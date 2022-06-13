@@ -1,0 +1,116 @@
+@import './variables.scss';
+
+.log-section::before{
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 91vh;
+    background: linear-gradient(to right, $blueDarkest, $main-color-light);
+    opacity: 0.8;
+    z-index: -1;
+}
+.log-section{
+    display: flex;
+    position: relative;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 91vh;
+    margin-top: -4px;
+    background: url('./img/logbackground.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: top center;
+	background-attachment: fixed;
+    z-index: 0;
+    transition: all 0.5s;
+        .log-container{
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 300px;
+            height: 300px;
+            background: linear-gradient(to top, $main-color 10%, $main-color-light);
+            border: 2px solid $grey;
+            border-radius: 25px;
+            box-shadow: 0px 0px 15px 15px $shadow;
+                .log-inputs{
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    width: 100%;
+                        label{
+                            display: flex;
+                            justify-content: flex-start;
+                            font-family: 'Roboto';
+                            font-weight: 400;
+                            font-size: 18px;
+                            color: $light;
+                            margin-bottom: 10px;
+                            text-shadow: 0px 0px 5px $shadow;
+                        }
+                        .username-input{
+                            width: 70%;
+                            height: 40px;
+                            margin-bottom: 10px;
+                            padding-left: 10px;
+                            outline: none;
+                            font-family: 'Roboto';
+                            font-weight: 400;
+                            font-size: 16px;
+                            border-style: none;
+                            border-radius: 5px;
+                        }
+                        .username-input::placeholder{
+                            color: $grey;
+                        }
+                        .password-input{
+                            width: 70%;
+                            height: 40px;
+                            margin-bottom: 10px;
+                            padding-left: 10px;
+                            font-family: 'Roboto';
+                            font-weight: 400;
+                            font-size: 16px;
+                            outline: none;
+                            border-style: none;
+                            border-radius: 5px;
+                        }
+                        .password-input::placeholder{
+                            color: $grey;
+                        }
+                }
+        }
+        .btn-login{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 70%;
+            height: 40px;
+            background-color: $main-color-light;
+            border-style: none;
+            border-radius: 5px;
+            border: 1px solid $light;
+            font-family: 'Roboto';
+            font-weight: 400;
+            font-size: 18px;
+            color: $white;
+
+        }
+        .btn-login:hover{
+            box-shadow: 0px 0px 3px 1px $light;
+            transition: 0.3s;
+        }
+        @media only screen and (max-width: 600px){
+            .log-container{
+                width: 250px;
+                height: 250px;
+                transition: all 0.5s;
+            }
+        }
+}

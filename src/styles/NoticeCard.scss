@@ -1,0 +1,43 @@
+@import './variables.scss';
+
+.notice-card{
+    display: flex;
+    align-items: center;
+    min-width: 96%;
+    height: 120px;
+    border: 1px solid $third-color;
+    text-decoration: none;
+    font-family: 'Roboto', sans-serif;
+    color: $black;
+    margin-top: 5px;
+    padding: 2px 1px 1px 1px;
+    background-color: #efefef;
+        img{
+            margin-left: 3px;
+            min-width: 75px;
+            height: 85px;
+            border-radius: 15px;
+            border: 1px solid $grey;
+        }
+        .notice-container{
+            display: flex;
+            flex-direction: column;
+            min-width: 70%;
+            padding: 10px;
+            .notice-tittle{
+                font-weight: 900;
+                font-size: 12px;
+                color: $darkCard;
+            }
+            .notice-content{
+                padding: 2px;
+                font-size: 9px;
+                color: $dark;
+                text-align: justify;
+            }
+        }
+}
+.notice-card:hover{
+    box-shadow: 1px 1px 5px $blue;
+    border-color: $blue;
+}

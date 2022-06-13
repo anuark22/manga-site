@@ -1,0 +1,293 @@
+@import './variables.scss';
+
+.forum-section::before{
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 91vh;
+    background: linear-gradient(to right, $blueDarkest, $main-color-light);
+    opacity: 0.8;
+    z-index: -1;
+}
+
+.forum-section{
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: center;
+    position: relative;
+    padding-left: 15px;
+    padding-right: 15px;
+    width: 100%;
+    height: 91vh;
+    margin-top: -4px;
+    background: url('./img/forumbackground.jpg');
+
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: top center;
+	background-attachment: fixed;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 400;
+    z-index: 0;
+    transition: all 0.5s;
+        .discussion-btn{
+            display: flex;
+            align-items: center;
+            width: 100%;
+            height: 40px;
+            margin-bottom: 10px;
+            padding-right: 20px;
+                button{
+                    width: 150px;
+                    height: 35px;
+                    border-style: none;
+                    border-radius: 5px;
+                    background-color: $main-color-light;
+                    color: $white;
+                    cursor: pointer;
+                    font-family: 'Roboto', sans-serif;
+                    font-weight: 700;
+                    font-size: 12px;
+                    box-shadow: 0px 0px 10px 3px $shadow;
+                }
+                button:hover{
+                    transition: all 0.3s;
+                    box-shadow: 0px 0px 10px 3px $light;
+                }
+                .fa-plus{
+                    margin-left: 10px;
+                }
+                .forum-post-select{
+                    display: flex;
+                    flex-direction: column;
+                    position: relative;
+                    margin-left: 70px;
+                        .fa-angle-down{
+                            display: flex;
+                            position: absolute;
+                            font-size: 20px;
+                            color: $white;
+                            right: 8px;
+                            top: 8px;
+                        }
+                        .fa-filter{
+                            display: flex;
+                            position: absolute;
+                            font-size: 20px;
+                            color: $white;
+                            left: 22px;
+                            top: 8px;
+                        }
+                        .forum-post-ul{
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            flex-direction: column;
+                            position: absolute;
+                            text-align: center;
+                            width: 150px;
+                            top: 40px;
+                            left: 0;
+                            background-color: $main-color-light;
+                            border-radius: 5px;
+                            box-shadow: 0px 0px 5px 2px $shadow;
+                                li{
+                                    width: 100%;
+                                    height: 100%;
+                                    padding: 10px 5px 10px 5px;
+                                    list-style: none;
+                                    font-family: 'Roboto', sans-serif;
+                                    font-weight: 400;
+                                    font-size: 15px;
+                                    color: $white;
+                                    cursor: pointer;
+                                }
+                                li:hover{
+                                    background-color: pink;
+                                    transition: all 0.2s;
+                                    transform: scale(1.01);
+                                    text-shadow: 0px 0px 2px $light;
+                                    color: $main-color-light;
+                                }
+                        }
+                }
+                .refresh-btn{
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    position: absolute;
+                    width: 50px;
+                    right: 0;
+                    margin-right: 60px;
+                }
+        }
+        .forum-content{
+            display: flex;
+            flex-wrap: nowrap;
+            width: 100%;
+            height: 70vh;
+                .user-name{
+                    margin-right: 5px;
+                    font-family: 'Roboto', sans-serif;
+                    font-weight: 700;
+                    margin-right: 5px;
+                }
+                .post-date{
+                    margin-right: 5px;
+                    font-family: 'Roboto', sans-serif;
+                    font-weight: 400;
+                }
+                .OMSComunnity{
+                    background-color: $main-color-light;
+                    padding: 2px;
+                    font-family: 'Roboto', sans-serif;
+                    font-weight: 400;
+                    font-size: 11px;
+                    color: white;
+                }
+                .Groups{
+                    background-color: $groups;
+                    padding: 2px;
+                    font-family: 'Roboto', sans-serif;
+                    font-weight: 400;
+                    font-size: 11px;
+                    color: $white;
+                }
+                .General{
+                    background-color: $general;
+                    padding: 2px;
+                    font-family: 'Roboto', sans-serif;
+                    font-weight: 400;
+                    font-size: 11px;
+                    color: $white;
+                }
+                .Recruitement{
+                    background-color: $recruitement;
+                    padding: 2px;
+                    font-family: 'Roboto', sans-serif;
+                    font-weight: 400;
+                    font-size: 11px;
+                    color: $white;
+                }
+                .Release{
+                    background-color: $release;
+                    padding: 2px;
+                    font-family: 'Roboto', sans-serif;
+                    font-weight: 400;
+                    font-size: 11px;
+                    color: $white;
+                }
+                .Help{
+                    background-color: $help;
+                    padding: 2px;
+                    font-family: 'Roboto', sans-serif;
+                    font-weight: 400;
+                    font-size: 11px;
+                    color: $light;
+                }
+                
+                .forum-post{
+                    display: flex;
+                    flex-wrap: nowrap;
+                    width: 80%;
+                    height: 100%;
+                    margin-left: 20px;
+                    background-color: $white;
+                    border-radius: 10px;
+                    box-shadow: 0px 0px 10px 3px $shadow;                
+                }
+                .post-card{
+                    display: flex;
+                    flex-direction: column;
+                    width: 100%;
+                    height: 100%;
+                    border-radius: 10px;
+                    overflow: auto;
+                        .post-container{
+                            display: flex;
+                            flex-direction: row;
+                            align-items: center;
+                            width: 98%;
+                            height: 90px;
+                            margin: 10px;
+                            padding: 5px;
+                            border-radius: 10px;
+                            border-top: 0.01em dashed $main-color-light;
+                            border-bottom: 0.01em dashed $main-color-light;
+                            border-right: 0.01em dashed $blue;
+                            border-left: 0.01em dashed $blue;
+                            text-decoration: none;
+                            color: $black;
+                            font-family: 'Roboto', sans-serif;
+                            font-size: 13px;
+                                img{
+                                    border-radius: 50%;
+                                    width: 60px;
+                                    height: 60px;
+                                    margin-left: 10px;
+                                    margin-right: 15px;
+                                    border: 2px solid $main-color-light;
+                                }
+                                .post-related{
+                                    display: flex;
+                                    width: 80%;
+                                    flex-direction: column;
+                                        .post-tittle{
+                                            font-family: 'Roboto', sans-serif;
+                                            font-weight: 700;
+                                            font-size: 15px;
+                                            margin-bottom: 2px;
+                                            color: $blue;
+                                        }
+                                        .post-content{
+                                            display: flex;
+                                            font-family: 'Roboto', sans-serif;
+                                            font-weight: 400;
+                                            font-size: 13px;
+                                            padding-bottom: 5px;
+                                        }
+                                }
+                                .post-stats{
+                                    display: flex;
+                                    flex-direction: column;
+                                    justify-content: center;
+                                    font-size: 17px;
+                                    width: 10%;
+                                    height: 100%;
+                                }
+
+                        }
+                        .post-container:hover{
+                            transform: scale(1.01);
+                            transition: all 0.1s;
+                        }
+                }
+        }
+        .oms-color{
+            color: $main-color-light
+        }
+        .groups-color{
+            color: $groups;
+        }
+        .general-color{
+            color: $general;
+        }
+        .release-color{
+            color: $release;
+        }
+        .help-color{
+            color: $help;
+        }
+        .recruitement-color{
+            color: $recruitement;
+        }
+        .library-color{
+            color: $library;
+        }
+        .video-library-color{
+            color: $videoLibrary;
+        }
+}

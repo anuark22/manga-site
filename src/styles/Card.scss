@@ -1,0 +1,152 @@
+@import './variables.scss';
+
+.card{
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    width: 200px;
+    height: 300px;
+
+    position: relative;
+    box-shadow: 0px 0px 5px 1px $shadow;
+        .synopsis{
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            padding-top: 40px;
+            padding-left: 10px;
+            padding-right: 10px;
+            font-family: 'Roboto', sans-serif;
+            font-weight: 400;
+            text-align: justify;
+            top: 0;
+            background-color: $darkCard;
+            color: $white;
+            z-index: 999;
+            opacity: 0;
+                b{
+                    color: $yellowCard;
+                }
+        }
+        .synopsis:hover{
+            opacity: 1;
+            transform: 0.5s;
+        }
+        .card-content{
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            font-family: 'Roboto', sans-serif;
+            font-weight: 700;
+                    img{
+                        position: absolute;
+                        width: 100%;
+                        height: 100%;
+                        border: 1px solid $shadow;
+                        text-align: center;
+                    }
+                    .manga-tittle{
+                        position: absolute;
+                        background-color: $shadow;
+                        padding: 5px;
+                        width: 100%;
+                        font-size: 12px;
+                        color: $white;
+                        text-align: center;
+                    }
+                    .MANGA{
+                        position: absolute;
+                        top: 35px;
+                        left: 5px;
+                        padding: 3px;
+                        background-color: $manga;
+                        border-radius: 5px;
+                        padding: 5px;
+                        color: $white;
+                        font-size: 12px;
+                        text-align: center;
+                        text-shadow: 1px 1px 3px $black;
+                    }
+                    .MANHWA{
+                        position: absolute;
+                        top: 35px;
+                        left: 5px;
+                        padding: 3px;
+                        background-color: $manhwa;
+                        border-radius: 5px;
+                        padding: 5px;
+                        color: $white;
+                        font-size: 12px;
+                        text-align: center;
+                        text-shadow: 1px 1px 3px $black;
+                    }
+                    .MANHUA{
+                        position: absolute;
+                        top: 35px;
+                        left: 5px;
+                        padding: 3px;
+                        background-color: $manhua;
+                        border-radius: 5px;
+                        padding: 5px;
+                        color: $white;
+                        font-size: 12px;
+                        text-align: center;
+                        text-shadow: 1px 1px 3px $black;
+                    }
+                    .SHOUNEN{
+                        position: absolute;
+                        bottom: 0;
+                        background-color: rgba($shounen, .8);
+                        width: 100%;
+                        padding: 4px;
+                        color: $white;
+                        font-size: 13px;
+                        text-align: center;
+                    }
+                    .SEINEN{
+                        position: absolute;
+                        bottom: 0;
+                        background-color: rgba($seinen, .8);
+                        width: 100%;
+                        padding: 4px;
+                        color: $white;
+                        font-size: 13px;
+                        text-align: center;
+                    }
+                    .SHOUJO{
+                        position: absolute;
+                        bottom: 0;
+                        background-color: rgba($shoujo, .8);
+                        width: 100%;
+                        padding: 4px;
+                        color: $white;
+                        font-size: 13px;
+                        text-align: center;
+                    }
+                    .JOSEI{
+                        position: absolute;
+                        bottom: 0;
+                        background-color: rgba($josei, .8);
+                        width: 100%;
+                        padding: 4px;
+                        color: $white;
+                        font-size: 13px;
+                        text-align: center;
+                    }
+        }    
+}
+.card:hover{
+    transform: scale(1.05);
+    transition: 0.5s;
+    box-shadow: 0px 0px 15px 4px $shadow;
+}
+@media only screen and (max-width:600px){
+    .card{
+        transform: scale(0.8);
+
+    }
+    .card:hover{
+        transform: scale(0.83);
+    }
+}

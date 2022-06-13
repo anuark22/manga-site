@@ -1,0 +1,255 @@
+//////COLORS//////
+$main-color      :#7e003f;
+$main-color-light:#913362;
+$main-color-dark :#3f0321;
+$secundary-color :#cc0066;
+$help			 :#667699;
+$general         :#3A369C;
+$release         :#C90E0E; 
+$groups          :#29BA46;
+$recruitement    :#E8B5E8;
+$third-color     :#ff6ab4;
+$library		 :#2487BA;
+$videoLibrary    :#29A7BA;
+$shounen         :rgba(255,165,0,.75);
+$seinen          :rgba(255,0,0,.75);
+$shoujo          :rgba(221,148,161,.75);
+$josei           :rgba(128,0,128,.75);
+$manga           :#7986cb;
+$manhwa          :#81c784;
+$manhua          :#8d6e63;
+$white           :#FFFFFF;
+$light           :#F7F7F7;
+$light2          :#F2F2F2;
+$light3          :#DEE2E4;
+$greyLight       :#D6DCE5;
+$greyLight2      :#E7E6E6;
+$greyLight3      :#D9D8D8;
+$greyLight4      :#EDEDED;
+$greyLighten     :#CDCDCD;
+$greyLighten2    :#A5A5A5;
+$greyDarken      :#ADB9CA;
+$greyDarken2     :#8598B0;
+$greyDarken3     :#BFBFBF;
+$grey            :#A6A6A6;
+$anotherGrey     :#727272;
+$greyDark        :#A2A1A1;
+$greyBlack       :#7F7F7F;
+$darkCard        :#141c3a;
+$dark            :#404040;
+$dark2           :#595959;
+$darkness        :#262626;
+$blueUltraSoft   :#ABC4DB;
+$blueSky         :#83C9E8;
+$blueLight       :#6BC6EB;
+$blueLighten     :#00B0F0;
+$blue            :#2FB1E5;
+$blueDarker      :#3D849F;
+$blueDark        :#1994C5;
+$blueDarkest     :#2E75B6;
+$blueSoftly      :#AECDEA;
+$blueUltraSoftly :#ACC4DB;
+$success         :#96CE5B;
+$danger          :#FF2D2D;
+$grayBlue        :#8497b0;
+$grayBlueDarker  :#596f8d;
+$green           :#92D050;
+$approved        :#548235;
+$shadow          :rgba(#000000, .6);
+$blueGrey        :#ACC4DB;
+$black           :#000000;
+$yellow          :#FFC000;
+$redColor        :#C00000;
+$greyColor       :#D9D9D9;
+$blueBtn         :#0EB0F0;
+
+//Fuentes
+$font-tittle     :'Original Surfer', cursive;
+
+//Cards Colors
+$greenCard           :#A9D18E;
+$yellowCard          :#FFD966;
+$redCard             :#FF5D5D;
+$blueCard            :#9DC3E6;
+//////////////////
+//////////ICONS/////////
+$phone               :"icons/Outline/Action/outline-phone-24px.svg";
+$home                :"icons/Outline/Action/outline-home-24px.svg";
+$home_baseline       :"icons/Fill/Action/baseline-home-24px.svg";
+$account_circle      :"icons/Outline/Action/outline-account_circle-24px.svg";
+$account_circle_fill :"icons/Fill/Action/account_circle-24px.svg";
+$lock                :"icons/Outline/Action/outline-lock-24px.svg";
+$public              :"icons/Fill/Social/baseline-public-24px.svg";
+$email               :"icons/Outline/Communication/outline-email-24px.svg";
+$fillEmail           :"icons/Fill/Communication/baseline-email-24px.svg";
+$person              :"icons/Outline/Social/outline-person-24px.svg";
+$expand_more         :"icons/Fill/Navigation/outline-expand_more-24px.svg";
+$expand_less         :"icons/Fill/Navigation/outline-expand_less-24px.svg";
+$visibility          :"icons/Outline/Action/outline-visibility-24px.svg";
+$check               :"icons/Fill/Navigation/baseline-check-24px.svg";
+$error               :"icons/Fill/Alert/baseline-error-24px.svg";
+$search              :"icons/Fill/Action/baseline-search-24px.svg";
+$logo                :"images/kommu.svg";
+$apps                :"icons/Fill/Navigation/baseline-apps-24px.svg";
+$profile             :"icons/Fill/Action/baseline-account_circle-24px.svg";
+$message             :"icons/Fill/Communication/baseline-chat_bubble-24px.svg";
+$conf                :"icons/Fill/Editor/baseline-bar_chart-24px.svg";
+$notification        :"icons/Fill/Social/baseline-notifications-24px.svg";
+$reader              :"icons/Fill/Action/baseline-chrome_reader_mode-24px.svg";
+$event               :"icons/Fill/Action/baseline-event-24px.svg";
+$eventGray           :"icons/Fill/Action/baseline-event-24px.svg";
+$blog                :"icons/Fill/Content/baseline-create-24px.svg";
+$forum               :"icons/Fill/Social/baseline-group-24px.svg";
+$website             :"icons/Fill/Action/baseline-language-24px.svg";
+$video               :"icons/Fill/Av/baseline-videocam-24px.svg";
+$chevron_left        :"icons/Fill/Navigation/baseline-chevron_left-24px.svg";
+$chevron_right       :"icons/Fill/Navigation/baseline-chevron_right-24px.svg";
+$close               :"icons/Fill/Navigation/baseline-close-24px.svg";
+$local_activity      :"icons/Outline/Maps/outline-local_activity-24px.svg";
+$local_offer         :"icons/Outline/Maps/outline-local_offer-24px.svg";
+$language            :"icons/Fill/Action/baseline-language-24px.svg";
+$how_to_vote         :"icons/Outline/Content/outline-how_to_vote-24px.svg";
+$bussiness           :"icons/Outline/Places/outline-business_center-24px.svg";
+$work                :"icons/Outline/Action/outline-work_outline-24px.svg";
+$fillWork            :"icons/Fill/Action/baseline-work-24px.svg";
+$developer_board     :"icons/Outline/Hardware/outline-developer_board-24px.svg";
+$point               :"icons/Fill/Action/circle-solid.svg";
+$group               :"icons/Fill/Social/baseline-group-24px.svg";
+$video               :"icons/Fill/Av/baseline-play_circle_filled-24px.svg";
+$volume              :"icons/Fill/Av/baseline-volume_down-24px.svg";
+$image               :"icons/Fill/Image/baseline-image-24px.svg";
+$document            :"icons/Fill/Editor/baseline-insert_drive_file-24px.svg";
+$dashboard           :"icons/Fill/Action/dashboard-24px.svg";
+$bubbleChart         :"icons/Fill/Editor/bubble_chart-24px.svg";
+$cancel              :"icons/Fill/Navigation/cancel-24px.svg";
+$arrow_drop_down     :"icons/Fill/Navigation/arrow_drop_down-24px.svg";
+$text                :"icons/Fill/Editor/title-24px.svg";
+$number              :"icons/Outline/Image/looks_one-24px.svg";
+$arroba              :"icons/Outline/Action/email_alternative.svg";
+$phone               :"icons/Outline/Communication/outline-phone-24px.svg";
+$date                :"icons/Outline/Action/date_range-24px.svg";
+$schedule            :"icons/Outline/Action/schedule-24px.svg";
+$earth               :"icons/Fill/Social/baseline-public-24px.svg";
+$image_outline       :"icons/Outline/Image/image-24px.svg";
+$file                :"icons/Outline/Editor/insert_drive_file-24px.svg";
+$link                :"icons/Outline/Content/link-24px.svg";
+$checkbox            :"icons/Outline/Toggle/check_box-24px.svg";
+$select              :"icons/Outline/Toggle/select_alternative.svg";
+$hourglass           :"icons/Outline/Action/hourglass_empty-24px.svg";
+$progress            :"icons/Fill/Action/trending_up-24px.svg";
+$add_circle          :"icons/Fill/Content/ic_add_circle_48px.svg";
+$file_copy           :"icons/Outline/Content/outline-file_copy-24px.svg";
+$happy_face          :"icons/Outline/Social/outline-sentiment_satisfied-24px.svg";
+$view_list           :"icons/Fill/Action/view_list.svg";
+$view_module         :"icons/Fill/Action/view_module.svg";
+$build               :"icons/Fill/Action/build- 24px.svg";
+$setting             :"icons/Fill/Action/ic_settings_48px.svg";
+$more_vert           :"icons/Fill/Navigation/more_vert.svg";
+$chrome_reader_mode  :"icons/Outline/Action/chrome_reader_mode-24px.svg";
+$receipt             :"icons/Outline/Action/receipt-24px.svg";
+$amp_stories         :"icons/Outline/Content/amp_stories-24px.svg";
+$meeting_room        :"icons/Outline/Places/meeting_room-24px.svg";
+$list_alt            :"icons/Fill/Communication/baseline-list_alt-24px.svg";
+$person              :"icons/Fill/Social/person-24px.svg";
+$person_group        :"icons/Fill/Social/people_alt-24px.svg";
+$person_out          :"icons/Outline/Social/outline-person-24px.svg";
+$group_out           :"icons/Outline/Social/outline-group-24px.svg";
+$favorite_fill       :"icons/Fill/Action/favorite-24px.svg";
+$pause               :"icons/Fill/Av/pause-24px.svg";
+$play_arrow          :"icons/Fill/Av/play_arrow-24px.svg";
+$volumen_off         :"icons/Fill/Av/volume_off-24px.svg";
+$volumen_up          :"icons/Fill/Av/volume_up-24px.svg";
+$forum               :"icons/Fill/Communication/forum-24px.svg";
+$fullscreen_exit     :"icons/Fill/Navigation/fullscreen_exit-24px.svg";
+$fullscreen          :"icons/Fill/Navigation/fullscreen-24px.svg";
+$emoji_people        :"icons/Fill/Social/emoji_people-24px.svg";
+$favorite_outline    :"icons/Outline/Action/favorite_border-24px.svg";
+$question_answer     :"icons/Outline/Communication/question_answer-24px.svg";
+$slideshow           :"icons/Outline/Image/slideshow-24px.svg";
+$sentiment_satisfied :"icons/Outline/Social/sentiment_satisfied_alt-24px.svg";
+$refresh             :"icons/Fill/Navigation/refresh-24px.svg";
+$brush               :"icons/Outline/Image/brush-24px.svg";
+$radio               :"icons/Fill/Toggle/radio_button_checked-24px.svg";
+$storefront          :"icons/Outline/Places/storefront-24px.svg";
+$add                 :"icons/Fill/Content/baseline-add-24px.svg";
+$check_circle        :"icons/Fill/Action/check_circle-24px.svg";
+$error2              :"icons/Fill/Alert/error-24px.svg";
+
+@mixin icon($route, $color: 0, $size:100%, $position:center, $repeat: no-repeat) {
+	mask-size            : $size;
+	mask-image           : url($route);
+	mask-position        : $position;
+	mask-repeat          : $repeat;
+	-webkit-mask-size    : $size;
+	-webkit-mask-image   : url($route);
+	-webkit-mask-position: $position;
+	-webkit-mask-repeat  : $repeat;
+
+	@if $color !=0 {
+		background-color: $color;
+	}
+
+}
+
+@mixin breakpoint($point) {
+	@if $point==mobileonly {
+		@media (max-width: 600px) {
+			@content ;
+		}
+	}
+
+	@if $point==tabletonly {
+		@media (max-width: 1024px) {
+			@content ;
+		}
+	}
+
+	@if $point==hdscreenonly {
+		@media (max-width: 1280px) {
+			@content ;
+		}
+	}
+
+	@if $point==hdscreenonly2 {
+		@media (max-width: 1366px) {
+			@content ;
+		}
+	}
+
+	@if $point==fhscreenonly {
+		@media (max-width: 1920px) {
+			@content ;
+		}
+	}
+}
+
+/////////Generic clases/////////
+
+%quicksandRegular {
+	font-family: 'Quicksand', sans-serif;
+	font-weight: 300;
+}
+
+%quicksandMedium {
+	font-family: 'Quicksand', sans-serif;
+	font-weight: 400;
+}
+
+%quicksandBold {
+	font-family: 'Quicksand', sans-serif;
+	font-weight: 700;
+}
+
+%notAllowed {
+	cursor: not-allowed;
+}
+
+%row {
+	display       : flex;
+	flex-direction: row;
+}
+
+%column {
+	display       : flex;
+	flex-direction: column;
+}

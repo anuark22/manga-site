@@ -1,0 +1,105 @@
+@import './variables.scss';
+.main-header{
+    display: flex;
+    flex-direction: column;
+    min-width: 62%;
+    height: 250px;
+    margin-top: 25px;
+    background: rgb(204,0,102);
+    background: linear-gradient(90deg, rgba(204,0,102,1) 0%, rgba(255,106,180,1) 44%, rgba(70,3,37,1) 100%);
+    border-radius: 25px;
+    box-shadow: 0px 5px 10px $shadow;
+    overflow: hidden;
+        .main-header-bar{
+            display: flex;
+            align-items: center;
+            background-color: $third-color;
+            width: 250px;
+            padding: 10px;
+            margin-bottom: 3px;
+            font-family: 'Roboto', sans-serif;
+            font-weight: 900;
+            color: $white;
+            text-shadow: 1px 1px 1px $shadow;
+            border-radius: 10px 0px 10px 0px;
+            box-shadow: 0px 2px 5px $shadow;
+        }
+        .top-tier-mangas{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: nowrap;
+            gap: 1px;
+            min-width: 80%;
+            min-height: 80%;
+            margin-top: 10px;
+            padding: 0;
+                .card{
+                    display: flex;
+                    transform: scale(0.6);
+                    margin-bottom: 30px;
+                }
+                @media only screen and (max-width: 750px){
+                    .card{
+                        transform: scale(0.6);
+                        font-size: 12px;
+                        .manga-tittle{
+                            font-size: 10px;
+                        }
+                    }
+                }
+                @media only screen and (max-width: 500px){
+                    .card{
+                        transform: scale(0.6);
+                        font-size: 14px;
+                        margin-right: -30px;
+                    }
+                }
+        }
+}
+@media only screen and (max-width: 900px){
+    .main-header{
+        min-width: 80%;
+    }
+}
+@media only screen and (max-width: 700px){
+    .main-header{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-width: 97%;
+        height: 280px;
+        overflow: scroll;
+
+    }
+    .main-header-bar{
+        min-width: 100%;
+        height: 100%;
+        justify-content: center;
+    }
+    .main-header{
+        min-width: 90%;
+    }
+    .top-tier-mangas{
+        transform: scale(0.9);
+    }
+}
+@media only screen and (max-width: 500px){
+    .main-header{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-width: 97%;
+        height: 300px;
+        overflow: scroll;
+
+    }
+    .main-header-bar{
+        min-width: 100%;
+        justify-content: center;
+    }
+    .top-tier-mangas{
+        min-width: auto;
+        margin-left: 50px;
+    }
+}
