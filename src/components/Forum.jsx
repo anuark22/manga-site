@@ -27,32 +27,35 @@ const Forum = () => {
     }
     return ( 
         <div className="forum-section">
-            <div className="discussion-btn">
-                <button type="submit">Create discussion <i className="fa fa-plus" aria-hidden="true"></i></button>
-                <div className="forum-post-select">
-                    <button type="submit" onClick={()=>{showItem()}} id="postHam" > 
-                        <i className="fa fa-filter" aria-hidden="true"></i>
-                        <p>Lastest</p>
-                        <i className="fa fa-angle-down" aria-hidden="true"></i>
-                    </button>
-                    <ul className="forum-post-ul" style={style}>
-                        <li>Lastest</li>
-                        <li>Above</li>
-                        <li>Newer</li>
-                        <li>Older</li>
-                        <li>Popular</li>
-                        <li>Unpopular</li>
-                    </ul>
-                </div>
-                <button type="submit" className="refresh-btn"> 
-                    <i className="fa fa-refresh" aria-hidden="true"></i>
-                </button>
-            </div>
             <div className="forum-content">
-                <SideBar />
+                <SideBar className="sidebar-comp" />
                 <div className="forum-post">
                     <div className="post-card">
-                        <Post />
+                        <div className="post-btns">
+                            <div className="discussion-btn">
+                                <div className="forum-post-select">
+                                    <button type="submit" onClick={()=>{showItem()}} id="postHam" > 
+                                        <i className="fa fa-filter" aria-hidden="true"></i>
+                                        <p>Lastest</p>
+                                        <i className="fa fa-angle-down" aria-hidden="true"></i>
+                                    </button>
+                                    <ul className="forum-post-ul" style={style}>
+                                        <li>Lastest</li>
+                                        <li>Above</li>
+                                        <li>Newer</li>
+                                        <li>Older</li>
+                                        <li>Popular</li>
+                                        <li>Unpopular</li>
+                                    </ul>
+                                </div>
+                                <button type="submit" className="refresh-btn"> 
+                                    <i className="fa fa-refresh" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div className="all-post-container">
+                            <Post />                  
+                        </div>
                     </div>
                 </div>
             </div>

@@ -25,69 +25,72 @@ const SideBar = () => {
     }
     return ( 
         <div className="forum-sidebar">
-            <div className="sidebar-main-group">
-                <div className="topic-head" onClick={()=>{showItem()}} id="hamSidebar">
-                    <i className="fa fa-square oms-color" aria-hidden="true"></i>
-                    <p >OMS Community</p>
+            <button type="submit">Create discussion <i className="fa fa-plus" aria-hidden="true"></i></button>
+            <div className="ul-container">
+                <div className="sidebar-main-group">
+                    <div className="topic-head" onClick={()=>{showItem()}} id="hamSidebar">
+                        <i className="fa fa-square oms-color" aria-hidden="true"></i>
+                        <p >OMS Community</p>
+                    </div>
+                    <div className="option-group" style={style}>
+                        <ul>
+                            <li>Release</li>
+                            <li>General</li>
+                            <li>Suggestions</li>
+                            <li>Video game</li>
+                            <li>Off-topic</li>
+                            <li>Help</li>
+                        </ul>
+                    </div>            
                 </div>
-                <div className="option-group" style={style}>
-                    <ul>
-                        <li>Release</li>
-                        <li>General</li>
-                        <li>Suggestions</li>
-                        <li>Video game</li>
-                        <li>Off-topic</li>
-                        <li>Help</li>
-                    </ul>
-                </div>            
-            </div>
-            <div className="sidebar-main-group">
-                <div className="topic-head">
-                    <i className="fa fa-square library-color" aria-hidden="true"></i>
-                    <div>Library</div>
+                <div className="sidebar-main-group">
+                    <div className="topic-head">
+                        <i className="fa fa-square library-color" aria-hidden="true"></i>
+                        <div>Library</div>
+                    </div>
+                    <div className="option-group" style={style}>
+                        <ul>
+                            <li>Release</li>
+                            <li>General</li>
+                            <li>Suggestions</li>
+                            <li>Video game</li>
+                            <li>Off-topic</li>
+                            <li>Help</li>
+                        </ul>
+                    </div>  
                 </div>
-                <div className="option-group" style={style}>
-                    <ul>
-                        <li>Release</li>
-                        <li>General</li>
-                        <li>Suggestions</li>
-                        <li>Video game</li>
-                        <li>Off-topic</li>
-                        <li>Help</li>
-                    </ul>
-                </div>  
-            </div>
-            <div className="sidebar-main-group">
-                <div className="topic-head">
-                    <i className="fa fa-square  video-library-color" aria-hidden="true"></i>
-                    <div>Video</div>
+                <div className="sidebar-main-group">
+                    <div className="topic-head">
+                        <i className="fa fa-square  video-library-color" aria-hidden="true"></i>
+                        <div>Video</div>
+                    </div>
+                    <div className="option-group" style={style}>
+                        <ul>
+                            <li>Release</li>
+                            <li>General</li>
+                            <li>Suggestions</li>
+                            <li>Video game</li>
+                            <li>Off-topic</li>
+                            <li>Help</li>
+                        </ul>
+                    </div>  
                 </div>
-                <div className="option-group" style={style}>
-                    <ul>
-                        <li>Release</li>
-                        <li>General</li>
-                        <li>Suggestions</li>
-                        <li>Video game</li>
-                        <li>Off-topic</li>
-                        <li>Help</li>
-                    </ul>
-                </div>  
-            </div>
-            <div className="sidebar-main-group ">
-                <div className="topic-head">
-                    <i className="fa fa-square groups-color" aria-hidden="true"></i>
-                    <div>Groups</div>
+                <div className="sidebar-main-group ">
+                    <div className="topic-head">
+                        <i className="fa fa-square groups-color" aria-hidden="true"></i>
+                        <div>Groups</div>
+                    </div>
+                    <div className="option-group" style={style}>
+                        <ul>
+                            <li>Release</li>
+                            <li>General</li>
+                            <li>Suggestions</li>
+                            <li>Video game</li>
+                            <li>Off-topic</li>
+                            <li>Help</li>
+                        </ul>
+                    </div>  
                 </div>
-                <div className="option-group" style={style}>
-                    <ul>
-                        <li>Release</li>
-                        <li>General</li>
-                        <li>Suggestions</li>
-                        <li>Video game</li>
-                        <li>Off-topic</li>
-                        <li>Help</li>
-                    </ul>
-                </div>  
             </div>
         </div>
     );

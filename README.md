@@ -1,8 +1,6 @@
-#You can watch the progress clicking this URL: https://anuar-manga.000webhostapp.com/
 # Getting Started with Create React App
-Building a manga site using Reactjs and SASS
 
-
+This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts
 

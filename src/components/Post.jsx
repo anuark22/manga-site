@@ -24,10 +24,10 @@ const Post = () => {
                             </div>
                         </div>
                         <div className="post-stats">
-                            <div>
+                            <div className="post-stats-content">
                                 <i className="fa fa-comment-o" aria-hidden="true"></i> {post.postComments} 
                             </div>
-                            <div>
+                            <div className="post-stats-content">
                                 <i className="fa fa-eye" aria-hidden="true"></i> {post.postViews} 
                             </div>
                         </div>

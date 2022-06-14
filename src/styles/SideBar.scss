@@ -4,52 +4,132 @@
     display: flex;
     flex-wrap: nowrap;
     flex-direction: column;
-    width: 200px;
+    align-items: center;
+    min-width: 20%;
     height: 100%;
-    background-color: $white;
-    border-radius: 10px;
-    box-shadow: 0px 0px 10px 3px $shadow;
-    padding-top: 10px;
     font-family: 'Roboto', sans-serif;
     font-weight: 400;
     font-size: 18px;
-        .sidebar-main-group{
+        button{
             display: flex;
-            flex-direction: column;
             justify-content: center;
-            padding-left: 15px;
-            list-style-type: none;
-            text-decoration: none;
+            align-items: center;
+            width: 150px;
+            height: 35px;
+            border-style: none;
+            border-radius: 5px;
+            background-color: $main-color-light;
+            color: $white;
             cursor: pointer;
-                i{
-                    padding-right: 10px;
-                }
-                .option-group{
-                    display: flex;
-                    flex-direction: column;
-                        li{
-                            font-family: 'Roboto', sans-serif;
-                            font-weight: 400;
-                            font-size: 15px;
-                            list-style-type: none;
-                            margin-top: 10px;
-                            margin-bottom: 10px;
-                            padding-left: 10px;
-                        }
-                        li:hover{
-                            color: $blueDarkest;
-                        }
-                }
-                .topic-head{
-                    display: flex;
-                    flex-direction: row;
-                    align-items: center;
-                    font-family: 'Roboto', sans-serif;
-                    font-weight: 700;
-                    font-size: 16px;
-                }
-                .topic-head:hover{
-                    color: $blueDarkest;
+            font-family: 'Roboto', sans-serif;
+            font-weight: 700;
+            font-size: 12px;
+            box-shadow: 0px 0px 10px 3px $shadow;
+            margin-bottom: 10px;
+            padding: 10px;
+                .fa-plus{
+                     margin-left: 10px;
                 }
         }
+        .ul-container{
+            display: flex;
+            flex-direction: column;
+            min-width: 100%;
+            min-height: 70%;
+            background-color: $white;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px 3px $shadow;
+                    .sidebar-main-group{
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        padding-left: 15px;
+                        list-style-type: none;
+                        text-decoration: none;
+                        cursor: pointer;
+                            i{
+                                padding-right: 10px;
+                            }
+                        .option-group{
+                            display: flex;
+                            flex-direction: column;
+                                li{
+                                    font-family: 'Roboto', sans-serif;
+                                    font-weight: 400;
+                                    font-size: 15px;
+                                    list-style-type: none;
+                                    margin-top: 10px;
+                                    margin-bottom: 10px;
+                                    padding-left: 10px;
+                                }
+                                li:hover{
+                                    color: $blueDarkest;
+                                }
+                        }
+                        .topic-head{
+                            display: flex;
+                            flex-direction: row;
+                            align-items: center;
+                            font-family: 'Roboto', sans-serif;
+                            font-weight: 700;
+                            font-size: 16px;
+                        }
+                        .topic-head:hover{
+                            color: $blueDarkest;
+                        }
+                    }
+                    .sidebar-main-group{
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        padding-left: 15px;
+                        list-style-type: none;
+                        text-decoration: none;
+                        cursor: pointer;
+                            i{
+                                padding-right: 10px;
+                            }
+                            .option-group{
+                                display: flex;
+                                flex-direction: column;
+                                    li{
+                                        font-family: 'Roboto', sans-serif;
+                                        font-weight: 400;
+                                        font-size: 15px;
+                                        list-style-type: none;
+                                        margin-top: 10px;
+                                        margin-bottom: 10px;
+                                        padding-left: 10px;
+                                    }
+                                    li:hover{
+                                        color: $blueDarkest;
+                                    }
+                            }
+                            .topic-head{
+                                display: flex;
+                                flex-direction: row;
+                                align-items: center;
+                                font-family: 'Roboto', sans-serif;
+                                font-weight: 700;
+                                font-size: 16px;
+                            }
+                            .topic-head:hover{
+                                color: $blueDarkest;
+                            }
+                    }   
+        }
+
 }
+@media only screen and (max-width: 900px){
+   .forum-sidebar{
+        justify-content: center;
+        align-items: center;
+        min-width: 80%;
+        margin-left: 20px;
+   }
+}
+@media only screen and (max-width: 400px){
+    .forum-sidebar{
+        min-height: 50vh;
+    }
+ }
