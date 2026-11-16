@@ -11,6 +11,7 @@ import MangaDetail from './components/MangaDetail';
 import Profile from './components/Profile';
 import MangaReader from './components/MangaReader';
 import ScanDashboard from './components/ScanDashboard';
+import AdminDashboard from './components/AdminDashboard';
 import { SearchBarProvider } from './Context/SearchBarContext';
 import { ThemeProvider } from './Context/ThemeContext';
 import { AuthProvider } from './Context/AuthContext';
@@ -32,6 +33,8 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/scan-dashboard" element={<ScanDashboard />} />
           <Route path="/scan-panel" element={<ScanDashboard />} />
+          <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          <Route path="/admin-panel" element={<AdminDashboard />} />
         </Routes>
       </Layout>
     </BrowserRouter>

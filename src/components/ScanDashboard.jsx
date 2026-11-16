@@ -6,6 +6,7 @@ import {
   genresApi, 
   mangaGenresApi, 
   scansApi, 
+  scanApplicationsApi,
   filtersApi, 
   normalizePageUrl 
 } from '../services/api';
@@ -103,6 +104,20 @@ const ScanDashboard = () => {
   const [newScanFile, setNewScanFile] = useState(null);
   const [newScanPreview, setNewScanPreview] = useState('');
 
+  // Solicitud del usuario actual (para postulantes a scan)
+  const [myApplication, setMyApplication] = useState(null);
+  const [showApplyModal, setShowApplyModal] = useState(false);
+  const [applyForm, setApplyForm] = useState({
+    scanName: '',
+    scanDescription: '',
+    discordUrl: '',
+    websiteUrl: '',
+    applicationMessage: '',
+    file: null,
+    preview: ''
+  });
+  const [applyLoading, setApplyLoading] = useState(false);
+
   // Mostrar mensaje toast
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -113,12 +128,13 @@ const ScanDashboard = () => {
   const loadMasterData = async () => {
     setLoading(true);
     try {
-      const [mList, gList, dList, tList, sList] = await Promise.all([
+      const [mList, gList, dList, tList, sList, myApp] = await Promise.all([
         mangasApi.getMangas().catch(() => []),
         filtersApi.getGenres().catch(() => []),
         filtersApi.getDemographics().catch(() => []),
         filtersApi.getMangasType().catch(() => []),
-        scansApi.getScans().catch(() => [])
+        scansApi.getScans().catch(() => []),
+        isAuthenticated ? scanApplicationsApi.getMyApplication().catch(() => null) : Promise.resolve(null)
       ]);
 
       setMangas(mList);
@@ -126,12 +142,26 @@ const ScanDashboard = () => {
       setDemographics(dList);
       setMangaTypes(tList);
       setScans(sList);
+      setMyApplication(myApp);
 
       if (mList.length > 0 && !selectedMangaId) {
         setSelectedMangaId(mList[0].mangaId);
       }
-      if (sList.length > 0 && !scanId) {
-        setScanId(sList[0].scanId);
+
+      // Si es un usuario Scan específico, preseleccionar su grupo exclusivo
+      const isScan = user?.roleId === 3 || user?.roleName?.toUpperCase() === 'SCAN';
+      const isAdminUser = user?.roleId === 2 || user?.roleName?.toUpperCase() === 'ADMIN';
+
+      if (sList.length > 0) {
+        if (isScan && !isAdminUser) {
+          const userGroup = sList.find(s => 
+            (user?.scanId && s.scanId === user.scanId) || 
+            (user?.userId && s.createdBy === user.userId)
+          ) || sList[0];
+          setScanId(userGroup.scanId);
+        } else if (!scanId) {
+          setScanId(sList[0].scanId);
+        }
       }
     } catch (err) {
       console.error('Error cargando datos maestros:', err);
@@ -604,14 +634,64 @@ const ScanDashboard = () => {
     }
   };
 
+  // ==========================================
+  // MANEJO DE POSTULACIÓN DE SCAN (CLIENTES)
+  // ==========================================
+  const handleSubmitApplication = async (e) => {
+    e.preventDefault();
+    if (!applyForm.scanName.trim()) {
+      showToast('Ingresa el nombre del grupo de scan', 'error');
+      return;
+    }
+    if (!applyForm.scanDescription.trim()) {
+      showToast('Ingresa una descripción de tu grupo', 'error');
+      return;
+    }
+
+    setApplyLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('ScanName', applyForm.scanName.trim());
+      formData.append('ScanDescription', applyForm.scanDescription.trim());
+      if (applyForm.discordUrl.trim()) formData.append('DiscordUrl', applyForm.discordUrl.trim());
+      if (applyForm.websiteUrl.trim()) formData.append('WebsiteUrl', applyForm.websiteUrl.trim());
+      if (applyForm.applicationMessage.trim()) formData.append('ApplicationMessage', applyForm.applicationMessage.trim());
+      formData.append('EmailNotification', 'false');
+      if (applyForm.file) {
+        formData.append('File', applyForm.file);
+      }
+
+      await scanApplicationsApi.apply(formData);
+      showToast('¡Solicitud enviada con éxito! Será revisada por los administradores.');
+      setShowApplyModal(false);
+
+      const updatedApp = await scanApplicationsApi.getMyApplication();
+      setMyApplication(updatedApp);
+    } catch (err) {
+      showToast(err.message || 'Error al enviar la solicitud', 'error');
+    } finally {
+      setApplyLoading(false);
+    }
+  };
+
   // Verificación de autenticación y rol
-  // Permite acceso a administradores (roleId 2) y scans (roleId 3)
-  const isAuthorized = isAuthenticated && (
+  const isAdmin = isAuthenticated && (
     user?.roleId === 2 || 
+    user?.roleName?.toUpperCase() === 'ADMIN'
+  );
+
+  const isScanRole = isAuthenticated && (
     user?.roleId === 3 || 
-    user?.roleName?.toUpperCase() === 'ADMIN' || 
     user?.roleName?.toUpperCase() === 'SCAN'
   );
+
+  const isAuthorized = isAdmin || isScanRole;
+
+  // Encontrar el grupo de scan exclusivo del usuario
+  const myScan = scans.find(s => 
+    (user?.scanId && s.scanId === user.scanId) || 
+    (user?.userId && s.createdBy === user.userId)
+  ) || (scans.length > 0 && isScanRole && !isAdmin ? scans[0] : null);
 
   // Filtrado de mangas en Tab 2
   const filteredMangas = mangas.filter(m => {
@@ -651,23 +731,63 @@ const ScanDashboard = () => {
       ) : !isAuthorized ? (
         <div className="auth-guard-container">
           <div className="guard-card">
-            <i className="fa fa-shield guard-icon warning"></i>
-            <h2>Permisos Insuficientes</h2>
-            <p>
-              Estás conectado como <strong>{user?.username || 'Usuario'}</strong> con rol <strong>{user?.roleName || 'Cliente'}</strong>.
-              Este panel requiere rol de <strong>Scan</strong> o <strong>Administrador</strong>.
-            </p>
-            <p className="guard-hint">
-              * Nota de desarrollo: Si deseas probar el panel, inicia sesión con la cuenta de administrador registrada o solicita rol de Scan.
-            </p>
-            <div className="guard-actions">
-              <Link to="/profile" className="btn-secondary">
-                <i className="fa fa-user"></i> Ver Mi Perfil
-              </Link>
-              <Link to="/manga-section" className="btn-primary">
-                <i className="fa fa-book"></i> Explorar Mangas
-              </Link>
-            </div>
+            {myApplication && myApplication.status === 'PENDING' ? (
+              <>
+                <i className="fa fa-clock-o guard-icon warning"></i>
+                <h2>Solicitud en Revisión</h2>
+                <p>
+                  Has postulado al grupo <strong>"{myApplication.scanName}"</strong> el {new Date(myApplication.createdAt).toLocaleDateString()}.
+                </p>
+                <div className="guard-hint" style={{ marginTop: '8px', padding: '10px 14px', background: 'rgba(245, 158, 11, 0.15)', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+                  <i className="fa fa-info-circle"></i> Nuestro equipo de administración está revisando tu solicitud. Una vez aprobada, se te otorgará automáticamente el rol de <strong>Scan</strong> y podrás acceder a este panel.
+                </div>
+                <div className="guard-actions">
+                  <Link to="/profile" className="btn-secondary">
+                    <i className="fa fa-user"></i> Ver Mi Perfil
+                  </Link>
+                  <Link to="/manga-section" className="btn-primary">
+                    <i className="fa fa-book"></i> Explorar Mangas
+                  </Link>
+                </div>
+              </>
+            ) : myApplication && myApplication.status === 'REJECTED' ? (
+              <>
+                <i className="fa fa-times-circle guard-icon" style={{ color: '#ef4444' }}></i>
+                <h2>Solicitud No Aprobada</h2>
+                <p>
+                  Tu postulación para <strong>"{myApplication.scanName}"</strong> no fue aprobada por los administradores.
+                </p>
+                {myApplication.adminNotes && (
+                  <div className="guard-hint" style={{ marginTop: '8px', padding: '10px 14px', background: 'rgba(239, 68, 68, 0.15)', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                    Motivo: <em>"{myApplication.adminNotes}"</em>
+                  </div>
+                )}
+                <div className="guard-actions">
+                  <button type="button" className="btn-primary" onClick={() => setShowApplyModal(true)}>
+                    <i className="fa fa-refresh"></i> Enviar Nueva Solicitud
+                  </button>
+                  <Link to="/manga-section" className="btn-secondary">
+                    <i className="fa fa-book"></i> Explorar Biblioteca
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <>
+                <i className="fa fa-users guard-icon"></i>
+                <h2>¿Perteneces a un Scan de Manga?</h2>
+                <p>
+                  Estás conectado como <strong>{user?.username}</strong> ({user?.roleName || 'Cliente'}). Para subir capítulos y publicar proyectos en la plataforma, solicita la aprobación de tu grupo de scanlation.
+                </p>
+                <div className="guard-actions">
+                  <button type="button" className="btn-primary" onClick={() => setShowApplyModal(true)}>
+                    <i className="fa fa-paper-plane"></i> Postular Mi Grupo de Scan
+                  </button>
+                  <Link to="/manga-section" className="btn-secondary">
+                    <i className="fa fa-book"></i> Explorar Mangas
+                  </Link>
+                </div>
+              </>
+            )}
           </div>
         </div>
       ) : (
@@ -844,19 +964,26 @@ const ScanDashboard = () => {
                           <label className="input-label">
                             <i className="fa fa-users"></i> Grupo Scan *
                           </label>
-                          <select
-                            className="form-select"
-                            value={scanId}
-                            onChange={(e) => setScanId(e.target.value)}
-                            required
-                          >
-                            <option value="">-- Selecciona Scan --</option>
-                            {scans.map(s => (
-                              <option key={s.scanId} value={s.scanId}>
-                                {s.scanName}
-                              </option>
-                            ))}
-                          </select>
+                          {isAdmin ? (
+                            <select
+                              className="form-select"
+                              value={scanId}
+                              onChange={(e) => setScanId(e.target.value)}
+                              required
+                            >
+                              <option value="">-- Selecciona Scan --</option>
+                              {scans.map(s => (
+                                <option key={s.scanId} value={s.scanId}>
+                                  {s.scanName}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <div className="exclusive-scan-lock-badge" title="Este capítulo se publicará a nombre de tu grupo exclusivo">
+                              <i className="fa fa-flag"></i>
+                              <span><strong>{myScan?.scanName || 'Tu Grupo Scan'}</strong> (#{myScan?.scanId || scanId})</span>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -1265,40 +1392,79 @@ const ScanDashboard = () => {
           {activeTab === 'scans' && (
             <div className="tab-pane scans-tab">
               <div className="panel-box">
-                <div className="box-header-row">
-                  <div className="box-title-group">
-                    <h2 className="box-title">
-                      <i className="fa fa-users"></i> Grupos de Scanlation ({scans.length})
-                    </h2>
-                    <p className="box-subtitle">Equipos registrados que suben capítulos y proyectos a la web.</p>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn-primary"
-                    onClick={() => setShowScanModal(true)}
-                  >
-                    <i className="fa fa-plus"></i> Registrar Grupo Scan
-                  </button>
-                </div>
-
-                <div className="scans-grid-admin">
-                  {scans.map(s => (
-                    <div key={s.scanId} className="scan-team-card">
-                      <div className="team-avatar-box">
-                        {s.scanImgUrl ? (
-                          <img src={normalizePageUrl(s.scanImgUrl)} alt={s.scanName} />
-                        ) : (
-                          <i className="fa fa-users"></i>
-                        )}
-                      </div>
-                      <div className="team-details">
-                        <h4>{s.scanName}</h4>
-                        <p>{s.scanDescription || 'Grupo de traducción y edición'}</p>
-                        <span className="team-id-badge">ID Scan: #{s.scanId}</span>
+                {isScanRole && !isAdmin && myScan ? (
+                  <div className="my-exclusive-scan-container">
+                    <div className="box-header-row">
+                      <div className="box-title-group">
+                        <h2 className="box-title">
+                          <i className="fa fa-flag"></i> Mi Grupo de Scan: {myScan.scanName}
+                        </h2>
+                        <p className="box-subtitle">Panel exclusivo de administración y métricas de tu equipo de scanlation.</p>
                       </div>
                     </div>
-                  ))}
-                </div>
+
+                    <div className="my-scan-hero-card">
+                      <div className="hero-avatar-box">
+                        {myScan.scanImgUrl ? (
+                          <img src={normalizePageUrl(myScan.scanImgUrl)} alt={myScan.scanName} />
+                        ) : (
+                          <i className="fa fa-flag"></i>
+                        )}
+                      </div>
+                      <div className="hero-details">
+                        <div className="hero-title-row">
+                          <h3>{myScan.scanName}</h3>
+                          <span className="hero-status-pill active">Activo</span>
+                        </div>
+                        <p className="hero-desc">{myScan.scanDescription || 'Grupo de traducción, edición y maquetación de manga.'}</p>
+                        <div className="hero-meta-row">
+                          <span><i className="fa fa-id-card"></i> <strong>ID Grupo:</strong> #{myScan.scanId}</span>
+                          <span><i className="fa fa-user"></i> <strong>Miembro:</strong> {user?.username}</span>
+                          <span><i className="fa fa-file-text-o"></i> <strong>Capítulos en plataforma:</strong> {mangaChapters.filter(c => c.scanId === myScan.scanId).length}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="box-header-row">
+                      <div className="box-title-group">
+                        <h2 className="box-title">
+                          <i className="fa fa-users"></i> Grupos de Scanlation ({scans.length})
+                        </h2>
+                        <p className="box-subtitle">Equipos registrados que suben capítulos y proyectos a la web.</p>
+                      </div>
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          onClick={() => setShowScanModal(true)}
+                        >
+                          <i className="fa fa-plus"></i> Registrar Grupo Scan
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="scans-grid-admin">
+                      {scans.map(s => (
+                        <div key={s.scanId} className="scan-team-card">
+                          <div className="team-avatar-box">
+                            {s.scanImgUrl ? (
+                              <img src={normalizePageUrl(s.scanImgUrl)} alt={s.scanName} />
+                            ) : (
+                              <i className="fa fa-users"></i>
+                            )}
+                          </div>
+                          <div className="team-details">
+                            <h4>{s.scanName}</h4>
+                            <p>{s.scanDescription || 'Grupo de traducción y edición'}</p>
+                            <span className="team-id-badge">ID Scan: #{s.scanId}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -1707,6 +1873,106 @@ const ScanDashboard = () => {
                 <button type="button" className="btn-secondary" onClick={() => setShowScanModal(false)}>Cancelar</button>
                 <button type="submit" className="btn-primary" disabled={scanFormLoading}>
                   {scanFormLoading ? <><i className="fa fa-spinner fa-spin"></i> Registrando...</> : 'Registrar Scan'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL: POSTULACIÓN PARA SCAN GROUP (CLIENTES)             */}
+      {/* ========================================================= */}
+      {showApplyModal && (
+        <div className="modal-backdrop" onClick={() => setShowApplyModal(false)}>
+          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3><i className="fa fa-paper-plane"></i> Solicitud de Scan Group</h3>
+              <button type="button" className="btn-modal-close" onClick={() => setShowApplyModal(false)}>✕</button>
+            </div>
+            <form onSubmit={handleSubmitApplication} className="modal-form">
+              <div className="modal-body-scroll">
+                <div className="form-group">
+                  <label className="input-label">Nombre del Grupo Scan *</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={applyForm.scanName}
+                    onChange={(e) => setApplyForm({ ...applyForm, scanName: e.target.value })}
+                    placeholder="Ej. Phoenix Scanlation"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="input-label">Descripción del Grupo / Proyectos *</label>
+                  <textarea
+                    rows={3}
+                    className="form-textarea"
+                    value={applyForm.scanDescription}
+                    onChange={(e) => setApplyForm({ ...applyForm, scanDescription: e.target.value })}
+                    placeholder="Describe los tipos de manga que traducen, frecuencia o experiencia..."
+                    required
+                  />
+                </div>
+                <div className="form-row">
+                  <div className="form-group col-half">
+                    <label className="input-label">Servidor Discord</label>
+                    <input
+                      type="url"
+                      className="form-input"
+                      value={applyForm.discordUrl}
+                      onChange={(e) => setApplyForm({ ...applyForm, discordUrl: e.target.value })}
+                      placeholder="https://discord.gg/..."
+                    />
+                  </div>
+                  <div className="form-group col-half">
+                    <label className="input-label">Sitio Web / Red Social</label>
+                    <input
+                      type="url"
+                      className="form-input"
+                      value={applyForm.websiteUrl}
+                      onChange={(e) => setApplyForm({ ...applyForm, websiteUrl: e.target.value })}
+                      placeholder="https://..."
+                    />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="input-label">Mensaje para Administradores</label>
+                  <textarea
+                    rows={2}
+                    className="form-textarea"
+                    value={applyForm.applicationMessage}
+                    onChange={(e) => setApplyForm({ ...applyForm, applicationMessage: e.target.value })}
+                    placeholder="Cuéntanos por qué te gustaría publicar en OurMangaSite..."
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="input-label">Logo del Grupo (Opcional)</label>
+                  <div className="cover-picker-box">
+                    {applyForm.preview && (
+                      <img src={applyForm.preview} alt="Logo Preview" className="cover-preview-img" />
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          setApplyForm({
+                            ...applyForm,
+                            file,
+                            preview: URL.createObjectURL(file)
+                          });
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn-secondary" onClick={() => setShowApplyModal(false)}>Cancelar</button>
+                <button type="submit" className="btn-primary" disabled={applyLoading}>
+                  {applyLoading ? <><i className="fa fa-spinner fa-spin"></i> Enviando...</> : 'Enviar Solicitud'}
                 </button>
               </div>
             </form>

@@ -14,6 +14,11 @@ const Nav = () => {
     const [isOpen, setIsOpen] = useState(false);
     const navigate = useNavigate();
 
+    const isAdmin = user && (
+        user.roleId === 2 || 
+        user.roleName?.toUpperCase() === 'ADMIN'
+    );
+
     const isScanOrAdmin = user && (
         user.roleId === 2 || 
         user.roleId === 3 || 
@@ -55,6 +60,11 @@ const Nav = () => {
                     {isScanOrAdmin && (
                         <Link to="/scan-dashboard" className="scan-panel-link" title="Panel de Scanlation y Gestión">
                             <i className="fa fa-cloud-upload" style={{ marginRight: '6px' }}></i><b>PANEL SCAN</b>
+                        </Link>
+                    )}
+                    {isAdmin && (
+                        <Link to="/admin-dashboard" className="admin-panel-link" title="Panel de Administración Global">
+                            <i className="fa fa-shield" style={{ marginRight: '6px' }}></i><b>PANEL ADMIN</b>
                         </Link>
                     )}
                 </div>
@@ -118,6 +128,13 @@ const Nav = () => {
                             <li>
                                 <Link to="/scan-dashboard" onClick={handleLinkClick} style={{ color: 'var(--main-color-light, #f4a261)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                                     <i className="fa fa-cloud-upload"></i> <b>PANEL SCAN</b>
+                                </Link>
+                            </li>
+                        )}
+                        {isAdmin && (
+                            <li>
+                                <Link to="/admin-dashboard" onClick={handleLinkClick} style={{ color: '#818cf8', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                    <i className="fa fa-shield"></i> <b>PANEL ADMIN</b>
                                 </Link>
                             </li>
                         )}

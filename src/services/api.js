@@ -537,6 +537,94 @@ export const scanApplicationsApi = {
   }
 };
 
+// ==========================================
+// ROLES & ADMIN USERS API
+// ==========================================
+export const rolesApi = {
+  /**
+   * Obtiene todos los roles del sistema
+   */
+  async getRoles(params = {}) {
+    const query = new URLSearchParams();
+    if (params.roleId) query.append('roleId', params.roleId);
+    if (params.roleName) query.append('roleName', params.roleName);
+    if (params.isActive !== undefined) query.append('isActive', params.isActive);
+    const qs = query.toString();
+    const res = await request(`/Roles/GetRoles${qs ? `?${qs}` : ''}`);
+    return res.items || [];
+  },
+
+  /**
+   * Obtiene un rol por ID
+   */
+  async getRoleById(roleId) {
+    const res = await request(`/Roles/GetRoleById?roleId=${roleId}`);
+    return (res.items && res.items[0]) || null;
+  },
+
+  /**
+   * Crea un nuevo rol
+   */
+  async createRole({ roleName, roleDescription, isActive = 1, isOwnerRole = 0 }) {
+    const res = await request('/Roles/CreateRole', {
+      method: 'POST',
+      body: JSON.stringify({ roleName, roleDescription, isActive, isOwnerRole })
+    });
+    return res;
+  },
+
+  /**
+   * Actualiza un rol existente
+   */
+  async updateRole({ roleId, roleName, roleDescription, isActive = 1 }) {
+    const res = await request('/Roles/UpdateRole', {
+      method: 'PUT',
+      body: JSON.stringify({ roleId, roleName, roleDescription, isActive })
+    });
+    return res;
+  },
+
+  /**
+   * Elimina un rol
+   */
+  async deleteRole(roleId) {
+    const res = await request(`/Roles/DeleteRole?roleId=${roleId}`, {
+      method: 'DELETE'
+    });
+    return res;
+  },
+
+  /**
+   * Asigna un rol a un usuario
+   */
+  async assignRole({ userId, roleId }) {
+    const res = await request('/Roles/AssignRole', {
+      method: 'POST',
+      body: JSON.stringify({ userId, roleId })
+    });
+    return res;
+  },
+
+  /**
+   * Obtiene usuarios que tienen un rol específico
+   */
+  async getUsersByRole(roleId) {
+    const res = await request(`/Roles/GetUsersByRole?roleId=${roleId}`);
+    return res.items || [];
+  }
+};
+
+export const adminUsersApi = {
+  /**
+   * Obtiene el listado completo de usuarios registrados para gestión administrativa
+   */
+  async getUsers(userId) {
+    const query = userId ? `?userId=${userId}` : '';
+    const res = await request(`/Users/GetUsers${query}`);
+    return res.items || [];
+  }
+};
+
 export default {
   mangas: mangasApi,
   chapters: chaptersApi,
@@ -544,6 +632,8 @@ export default {
   mangaGenres: mangaGenresApi,
   scans: scansApi,
   scanApplications: scanApplicationsApi,
+  roles: rolesApi,
+  adminUsers: adminUsersApi,
   notices: noticesApi,
   forum: forumApi,
   filters: filtersApi,

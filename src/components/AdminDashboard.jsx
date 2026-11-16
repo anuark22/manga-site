@@ -1,0 +1,1010 @@
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { 
+  rolesApi, 
+  adminUsersApi, 
+  scanApplicationsApi, 
+  scansApi, 
+  mangasApi,
+  normalizePageUrl 
+} from '../services/api';
+import { useAuth } from '../Context/AuthContext';
+import { useTheme } from '../Context/ThemeContext';
+import '../styles/AdminDashboard.scss';
+
+const AdminDashboard = () => {
+  const { user, isAuthenticated } = useAuth();
+  const { theme } = useTheme();
+  const navigate = useNavigate();
+
+  // Pestañas: 'applications' | 'users' | 'roles'
+  const [activeTab, setActiveTab] = useState('applications');
+
+  // Estados generales
+  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState(null);
+
+  // Datos maestros
+  const [applications, setApplications] = useState([]);
+  const [usersList, setUsersList] = useState([]);
+  const [rolesList, setRolesList] = useState([]);
+  const [scansList, setScansList] = useState([]);
+  const [mangasCount, setMangasCount] = useState(0);
+
+  // Filtros de aplicaciones
+  const [appStatusFilter, setAppStatusFilter] = useState('ALL'); // 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'
+  const [appSearch, setAppSearch] = useState('');
+
+  // Filtros de usuarios
+  const [userSearch, setUserSearch] = useState('');
+  const [userRoleFilter, setUserRoleFilter] = useState('ALL'); // 'ALL' | '1' | '2' | '3'
+
+  // Modales de Solicitud (Aprobar / Rechazar)
+  const [selectedApp, setSelectedApp] = useState(null);
+  const [reviewAction, setReviewAction] = useState(null); // 'APPROVE' | 'REJECT'
+  const [adminNotes, setAdminNotes] = useState('');
+  const [reviewLoading, setReviewLoading] = useState(false);
+
+  // Modal Asignar Rol
+  const [userToAssign, setUserToAssign] = useState(null);
+  const [selectedRoleId, setSelectedRoleId] = useState('');
+  const [assignLoading, setAssignLoading] = useState(false);
+
+  // Modal Crear / Editar Rol
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [editingRole, setEditingRole] = useState(null);
+  const [roleForm, setRoleForm] = useState({ roleName: '', roleDescription: '', isActive: 1 });
+  const [roleFormLoading, setRoleFormLoading] = useState(false);
+
+  // Notificación Toast
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  // Cargar datos del panel de administración
+  const loadAdminData = async () => {
+    setLoading(true);
+    try {
+      const [apps, users, roles, scans, mangas] = await Promise.all([
+        scanApplicationsApi.getApplications().catch(err => {
+          console.warn('Error cargando solicitudes:', err);
+          return [];
+        }),
+        adminUsersApi.getUsers().catch(err => {
+          console.warn('Error cargando usuarios:', err);
+          return [];
+        }),
+        rolesApi.getRoles().catch(err => {
+          console.warn('Error cargando roles:', err);
+          return [];
+        }),
+        scansApi.getScans().catch(err => {
+          console.warn('Error cargando scans:', err);
+          return [];
+        }),
+        mangasApi.getMangas().catch(() => [])
+      ]);
+
+      setApplications(apps);
+      setUsersList(users);
+      setRolesList(roles);
+      setScansList(scans);
+      setMangasCount(mangas.length);
+    } catch (err) {
+      console.error('Error general cargando datos de administración:', err);
+      showToast('Error al conectar con los servicios administrativos', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated && (user?.roleId === 2 || user?.roleName?.toUpperCase() === 'ADMIN')) {
+      loadAdminData();
+    } else {
+      setLoading(false);
+    }
+  }, [isAuthenticated, user]);
+
+  // ==========================================
+  // REVISIÓN DE SOLICITUDES SCAN (APROBAR / RECHAZAR)
+  // ==========================================
+  const handleOpenReview = (app, actionType) => {
+    setSelectedApp(app);
+    setReviewAction(actionType);
+    setAdminNotes(actionType === 'APPROVE' 
+      ? `¡Felicidades! Tu grupo "${app.scanName}" ha sido aprobado. Ahora cuentas con permisos para subir capítulos y administrar tu equipo.` 
+      : ''
+    );
+  };
+
+  const handleCloseReview = () => {
+    setSelectedApp(null);
+    setReviewAction(null);
+    setAdminNotes('');
+  };
+
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    if (!selectedApp || !reviewAction) return;
+
+    if (reviewAction === 'REJECT' && !adminNotes.trim()) {
+      showToast('Por favor ingresa el motivo del rechazo para informar al usuario', 'error');
+      return;
+    }
+
+    setReviewLoading(true);
+    try {
+      const isApproved = reviewAction === 'APPROVE';
+      await scanApplicationsApi.reviewApplication({
+        applicationId: selectedApp.applicationId,
+        isApproved,
+        adminNotes: adminNotes.trim()
+      });
+
+      showToast(
+        isApproved 
+          ? `Solicitud de "${selectedApp.scanName}" aprobada con éxito. Rol de Scan asignado.` 
+          : `Solicitud de "${selectedApp.scanName}" rechazada.`
+      );
+
+      handleCloseReview();
+      // Recargar datos
+      loadAdminData();
+    } catch (err) {
+      showToast(err.message || 'Error al procesar la revisión de la solicitud', 'error');
+    } finally {
+      setReviewLoading(false);
+    }
+  };
+
+  // ==========================================
+  // ASIGNACIÓN DE ROLES A USUARIOS
+  // ==========================================
+  const handleOpenAssignRole = (u) => {
+    setUserToAssign(u);
+    setSelectedRoleId(String(u.roleId || 1));
+  };
+
+  const handleCloseAssignRole = () => {
+    setUserToAssign(null);
+    setSelectedRoleId('');
+  };
+
+  const handleSubmitAssignRole = async (e) => {
+    e.preventDefault();
+    if (!userToAssign || !selectedRoleId) return;
+
+    setAssignLoading(true);
+    try {
+      await rolesApi.assignRole({
+        userId: userToAssign.userId,
+        roleId: parseInt(selectedRoleId, 10)
+      });
+
+      const roleObj = rolesList.find(r => String(r.roleId) === String(selectedRoleId));
+      const roleName = roleObj ? roleObj.roleName : `Rol #${selectedRoleId}`;
+
+      showToast(`Rol "${roleName}" asignado exitosamente a ${userToAssign.username}`);
+      handleCloseAssignRole();
+
+      // Actualizar listado local de usuarios
+      setUsersList(prev => prev.map(u => {
+        if (u.userId === userToAssign.userId) {
+          return {
+            ...u,
+            roleId: parseInt(selectedRoleId, 10),
+            roleName: roleObj ? roleObj.roleName : u.roleName
+          };
+        }
+        return u;
+      }));
+    } catch (err) {
+      showToast(err.message || 'Error al asignar rol al usuario', 'error');
+    } finally {
+      setAssignLoading(false);
+    }
+  };
+
+  // ==========================================
+  // GESTIÓN DE ROLES (CREAR / EDITAR)
+  // ==========================================
+  const handleOpenCreateRole = () => {
+    setEditingRole(null);
+    setRoleForm({ roleName: '', roleDescription: '', isActive: 1 });
+    setShowRoleModal(true);
+  };
+
+  const handleOpenEditRole = (role) => {
+    setEditingRole(role);
+    setRoleForm({
+      roleName: role.roleName || '',
+      roleDescription: role.roleDescription || '',
+      isActive: role.isActive ?? 1
+    });
+    setShowRoleModal(true);
+  };
+
+  const handleSubmitRole = async (e) => {
+    e.preventDefault();
+    if (!roleForm.roleName.trim()) {
+      showToast('Ingresa el nombre del rol', 'error');
+      return;
+    }
+
+    setRoleFormLoading(true);
+    try {
+      if (editingRole) {
+        await rolesApi.updateRole({
+          roleId: editingRole.roleId,
+          roleName: roleForm.roleName.trim(),
+          roleDescription: roleForm.roleDescription.trim(),
+          isActive: roleForm.isActive
+        });
+        showToast(`Rol "${roleForm.roleName}" actualizado con éxito`);
+      } else {
+        await rolesApi.createRole({
+          roleName: roleForm.roleName.trim(),
+          roleDescription: roleForm.roleDescription.trim(),
+          isActive: roleForm.isActive,
+          isOwnerRole: 0
+        });
+        showToast(`Rol "${roleForm.roleName}" creado con éxito`);
+      }
+
+      setShowRoleModal(false);
+      const freshRoles = await rolesApi.getRoles();
+      setRolesList(freshRoles);
+    } catch (err) {
+      showToast(err.message || 'Error al guardar el rol', 'error');
+    } finally {
+      setRoleFormLoading(false);
+    }
+  };
+
+  // ==========================================
+  // FILTRADO DE DATOS
+  // ==========================================
+  const pendingCount = applications.filter(a => a.status === 'PENDING').length;
+
+  const filteredApplications = applications.filter(app => {
+    const matchesStatus = appStatusFilter === 'ALL' || app.status === appStatusFilter;
+    const q = appSearch.toLowerCase();
+    const matchesSearch = !q || 
+      (app.scanName && app.scanName.toLowerCase().includes(q)) ||
+      (app.username && app.username.toLowerCase().includes(q)) ||
+      (app.userEmail && app.userEmail.toLowerCase().includes(q));
+    return matchesStatus && matchesSearch;
+  });
+
+  const filteredUsers = usersList.filter(u => {
+    const matchesRole = userRoleFilter === 'ALL' || String(u.roleId) === String(userRoleFilter);
+    const q = userSearch.toLowerCase();
+    const matchesSearch = !q ||
+      (u.username && u.username.toLowerCase().includes(q)) ||
+      (u.email && u.email.toLowerCase().includes(q));
+    return matchesRole && matchesSearch;
+  });
+
+  const isAdmin = user && (user.roleId === 2 || user.roleName?.toUpperCase() === 'ADMIN');
+
+  return (
+    <div className={`admin-dashboard-wrapper theme-${theme}`}>
+      {/* Toast de notificaciones */}
+      {toast && (
+        <div className={`admin-toast toast-${toast.type}`}>
+          <i className={`fa ${toast.type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'}`}></i>
+          <span>{toast.message}</span>
+        </div>
+      )}
+
+      {/* Control de Acceso: Solo Administradores */}
+      {!isAuthenticated ? (
+        <div className="auth-guard-container">
+          <div className="guard-card">
+            <i className="fa fa-lock guard-icon"></i>
+            <h2>Acceso Restringido al Panel de Administración</h2>
+            <p>Debes iniciar sesión con una cuenta de Administrador para gestionar usuarios, roles y solicitudes.</p>
+            <div className="guard-actions">
+              <Link to="/login" className="btn-primary">
+                <i className="fa fa-sign-in"></i> Iniciar Sesión
+              </Link>
+              <Link to="/" className="btn-secondary">
+                <i className="fa fa-home"></i> Volver al Inicio
+              </Link>
+            </div>
+          </div>
+        </div>
+      ) : !isAdmin ? (
+        <div className="auth-guard-container">
+          <div className="guard-card">
+            <i className="fa fa-shield guard-icon warning"></i>
+            <h2>Acceso Exclusivo para Administradores</h2>
+            <p>
+              Estás conectado como <strong>{user?.username}</strong> con rol <strong>{user?.roleName || 'Usuario'}</strong>.
+              Este centro de control está reservado exclusivamente para la administración general del portal.
+            </p>
+            <div className="guard-actions">
+              {(user?.roleId === 3 || user?.roleName?.toUpperCase() === 'SCAN') ? (
+                <Link to="/scan-dashboard" className="btn-primary">
+                  <i className="fa fa-cloud-upload"></i> Ir a Mi Panel Scan
+                </Link>
+              ) : (
+                <Link to="/profile" className="btn-primary">
+                  <i className="fa fa-user"></i> Ver Mi Perfil
+                </Link>
+              )}
+              <Link to="/manga-section" className="btn-secondary">
+                <i className="fa fa-book"></i> Explorar Biblioteca
+              </Link>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="admin-content-container">
+          {/* HEADER DEL PANEL ADMINISTRATIVO */}
+          <header className="admin-header">
+            <div className="header-meta">
+              <div className="badge-admin">
+                <i className="fa fa-shield"></i> Panel de Control Global
+              </div>
+              <h1 className="header-title">Centro de Administración del Sistema</h1>
+              <p className="header-desc">
+                Gestión integral de usuarios, asignación de roles y aprobación de solicitudes para nuevos grupos de scanlation.
+              </p>
+            </div>
+
+            <div className="user-status-card">
+              <div className="status-avatar">
+                <i className="fa fa-user-circle"></i>
+              </div>
+              <div className="status-info">
+                <span className="user-name">{user?.username || 'Admin'}</span>
+                <span className="user-badge">ADMINISTRADOR</span>
+              </div>
+            </div>
+          </header>
+
+          {/* TARJETAS DE ESTADÍSTICAS RÁPIDAS */}
+          <section className="admin-stats-row">
+            <div className="stat-card">
+              <div className="stat-icon icon-users">
+                <i className="fa fa-users"></i>
+              </div>
+              <div className="stat-data">
+                <span className="stat-value">{usersList.length}</span>
+                <span className="stat-label">Usuarios Registrados</span>
+              </div>
+            </div>
+
+            <div className="stat-card highlight">
+              <div className="stat-icon icon-requests">
+                <i className="fa fa-envelope-open-o"></i>
+              </div>
+              <div className="stat-data">
+                <div className="value-with-badge">
+                  <span className="stat-value">{pendingCount}</span>
+                  {pendingCount > 0 && <span className="alert-badge">Pendientes</span>}
+                </div>
+                <span className="stat-label">Solicitudes de Scan</span>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon icon-scans">
+                <i className="fa fa-flag"></i>
+              </div>
+              <div className="stat-data">
+                <span className="stat-value">{scansList.length}</span>
+                <span className="stat-label">Grupos Scan Activos</span>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon icon-roles">
+                <i className="fa fa-id-badge"></i>
+              </div>
+              <div className="stat-data">
+                <span className="stat-value">{rolesList.length}</span>
+                <span className="stat-label">Roles del Sistema</span>
+              </div>
+            </div>
+          </section>
+
+          {/* NAVEGACIÓN POR PESTAÑAS */}
+          <nav className="admin-nav-tabs">
+            <button
+              type="button"
+              className={`nav-tab-btn ${activeTab === 'applications' ? 'active' : ''}`}
+              onClick={() => setActiveTab('applications')}
+            >
+              <i className="fa fa-inbox"></i> Solicitudes de Scan
+              {pendingCount > 0 && (
+                <span className="tab-counter-badge">{pendingCount}</span>
+              )}
+            </button>
+            <button
+              type="button"
+              className={`nav-tab-btn ${activeTab === 'users' ? 'active' : ''}`}
+              onClick={() => setActiveTab('users')}
+            >
+              <i className="fa fa-user-circle-o"></i> Usuarios y Roles ({usersList.length})
+            </button>
+            <button
+              type="button"
+              className={`nav-tab-btn ${activeTab === 'roles' ? 'active' : ''}`}
+              onClick={() => setActiveTab('roles')}
+            >
+              <i className="fa fa-shield"></i> Roles del Sistema ({rolesList.length})
+            </button>
+            <Link to="/scan-dashboard" className="nav-tab-btn link-external">
+              <i className="fa fa-cloud-upload"></i> Ir a Panel Scan <i className="fa fa-external-link"></i>
+            </Link>
+          </nav>
+
+          {/* ========================================================= */}
+          {/* TAB 1: SOLICITUDES DE SCAN GROUP                          */}
+          {/* ========================================================= */}
+          {activeTab === 'applications' && (
+            <div className="tab-pane applications-tab">
+              <div className="panel-box">
+                <div className="box-header-row">
+                  <div className="box-title-group">
+                    <h2 className="box-title">
+                      <i className="fa fa-inbox"></i> Solicitudes para Fundar Scan Group ({filteredApplications.length})
+                    </h2>
+                    <p className="box-subtitle">
+                      Revisa, aprueba o rechaza solicitudes de usuarios que desean convertirse en grupos de traducción.
+                    </p>
+                  </div>
+
+                  <div className="header-filters-row">
+                    <div className="status-pills">
+                      <button
+                        type="button"
+                        className={`pill-btn ${appStatusFilter === 'ALL' ? 'active' : ''}`}
+                        onClick={() => setAppStatusFilter('ALL')}
+                      >
+                        Todas ({applications.length})
+                      </button>
+                      <button
+                        type="button"
+                        className={`pill-btn pending ${appStatusFilter === 'PENDING' ? 'active' : ''}`}
+                        onClick={() => setAppStatusFilter('PENDING')}
+                      >
+                        Pendientes ({pendingCount})
+                      </button>
+                      <button
+                        type="button"
+                        className={`pill-btn approved ${appStatusFilter === 'APPROVED' ? 'active' : ''}`}
+                        onClick={() => setAppStatusFilter('APPROVED')}
+                      >
+                        Aprobadas ({applications.filter(a => a.status === 'APPROVED').length})
+                      </button>
+                      <button
+                        type="button"
+                        className={`pill-btn rejected ${appStatusFilter === 'REJECTED' ? 'active' : ''}`}
+                        onClick={() => setAppStatusFilter('REJECTED')}
+                      >
+                        Rechazadas ({applications.filter(a => a.status === 'REJECTED').length})
+                      </button>
+                    </div>
+
+                    <div className="search-bar-inline">
+                      <i className="fa fa-search"></i>
+                      <input
+                        type="text"
+                        placeholder="Buscar por grupo o usuario..."
+                        value={appSearch}
+                        onChange={(e) => setAppSearch(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {loading ? (
+                  <div className="loading-state">
+                    <i className="fa fa-spinner fa-spin"></i>
+                    <p>Cargando solicitudes...</p>
+                  </div>
+                ) : filteredApplications.length === 0 ? (
+                  <div className="empty-state">
+                    <i className="fa fa-check-circle-o"></i>
+                    <p>No hay solicitudes de scan en esta categoría.</p>
+                    <span>
+                      {appStatusFilter === 'PENDING' 
+                        ? '¡Excelente! Todas las solicitudes pendientes han sido procesadas.' 
+                        : 'No se encontraron registros que coincidan con los filtros seleccionados.'}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="applications-list">
+                    {filteredApplications.map(app => (
+                      <div key={app.applicationId} className={`app-card status-${app.status.toLowerCase()}`}>
+                        <div className="app-card-header">
+                          <div className="app-scan-info">
+                            <div className="app-logo-box">
+                              {app.scanImgUrl ? (
+                                <img 
+                                  src={normalizePageUrl(app.scanImgUrl)} 
+                                  alt={app.scanName}
+                                  onError={(e) => { e.target.style.display = 'none'; }}
+                                />
+                              ) : (
+                                <i className="fa fa-flag"></i>
+                              )}
+                            </div>
+                            <div className="app-titles">
+                              <div className="title-row">
+                                <h3 className="app-scan-name">{app.scanName}</h3>
+                                <span className={`app-status-badge ${app.status.toLowerCase()}`}>
+                                  {app.status === 'PENDING' && <><i className="fa fa-clock-o"></i> Pendiente</>}
+                                  {app.status === 'APPROVED' && <><i className="fa fa-check"></i> Aprobada</>}
+                                  {app.status === 'REJECTED' && <><i className="fa fa-times"></i> Rechazada</>}
+                                </span>
+                              </div>
+                              <div className="app-applicant-meta">
+                                <span><i className="fa fa-user"></i> <strong>{app.username}</strong></span>
+                                <span><i className="fa fa-envelope"></i> {app.userEmail}</span>
+                                <span><i className="fa fa-calendar"></i> {new Date(app.createdAt).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Acciones para solicitudes pendientes */}
+                          {app.status === 'PENDING' && (
+                            <div className="app-actions">
+                              <button
+                                type="button"
+                                className="btn-approve"
+                                onClick={() => handleOpenReview(app, 'APPROVE')}
+                                title="Aprobar solicitud y crear grupo de scan"
+                              >
+                                <i className="fa fa-check"></i> Aprobar Solicitud
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-reject"
+                                onClick={() => handleOpenReview(app, 'REJECT')}
+                                title="Rechazar solicitud con observaciones"
+                              >
+                                <i className="fa fa-times"></i> Rechazar
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="app-card-body">
+                          <div className="app-desc-section">
+                            <h4>Descripción del Proyecto:</h4>
+                            <p>{app.scanDescription}</p>
+                          </div>
+
+                          {app.applicationMessage && (
+                            <div className="app-message-section">
+                              <h4>Mensaje de Postulación:</h4>
+                              <blockquote>"{app.applicationMessage}"</blockquote>
+                            </div>
+                          )}
+
+                          <div className="app-links-row">
+                            {app.discordUrl && (
+                              <a href={app.discordUrl} target="_blank" rel="noopener noreferrer" className="app-link-pill discord">
+                                <i className="fa fa-comments"></i> Discord
+                              </a>
+                            )}
+                            {app.websiteUrl && (
+                              <a href={app.websiteUrl} target="_blank" rel="noopener noreferrer" className="app-link-pill web">
+                                <i className="fa fa-globe"></i> Sitio Web
+                              </a>
+                            )}
+                            {app.createdScanId && (
+                              <span className="app-link-pill scan-id">
+                                <i className="fa fa-id-card"></i> Scan ID Creado: #{app.createdScanId}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Historial de revisión si fue procesada */}
+                          {app.reviewedByUsername && (
+                            <div className="app-review-history">
+                              <div className="review-meta">
+                                <i className="fa fa-info-circle"></i> Revisada por <strong>{app.reviewedByUsername}</strong> el {new Date(app.reviewedAt).toLocaleString()}
+                              </div>
+                              {app.adminNotes && (
+                                <p className="review-notes">Notas administrativas: <em>"{app.adminNotes}"</em></p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* TAB 2: USUARIOS Y ASIGNACIÓN DE ROLES                     */}
+          {/* ========================================================= */}
+          {activeTab === 'users' && (
+            <div className="tab-pane users-tab">
+              <div className="panel-box">
+                <div className="box-header-row">
+                  <div className="box-title-group">
+                    <h2 className="box-title">
+                      <i className="fa fa-users"></i> Directorio y Asignación de Roles ({filteredUsers.length})
+                    </h2>
+                    <p className="box-subtitle">
+                      Asigna roles de Scan, Administrador o Cliente a cualquier usuario registrado en la base de datos.
+                    </p>
+                  </div>
+
+                  <div className="header-filters-row">
+                    <select
+                      className="form-select role-filter-select"
+                      value={userRoleFilter}
+                      onChange={(e) => setUserRoleFilter(e.target.value)}
+                    >
+                      <option value="ALL">-- Todos los Roles --</option>
+                      {rolesList.map(r => (
+                        <option key={r.roleId} value={r.roleId}>{r.roleName}</option>
+                      ))}
+                    </select>
+
+                    <div className="search-bar-inline">
+                      <i className="fa fa-search"></i>
+                      <input
+                        type="text"
+                        placeholder="Buscar por usuario o email..."
+                        value={userSearch}
+                        onChange={(e) => setUserSearch(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="users-table-wrapper">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Usuario</th>
+                        <th>Correo Electrónico</th>
+                        <th>Rol Actual</th>
+                        <th>Grupo Scan</th>
+                        <th>Estado</th>
+                        <th>Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredUsers.map(u => {
+                        const scanGroup = scansList.find(s => s.scanId === u.scanId);
+                        return (
+                          <tr key={u.userId}>
+                            <td className="col-id">#{u.userId}</td>
+                            <td className="col-user">
+                              <div className="user-table-cell">
+                                <div className="user-cell-avatar">
+                                  {(u.username || 'U')[0].toUpperCase()}
+                                </div>
+                                <span className="user-cell-name">{u.username}</span>
+                              </div>
+                            </td>
+                            <td className="col-email">{u.email}</td>
+                            <td className="col-role">
+                              <span className={`role-tag role-${(u.roleName || 'CLIENTE').toLowerCase()}`}>
+                                {u.roleName || (u.roleId === 2 ? 'ADMIN' : u.roleId === 3 ? 'SCAN' : 'CLIENTE')}
+                              </span>
+                            </td>
+                            <td className="col-scan">
+                              {scanGroup ? (
+                                <span className="scan-pill">
+                                  <i className="fa fa-flag"></i> {scanGroup.scanName}
+                                </span>
+                              ) : (
+                                <span className="no-scan">Ninguno</span>
+                              )}
+                            </td>
+                            <td className="col-status">
+                              {u.isBlocked === 1 ? (
+                                <span className="status-blocked">Bloqueado</span>
+                              ) : (
+                                <span className="status-active">Activo</span>
+                              )}
+                            </td>
+                            <td className="col-actions">
+                              <button
+                                type="button"
+                                className="btn-assign-role"
+                                onClick={() => handleOpenAssignRole(u)}
+                                title="Cambiar rol de usuario"
+                              >
+                                <i className="fa fa-pencil-square-o"></i> Asignar Rol
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* TAB 3: ROLES DEL SISTEMA                                  */}
+          {/* ========================================================= */}
+          {activeTab === 'roles' && (
+            <div className="tab-pane roles-tab">
+              <div className="panel-box">
+                <div className="box-header-row">
+                  <div className="box-title-group">
+                    <h2 className="box-title">
+                      <i className="fa fa-shield"></i> Roles Configurados en el Sistema ({rolesList.length})
+                    </h2>
+                    <p className="box-subtitle">
+                      Administra los niveles de autorización y permisos disponibles en la plataforma.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={handleOpenCreateRole}
+                  >
+                    <i className="fa fa-plus"></i> Crear Nuevo Rol
+                  </button>
+                </div>
+
+                <div className="roles-grid">
+                  {rolesList.map(r => (
+                    <div key={r.roleId} className="role-card">
+                      <div className="role-card-header">
+                        <div className="role-icon-box">
+                          <i className={`fa ${r.roleId === 2 ? 'fa-star' : r.roleId === 3 ? 'fa-pencil-square-o' : 'fa-user'}`}></i>
+                        </div>
+                        <div className="role-title-box">
+                          <h3 className="role-name">{r.roleName}</h3>
+                          <span className="role-id">ID Rol: #{r.roleId}</span>
+                        </div>
+                        <span className={`role-status-badge ${r.isActive ? 'active' : 'inactive'}`}>
+                          {r.isActive ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </div>
+
+                      <p className="role-desc">{r.roleDescription || 'Sin descripción'}</p>
+
+                      <div className="role-card-footer">
+                        <div className="role-user-count">
+                          <i className="fa fa-users"></i> {r.userCount || 0} Usuarios asignados
+                        </div>
+                        <button
+                          type="button"
+                          className="btn-edit-role"
+                          onClick={() => handleOpenEditRole(r)}
+                        >
+                          <i className="fa fa-pencil"></i> Editar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL: REVISAR SOLICITUD SCAN (APROBAR / RECHAZAR)        */}
+      {/* ========================================================= */}
+      {selectedApp && (
+        <div className="admin-modal-backdrop" onClick={handleCloseReview}>
+          <div className="admin-modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-modal-header">
+              <h3>
+                <i className={`fa ${reviewAction === 'APPROVE' ? 'fa-check-circle' : 'fa-times-circle'}`}></i>
+                {reviewAction === 'APPROVE' ? 'Aprobar Solicitud de Scan' : 'Rechazar Solicitud de Scan'}
+              </h3>
+              <button type="button" className="btn-close" onClick={handleCloseReview}>
+                <i className="fa fa-times"></i>
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitReview} className="admin-modal-form">
+              <div className="review-summary-box">
+                <p><strong>Grupo:</strong> {selectedApp.scanName}</p>
+                <p><strong>Solicitante:</strong> {selectedApp.username} ({selectedApp.userEmail})</p>
+                {reviewAction === 'APPROVE' ? (
+                  <div className="alert-box success">
+                    <i className="fa fa-info-circle"></i> Al aprobar esta solicitud:
+                    <ul>
+                      <li>Se registrará automáticamente el grupo <strong>"{selectedApp.scanName}"</strong> en la plataforma.</li>
+                      <li>El usuario <strong>{selectedApp.username}</strong> pasará a tener el rol <strong>SCAN (RoleId: 3)</strong>.</li>
+                      <li>Quedará vinculado directamente a su nuevo grupo para subir capítulos.</li>
+                    </ul>
+                  </div>
+                ) : (
+                  <div className="alert-box warning">
+                    <i className="fa fa-exclamation-triangle"></i> La solicitud quedará marcada como rechazada y el usuario podrá ver tus observaciones en su panel.
+                  </div>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label className="input-label">
+                  {reviewAction === 'APPROVE' 
+                    ? 'Mensaje o notas de bienvenida (Opcional):' 
+                    : 'Motivo del rechazo (Requerido): *'}
+                </label>
+                <textarea
+                  className="form-textarea"
+                  rows={4}
+                  value={adminNotes}
+                  onChange={(e) => setAdminNotes(e.target.value)}
+                  placeholder={reviewAction === 'APPROVE' 
+                    ? 'Ej. ¡Bienvenidos al equipo de colaboradores! Recuerden seguir las directrices de calidad.' 
+                    : 'Ej. Faltan enlaces a muestras de trabajo previas o el grupo no cumple los requisitos.'}
+                  required={reviewAction === 'REJECT'}
+                />
+              </div>
+
+              <div className="admin-modal-footer">
+                <button type="button" className="btn-secondary" onClick={handleCloseReview}>
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className={`btn-primary ${reviewAction === 'APPROVE' ? 'btn-success' : 'btn-danger'}`}
+                  disabled={reviewLoading}
+                >
+                  {reviewLoading ? (
+                    <><i className="fa fa-spinner fa-spin"></i> Procesando...</>
+                  ) : reviewAction === 'APPROVE' ? (
+                    <><i className="fa fa-check"></i> Confirmar y Aprobar Scan</>
+                  ) : (
+                    <><i className="fa fa-times"></i> Confirmar Rechazo</>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL: ASIGNAR ROL A USUARIO                              */}
+      {/* ========================================================= */}
+      {userToAssign && (
+        <div className="admin-modal-backdrop" onClick={handleCloseAssignRole}>
+          <div className="admin-modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-modal-header">
+              <h3>
+                <i className="fa fa-id-badge"></i> Asignar Rol a {userToAssign.username}
+              </h3>
+              <button type="button" className="btn-close" onClick={handleCloseAssignRole}>
+                <i className="fa fa-times"></i>
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitAssignRole} className="admin-modal-form">
+              <p className="modal-lead">
+                Selecciona el rol que deseas otorgar al usuario <strong>{userToAssign.username}</strong> ({userToAssign.email}):
+              </p>
+
+              <div className="form-group">
+                <label className="input-label">Rol del Sistema: *</label>
+                <select
+                  className="form-select"
+                  value={selectedRoleId}
+                  onChange={(e) => setSelectedRoleId(e.target.value)}
+                  required
+                >
+                  {rolesList.map(r => (
+                    <option key={r.roleId} value={r.roleId}>
+                      {r.roleName} - {r.roleDescription}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="admin-modal-footer">
+                <button type="button" className="btn-secondary" onClick={handleCloseAssignRole}>
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={assignLoading}
+                >
+                  {assignLoading ? (
+                    <><i className="fa fa-spinner fa-spin"></i> Guardando...</>
+                  ) : (
+                    <><i className="fa fa-save"></i> Guardar Asignación</>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL: CREAR / EDITAR ROL                                 */}
+      {/* ========================================================= */}
+      {showRoleModal && (
+        <div className="admin-modal-backdrop" onClick={() => setShowRoleModal(false)}>
+          <div className="admin-modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-modal-header">
+              <h3>
+                <i className="fa fa-shield"></i> {editingRole ? 'Editar Rol' : 'Crear Nuevo Rol'}
+              </h3>
+              <button type="button" className="btn-close" onClick={() => setShowRoleModal(false)}>
+                <i className="fa fa-times"></i>
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitRole} className="admin-modal-form">
+              <div className="form-group">
+                <label className="input-label">Nombre del Rol: *</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={roleForm.roleName}
+                  onChange={(e) => setRoleForm({ ...roleForm, roleName: e.target.value })}
+                  placeholder="Ej. MODERADOR"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="input-label">Descripción: *</label>
+                <textarea
+                  className="form-textarea"
+                  rows={3}
+                  value={roleForm.roleDescription}
+                  onChange={(e) => setRoleForm({ ...roleForm, roleDescription: e.target.value })}
+                  placeholder="Descripción de las facultades de este rol"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="custom-check-label">
+                  <input
+                    type="checkbox"
+                    checked={roleForm.isActive === 1}
+                    onChange={(e) => setRoleForm({ ...roleForm, isActive: e.target.checked ? 1 : 0 })}
+                  />
+                  <span>Rol Activo</span>
+                </label>
+              </div>
+
+              <div className="admin-modal-footer">
+                <button type="button" className="btn-secondary" onClick={() => setShowRoleModal(false)}>
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={roleFormLoading}
+                >
+                  {roleFormLoading ? (
+                    <><i className="fa fa-spinner fa-spin"></i> Guardando...</>
+                  ) : (
+                    <><i className="fa fa-save"></i> Guardar Rol</>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AdminDashboard;
