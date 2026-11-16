@@ -1,12 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Post from './Post';
 import SideBar from './SideBar';
 import '../styles/Forum.scss';
 import { useClickOutside } from '../hooks/useClickOutside';
+import { forumApi } from '../services/api';
+import postData from './postData';
 
 const Forum = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [selectedSort, setSelectedSort] = useState('Latest');
+    const [filterCategory, setFilterCategory] = useState(null);
+    const [filterSubTopic, setFilterSubTopic] = useState(null);
+    const [posts, setPosts] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchPosts = useCallback(async () => {
+        setLoading(true);
+        try {
+            const params = {
+                sortBy: selectedSort,
+                ...(filterCategory ? { topic: filterCategory } : {}),
+                ...(filterSubTopic ? { subTopic: filterSubTopic } : {})
+            };
+            const data = await forumApi.getPosts(params);
+            if (data && data.length > 0) {
+                setPosts(data);
+            } else if (!filterCategory && !filterSubTopic) {
+                // Fallback a postData local si la API está vacía
+                setPosts(postData);
+            } else {
+                setPosts([]);
+            }
+        } catch (err) {
+            console.warn('Error al obtener posts del foro, usando fallback:', err);
+            setPosts(postData);
+        } finally {
+            setLoading(false);
+        }
+    }, [selectedSort, filterCategory, filterSubTopic]);
+
+    useEffect(() => {
+        fetchPosts();
+    }, [fetchPosts]);
 
     // Cierra el menú desplegable al hacer clic fuera
     const dropdownRef = useClickOutside(() => {
@@ -22,12 +57,26 @@ const Forum = () => {
         setIsOpen(false);
     };
 
+    const handleSelectTopic = ({ topic, subTopic }) => {
+        setFilterCategory(topic);
+        setFilterSubTopic(subTopic);
+    };
+
+    const handleResetFilters = () => {
+        setFilterCategory(null);
+        setFilterSubTopic(null);
+    };
+
     const sortOptions = ['Latest', 'Newer', 'Older', 'Popular', 'Trending', 'Discussions'];
 
     return ( 
         <div className="forum-section">
             <div className="forum-content">
-                <SideBar className="sidebar-comp" />
+                <SideBar 
+                    className="sidebar-comp" 
+                    onSelectTopic={handleSelectTopic}
+                    onPostCreated={fetchPosts}
+                />
                 <div className="forum-post">
                     <div className="post-card">
                         <div className="post-btns">
@@ -53,18 +102,40 @@ const Forum = () => {
                                         ))}
                                     </ul>
                                 </div>
+
+                                {(filterCategory || filterSubTopic) && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                                        <span>Filtro activo: <b>{filterCategory}</b> {filterSubTopic && `> ${filterSubTopic}`}</span>
+                                        <button 
+                                            type="button" 
+                                            onClick={handleResetFilters}
+                                            style={{
+                                                background: 'none',
+                                                border: '1px solid var(--border-color)',
+                                                borderRadius: '4px',
+                                                color: 'var(--text-primary)',
+                                                cursor: 'pointer',
+                                                padding: '2px 8px',
+                                                fontSize: '11px'
+                                            }}
+                                        >
+                                            Limpiar filtro
+                                        </button>
+                                    </div>
+                                )}
+
                                 <button 
                                     type="button" 
                                     className="refresh-btn" 
                                     title="Actualizar discusiones"
-                                    onClick={() => alert('Lista de temas actualizada')}
+                                    onClick={fetchPosts}
                                 > 
                                     <i className="fa fa-refresh" aria-hidden="true"></i>
                                 </button>
                             </div>
                         </div>
                         <div className="all-post-container">
-                            <Post />                  
+                            <Post posts={posts} loading={loading} />                  
                         </div>
                     </div>
                 </div>

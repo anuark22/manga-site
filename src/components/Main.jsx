@@ -1,29 +1,57 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Lastest from './Lastest';
 import '../styles/Main.scss';
 import NoticeCard from './NoticeCard';
+import { noticesApi } from '../services/api';
 
 const Main = () => {
+    const [notices, setNotices] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        let isMounted = true;
+        const fetchNotices = async () => {
+            try {
+                const data = await noticesApi.getNotices();
+                if (isMounted && data && data.length > 0) {
+                    setNotices(data);
+                }
+            } catch (err) {
+                console.warn('Usando notices fallback:', err);
+            } finally {
+                if (isMounted) setLoading(false);
+            }
+        };
+
+        fetchNotices();
+        return () => { isMounted = false; };
+    }, []);
+
     return (
         <div className="main-container">
             <div className="main-content">
                 <Lastest/>
             </div>
             <div className="main-sidebar">
-                <div className="notices-bar">Notices</div>
-                <NoticeCard/>
-                <NoticeCard/>
-                <NoticeCard/>
-                <NoticeCard/>
-                <NoticeCard/>
-                <NoticeCard/>
-                <NoticeCard/>
-                <NoticeCard/>
-                <NoticeCard/>
-                <NoticeCard/>
+                <div className="notices-bar">Notices / Noticias</div>
+                {loading && notices.length === 0 ? (
+                    <div style={{ padding: '16px', color: 'var(--text-secondary)', textAlign: 'center' }}>
+                        Cargando noticias...
+                    </div>
+                ) : notices.length > 0 ? (
+                    notices.map((notice, index) => (
+                        <NoticeCard key={notice.noticeId || notice.id || index} notice={notice} />
+                    ))
+                ) : (
+                    // Fallback inicial por si no hay noticias en base de datos
+                    <>
+                        <NoticeCard />
+                        <NoticeCard />
+                    </>
+                )}
             </div>
         </div>
     );
-}
+};
 
 export default Main;

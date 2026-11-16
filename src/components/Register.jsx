@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../Context/AuthContext';
 import '../styles/Register.scss';
 
 const Register = () => {
@@ -11,14 +12,40 @@ const Register = () => {
         password: '',
         confirmPassword: ''
     });
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+    const { register } = useAuth();
+    const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword) {
-            alert('Las contraseñas no coinciden.');
+        setError('');
+
+        if (formData.password !== formData.confirmPassword) {
+            setError('Las contraseñas no coinciden.');
             return;
         }
-        alert(`¡Registro completado para ${formData.username || 'nuevo usuario'}!`);
+
+        if (formData.password.length < 6) {
+            setError('La contraseña debe tener al menos 6 caracteres.');
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            await register({
+                username: formData.username.trim(),
+                email: formData.email.trim(),
+                password: formData.password
+            });
+            alert('¡Cuenta creada exitosamente!');
+            navigate('/');
+        } catch (err) {
+            setError(err.message || 'Error al crear la cuenta. Por favor intenta nuevamente.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (  
@@ -26,6 +53,23 @@ const Register = () => {
             <form onSubmit={handleSubmit}>
                 <div className="register-container">
                     <h2 className="auth-title">Crear Cuenta</h2>
+
+                    {error && (
+                        <div style={{
+                            width: '100%',
+                            padding: '10px 14px',
+                            borderRadius: '8px',
+                            background: 'rgba(239, 68, 68, 0.2)',
+                            border: '1px solid #ef4444',
+                            color: '#fff',
+                            fontSize: '13px',
+                            boxSizing: 'border-box'
+                        }}>
+                            <i className="fa fa-exclamation-triangle" style={{ marginRight: '6px' }}></i>
+                            {error}
+                        </div>
+                    )}
+
                     <div className="reg-inputs">
                         <input 
                             type="text" 
@@ -84,7 +128,9 @@ const Register = () => {
                             </button>
                         </div>
                     </div>
-                    <button type="submit" className="btn-register">Register</button>
+                    <button type="submit" className="btn-register" disabled={loading}>
+                        {loading ? 'Creando cuenta...' : 'Register'}
+                    </button>
                     <p className="auth-switch">
                         ¿Ya tienes una cuenta? <Link to="/login">Inicia sesión</Link>
                     </p>

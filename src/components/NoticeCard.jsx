@@ -1,15 +1,19 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import notice1 from '../styles/img/notice1.webp';
+import { getNoticeImage } from '../utils/imageHelper';
 import '../styles/NoticeCard.scss';
 
-const NoticeCard = () => {
+const NoticeCard = ({ notice }) => {
+    const title = notice?.title || notice?.noticeTittle || 'Noticia destacada';
+    const content = notice?.content || notice?.noticeContent || 'Información de la comunidad y lanzamientos.';
+    const image = getNoticeImage(notice);
+
     return (  
         <Link className="notice-card" to="/">
-            <img src={notice1} alt="noticia sobre anime" />
+            <img src={image} alt={title} />
             <div className="notice-container">
-                <p className="notice-tittle">One Piece has enter in heatus period</p>
-                <p className="notice-content">Lorem ipsum, dolor sit amet consectetur adipisicing elit. Facere blanditiis adipisci harum, sequi velit quos voluptates consequatur? Possimus tempora rerum nesciunt libero iste consequuntur vel rem vero facere. Tempore, iure!</p>
+                <p className="notice-tittle">{title}</p>
+                <p className="notice-content">{content}</p>
             </div>
         </Link>
     );

@@ -15,12 +15,12 @@ export function useClickOutside(handler) {
       }
     };
 
-    document.addEventListener('mousedown', maybeHandler);
-    document.addEventListener('touchstart', maybeHandler);
+    document.addEventListener('click', maybeHandler);
+    document.addEventListener('touchend', maybeHandler);
 
     return () => {
-      document.removeEventListener('mousedown', maybeHandler);
-      document.removeEventListener('touchstart', maybeHandler);
+      document.removeEventListener('click', maybeHandler);
+      document.removeEventListener('touchend', maybeHandler);
     };
   }, [handler]);
 

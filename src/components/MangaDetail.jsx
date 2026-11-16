@@ -1,20 +1,138 @@
-import React, { useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import mangasData, { canonicalMangas } from './mangasData';
+import { mangasApi, chaptersApi, userListApi } from '../services/api';
+import { useAuth } from '../Context/AuthContext';
+import { getMangaImage } from '../utils/imageHelper';
 import '../styles/MangaDetail.scss';
 
 const MangaDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const [manga, setManga] = useState(null);
+  const [chapters, setChapters] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isInList, setIsInList] = useState(false);
+  const [listLoading, setListLoading] = useState(false);
+  const { isAuthenticated } = useAuth();
 
-  const manga = useMemo(() => {
-    if (!id) return null;
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadMangaData = async () => {
+      setLoading(true);
+      try {
+        // Primero intentamos buscar en la API
+        const allMangas = await mangasApi.getMangas();
+        let found = null;
+
+        // Búsqueda por ID numérico o por título/slug
+        if (!isNaN(Number(id))) {
+          found = allMangas.find(m => m.mangaId === Number(id));
+        }
+        if (!found) {
+          found = allMangas.find(m => 
+            (m.mangaTittle || m.mangaName || '').toLowerCase().replace(/\s+/g, '-') === id.toLowerCase() ||
+            (m.alternativeNames || '').toLowerCase().includes(id.toLowerCase())
+          );
+        }
+
+        // Si no se encuentra en API, recurrimos al dataset local
+        if (!found) {
+          found = (
+            mangasData.find(m => m.id === id) ||
+            canonicalMangas.find(m => id.startsWith(m.id)) ||
+            canonicalMangas.find(m => m.mangaName.toLowerCase().replace(/\s+/g, '-') === id.toLowerCase()) ||
+            null
+          );
+        }
+
+        if (isMounted && found) {
+          setManga(found);
+          const mangaId = found.mangaId || found.id;
+
+          // Cargar capítulos reales de la API
+          try {
+            const apiChapters = await chaptersApi.getByManga(mangaId);
+            if (isMounted && apiChapters && apiChapters.length > 0) {
+              setChapters(apiChapters.map(c => ({
+                number: c.chapterNumber,
+                title: c.chapterTitle || `Capítulo ${c.chapterNumber}`,
+                releaseDate: c.uploadedAt ? c.uploadedAt.substring(0, 10) : '2026-11'
+              })));
+            } else if (found.chapters) {
+              setChapters(found.chapters);
+            } else {
+              setChapters([
+                { number: 1, title: 'Capítulo 1: Inicio', releaseDate: '2026-10-11' },
+                { number: 2, title: 'Capítulo 2: El Despertar', releaseDate: '2026-10-18' }
+              ]);
+            }
+          } catch {
+            if (found.chapters) setChapters(found.chapters);
+          }
+
+          // Verificar si está en la lista del usuario
+          if (isAuthenticated && found.mangaId) {
+            try {
+              const inList = await userListApi.check(found.mangaId);
+              if (isMounted) setIsInList(Boolean(inList));
+            } catch {
+              // Silencioso
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Error cargando detalle desde API:', err);
+        const fallback = mangasData.find(m => m.id === id) || canonicalMangas[0];
+        if (isMounted) {
+          setManga(fallback);
+          if (fallback?.chapters) setChapters(fallback.chapters);
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    loadMangaData();
+    return () => { isMounted = false; };
+  }, [id, isAuthenticated]);
+
+  const handleToggleList = async () => {
+    if (!isAuthenticated) {
+      alert('Debes iniciar sesión para guardar mangas en tu lista.');
+      return;
+    }
+    if (!manga?.mangaId) return;
+
+    setListLoading(true);
+    try {
+      if (isInList) {
+        await userListApi.remove(manga.mangaId);
+        setIsInList(false);
+        alert(`¡${manga.mangaName || manga.mangaTittle} ha sido removido de tu lista!`);
+      } else {
+        await userListApi.addOrUpdate({ mangaId: manga.mangaId, readingStatus: 'Reading' });
+        setIsInList(true);
+        alert(`¡${manga.mangaName || manga.mangaTittle} añadido a tu lista con éxito!`);
+      }
+    } catch (err) {
+      alert(`Error al actualizar la lista: ${err.message}`);
+    } finally {
+      setListLoading(false);
+    }
+  };
+
+  if (loading) {
     return (
-      mangasData.find(m => m.id === id) ||
-      canonicalMangas.find(m => id.startsWith(m.id)) ||
-      canonicalMangas.find(m => m.mangaName.toLowerCase().replace(/\s+/g, '-') === id.toLowerCase()) ||
-      null
+      <div className="manga-detail-wrapper">
+        <div className="manga-detail-container" style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-secondary)' }}>
+          <i className="fa fa-spinner fa-spin" style={{ fontSize: '36px', marginBottom: '16px', color: 'var(--main-color)' }}></i>
+          <h3>Cargando información del manga...</h3>
+        </div>
+      </div>
     );
-  }, [id]);
+  }
 
   if (!manga) {
     return (
@@ -30,21 +148,14 @@ const MangaDetail = () => {
     );
   }
 
-  const {
-    mangaName,
-    mangaImage,
-    mangaType,
-    mangaDemography,
-    synopsis,
-    author = 'Desconocido',
-    rating = '4.8',
-    status = 'Publicándose',
-    chapters = [
-      { number: 1, title: 'Capítulo 1: Inicio', releaseDate: '2024-01-10' },
-      { number: 2, title: 'Capítulo 2: El Despertar', releaseDate: '2024-01-17' },
-      { number: 3, title: 'Capítulo 3: La Batalla', releaseDate: '2024-01-24' }
-    ]
-  } = manga;
+  const mangaName = manga.mangaName || manga.mangaTittle;
+  const synopsis = manga.synopsis || manga.mangaDescription;
+  const author = manga.author || manga.mangaka || 'Desconocido';
+  const rating = manga.rating || '4.8';
+  const status = manga.status || 'Publicándose';
+  const mangaType = manga.mangaType || manga.mangaTypeName || 'Manga';
+  const mangaDemography = manga.mangaDemography || manga.demographyName || 'Shounen';
+  const mangaImage = getMangaImage(manga);
 
   return (
     <div className="manga-detail-wrapper">
@@ -80,45 +191,47 @@ const MangaDetail = () => {
               <button 
                 type="button" 
                 className="btn-read"
-                onClick={() => alert(`Iniciando lectura de ${mangaName} - Capítulo 1`)}
+                onClick={() => {
+                  const first = chapters[0];
+                  if (first) {
+                    navigate(`/manga/${manga?.mangaId || id}/chapter/${first.chapterId || first.number}`);
+                  }
+                }}
               >
                 <i className="fa fa-book" aria-hidden="true"></i> Leer primer capítulo
               </button>
               <button 
                 type="button" 
                 className="btn-list"
-                onClick={() => alert(`¡${mangaName} añadido a tu lista!`)}
+                onClick={handleToggleList}
+                disabled={listLoading}
+                style={{
+                  background: isInList ? '#10b981' : undefined,
+                  color: isInList ? '#ffffff' : undefined
+                }}
               >
-                <i className="fa fa-bookmark" aria-hidden="true"></i> Añadir a mi lista
+                <i className={`fa ${isInList ? 'fa-check' : 'fa-bookmark'}`} aria-hidden="true"></i>{' '}
+                {listLoading ? 'Actualizando...' : isInList ? 'En tu lista' : 'Añadir a mi lista'}
               </button>
             </div>
           </div>
         </section>
 
         <section className="chapters-section">
-          <div className="chapters-header">
-            <h2>
-              <i className="fa fa-list-ul" aria-hidden="true"></i> Lista de Capítulos
-            </h2>
-            <span className="chapter-count">{chapters.length} capítulos</span>
-          </div>
-
+          <h2>Capítulos ({chapters.length})</h2>
           <div className="chapters-list">
-            {chapters.map(chap => (
+            {chapters.map(chapter => (
               <div 
-                key={chap.number} 
-                className="chapter-item"
-                style={{ cursor: 'pointer' }}
-                onClick={() => alert(`Abriendo Capítulo ${chap.number}: ${chap.title}`)}
+                key={chapter.chapterId || chapter.number} 
+                className="chapter-item" 
+                onClick={() => navigate(`/manga/${manga?.mangaId || id}/chapter/${chapter.chapterId || chapter.number}`)}
+                role="button"
+                tabIndex={0}
+                title={`Leer ${chapter.title}`}
               >
-                <div className="chapter-left">
-                  <span className="chap-number">Cap. {chap.number}</span>
-                  <span className="chap-title">{chap.title}</span>
-                </div>
-                <div className="chapter-right">
-                  <span>{chap.releaseDate}</span>
-                  <i className="fa fa-chevron-right" aria-hidden="true"></i>
-                </div>
+                <span className="chapter-number">#{chapter.number}</span>
+                <span className="chapter-title">{chapter.title}</span>
+                <span className="chapter-date">{chapter.releaseDate}</span>
               </div>
             ))}
           </div>

@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import '../styles/SideBar.scss';
 import { useClickOutside } from '../hooks/useClickOutside';
+import { forumApi } from '../services/api';
+import { useAuth } from '../Context/AuthContext';
 
-const SideBar = () => {
+const SideBar = ({ onSelectTopic, onPostCreated }) => {
+    const { isAuthenticated } = useAuth();
     // Control individual e independiente para cada sección
     const [openSections, setOpenSections] = useState({
         community: true,
@@ -11,11 +14,12 @@ const SideBar = () => {
         groups: false
     });
 
-    const [activeTopic, setActiveTopic] = useState('General');
+    const [activeTopic, setActiveTopic] = useState('All');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newTitle, setNewTitle] = useState('');
     const [newCategory, setNewCategory] = useState('OMS Community');
     const [newContent, setNewContent] = useState('');
+    const [submitting, setSubmitting] = useState(false);
 
     const modalRef = useClickOutside(() => {
         if (isModalOpen) setIsModalOpen(false);
@@ -28,16 +32,47 @@ const SideBar = () => {
         }));
     };
 
-    const handleCreateDiscussion = (e) => {
+    const handleTopicClick = (sectionTitle, topic) => {
+        setActiveTopic(topic);
+        if (onSelectTopic) {
+            onSelectTopic({ topic: sectionTitle, subTopic: topic === 'Todos' || topic === 'All' ? null : topic });
+        }
+    };
+
+    const handleCreateDiscussion = async (e) => {
         e.preventDefault();
+        if (!isAuthenticated) {
+            alert('Debes iniciar sesión para crear una discusión en el foro.');
+            return;
+        }
+
         if (!newTitle.trim()) {
             alert('Por favor ingresa un título para la discusión');
             return;
         }
-        alert(`¡Discusión creada con éxito en "${newCategory}":\n"${newTitle}"!`);
-        setIsModalOpen(false);
-        setNewTitle('');
-        setNewContent('');
+
+        setSubmitting(true);
+        try {
+            await forumApi.createPost({
+                title: newTitle.trim(),
+                content: newContent.trim() || 'Discusión de la comunidad',
+                topic: newCategory,
+                subTopic: activeTopic !== 'All' ? activeTopic : 'General'
+            });
+
+            alert(`¡Discusión creada con éxito en "${newCategory}":\n"${newTitle}"!`);
+            setIsModalOpen(false);
+            setNewTitle('');
+            setNewContent('');
+
+            if (onPostCreated) {
+                onPostCreated();
+            }
+        } catch (err) {
+            alert(`Error al publicar la discusión: ${err.message || 'Error del servidor'}`);
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const sections = [
@@ -45,25 +80,25 @@ const SideBar = () => {
             key: 'community',
             title: 'OMS Community',
             iconClass: 'fa fa-square oms-color',
-            topics: ['General', 'Release', 'Announcements', 'Suggestions', 'Help']
+            topics: ['All', 'General', 'Release', 'Announcements', 'Suggestions', 'Help']
         },
         {
             key: 'library',
             title: 'Library & Mangas',
             iconClass: 'fa fa-square library-color',
-            topics: ['Shounen & Action', 'Seinen & Mystery', 'Romance & Shoujo', 'Recommendations', 'Reviews']
+            topics: ['All', 'Shounen & Action', 'Seinen & Mystery', 'Romance & Shoujo', 'Recommendations', 'Reviews']
         },
         {
             key: 'video',
             title: 'Video & Anime',
             iconClass: 'fa fa-square video-library-color',
-            topics: ['Episodes & Stream', 'Movie Adaptations', 'Trailers & Teasers', 'Soundtracks & OST']
+            topics: ['All', 'Episodes & Stream', 'Movie Adaptations', 'Trailers & Teasers', 'Soundtracks & OST']
         },
         {
             key: 'groups',
             title: 'Scanlation Groups',
             iconClass: 'fa fa-square groups-color',
-            topics: ['Recruitment', 'Releases Showcase', 'Translators & Editors', 'Partnerships']
+            topics: ['All', 'Recruitment', 'Releases Showcase', 'Translators & Editors', 'Partnerships']
         }
     ];
 
@@ -102,7 +137,7 @@ const SideBar = () => {
                                         <li 
                                             key={topic}
                                             className={activeTopic === topic ? 'active-topic' : ''}
-                                            onClick={() => setActiveTopic(topic)}
+                                            onClick={() => handleTopicClick(title, topic)}
                                         >
                                             {topic}
                                         </li>
@@ -128,6 +163,20 @@ const SideBar = () => {
                                 &times;
                             </button>
                         </div>
+
+                        {!isAuthenticated && (
+                            <div style={{
+                                padding: '10px 14px',
+                                background: 'rgba(234, 179, 8, 0.15)',
+                                border: '1px solid #eab308',
+                                borderRadius: '8px',
+                                marginBottom: '14px',
+                                fontSize: '13px',
+                                color: 'var(--text-primary)'
+                            }}>
+                                <i className="fa fa-info-circle"></i> Debes haber iniciado sesión para poder publicar.
+                            </div>
+                        )}
 
                         <form onSubmit={handleCreateDiscussion}>
                             <div className="form-group">
@@ -172,8 +221,8 @@ const SideBar = () => {
                                 >
                                     Cancelar
                                 </button>
-                                <button type="submit" className="btn-submit">
-                                    Publicar Discusión
+                                <button type="submit" className="btn-submit" disabled={submitting}>
+                                    {submitting ? 'Publicando...' : 'Publicar Discusión'}
                                 </button>
                             </div>
                         </form>

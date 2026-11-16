@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import '../styles/Nav.scss';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useSearchTerm } from '../Context/SearchBarContext';
 import { useTheme } from '../Context/ThemeContext';
+import { useAuth } from '../Context/AuthContext';
 import { useClickOutside } from '../hooks/useClickOutside';
+import SearchBox from './SearchBox';
 
 const Nav = () => {
     const { setSearchTerm } = useSearchTerm();       
     const { theme, toggleTheme } = useTheme();
+    const { user, isAuthenticated, logout } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
+    const navigate = useNavigate();
 
     // Cierra el menú móvil al hacer clic fuera
     const mobileMenuRef = useClickOutside(() => {
@@ -23,6 +27,12 @@ const Nav = () => {
         setIsOpen(false);
     };
 
+    const handleLogout = () => {
+        logout();
+        setIsOpen(false);
+        navigate('/');
+    };
+
     return ( 
         <div>
             <nav className="main-navbar">
@@ -33,15 +43,10 @@ const Nav = () => {
                 </div>
                 <div className="nav-buttons">
                     <Link to="/manga-section"><b>LIBRARY</b></Link>
-                    <Link to="/"><b>YOUR LIST</b></Link>
+                    <Link to="/my-list"><b>YOUR LIST</b></Link>
                     <Link to="/forum"><b>FORUM</b></Link>
                 </div>
-                <div className="search">
-                    <input type="text" name="search" placeholder="Search ..." onChange={e => {setSearchTerm(e.target.value)}}/>
-                    <Link to="/manga-section" >
-                        <i className="fa fa-search" aria-hidden="true"></i>
-                    </Link>
-                </div>
+                <SearchBox />
                 <div className="nav-log-section">
                     <button 
                         type="button" 
@@ -52,8 +57,29 @@ const Nav = () => {
                         <i className={`fa ${theme === 'dark' ? 'fa-sun-o' : 'fa-moon-o'}`} aria-hidden="true"></i>
                         <span>{theme === 'dark' ? 'Pastel' : 'Oscuro'}</span>
                     </button>
-                    <Link to="/login" >LOGIN</Link>
-                    <Link to="/register" >REGISTER</Link>
+
+                    {isAuthenticated ? (
+                        <div className="nav-user-profile">
+                            <Link to="/profile" className="user-badge" title="Ver y editar mi perfil">
+                                <i className="fa fa-user-circle" aria-hidden="true"></i>
+                                <b>{user?.username || 'Usuario'}</b>
+                            </Link>
+                            <button 
+                                type="button" 
+                                className="logout-btn" 
+                                onClick={handleLogout}
+                                title="Cerrar sesión"
+                            >
+                                <i className="fa fa-sign-out" aria-hidden="true"></i>
+                                <span>LOGOUT</span>
+                            </button>
+                        </div>
+                    ) : (
+                        <>
+                            <Link to="/login">LOGIN</Link>
+                            <Link to="/register">REGISTER</Link>
+                        </>
+                    )}
                 </div>
             </nav>
             <nav className="toggle-navbar" ref={mobileMenuRef}> 
@@ -74,21 +100,38 @@ const Nav = () => {
                     </div>
                     <ul style={{ display: isOpen ? 'flex' : 'none' }}>
                         <li><Link to="/manga-section" onClick={handleLinkClick}><b>LIBRARY</b></Link></li>
-                        <li><Link to="/" onClick={handleLinkClick}><b>YOUR LIST</b></Link></li>
+                        <li><Link to="/my-list" onClick={handleLinkClick}><b>YOUR LIST</b></Link></li>
                         <li><Link to="/forum" onClick={handleLinkClick}><b>FORUM</b></Link></li>
-                        <li><Link to="/login" onClick={handleLinkClick}>LOGIN</Link></li>
-                        <li><Link to="/register" onClick={handleLinkClick}>REGISTER</Link></li>
-                        <div className="search">
-                            <input 
-                                type="text" 
-                                name="search" 
-                                placeholder="Search ..."  
-                                onChange={e => setSearchTerm(e.target.value)}
-                            />
-                            <Link to="/manga-section" onClick={handleLinkClick}>
-                                <i className="fa fa-search" aria-hidden="true"></i>
-                            </Link>
-                        </div>
+
+                        {isAuthenticated ? (
+                            <>
+                                <li className="mobile-user-info">
+                                    <Link 
+                                        to="/profile" 
+                                        onClick={handleLinkClick}
+                                        style={{ color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                                    >
+                                        <i className="fa fa-user-circle"></i> {user?.username} <b>(Mi Perfil)</b>
+                                    </Link>
+                                </li>
+                                <li>
+                                    <button 
+                                        type="button" 
+                                        onClick={handleLogout}
+                                        style={{ background: 'none', border: 'none', color: 'inherit', font: 'inherit', cursor: 'pointer', padding: 0 }}
+                                    >
+                                        <b>LOGOUT</b>
+                                    </button>
+                                </li>
+                            </>
+                        ) : (
+                            <>
+                                <li><Link to="/login" onClick={handleLinkClick}>LOGIN</Link></li>
+                                <li><Link to="/register" onClick={handleLinkClick}>REGISTER</Link></li>
+                            </>
+                        )}
+
+                        <SearchBox isMobile={true} onAfterNavigate={handleLinkClick} />
                     </ul>
                 </div>
             </nav> 
