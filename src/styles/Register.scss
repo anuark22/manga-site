@@ -1,116 +1,157 @@
 @import './variables.scss';
 
-.register-section::before{
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
+.register-section {
+  display: flex;
+  position: relative;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+  min-height: calc(100vh - 64px);
+  padding: 40px 16px;
+  background: linear-gradient(var(--bg-overlay), var(--bg-overlay)),
+              url('./img/regbackground.jpg') center/cover fixed;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  transition: background 0.3s ease;
+
+  form {
     width: 100%;
-    height: 91vh;
-    background: linear-gradient(to right, $blueDarkest, $main-color-light);
-    opacity: 0.8;
-    z-index: -1;
-}
-.register-section{
+    max-width: 440px;
+    box-sizing: border-box;
+  }
+
+  .register-container {
     display: flex;
-    position: relative;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     width: 100%;
-    height: 91vh;
-    margin-top: -4px;
-    background: url('./img/regbackground.jpg');
-    background-size: cover;
-    background-repeat: no-repeat;
-    background-position: top center;
-	background-attachment: fixed;
-    z-index: 0;
-    transition: all 0.5s;
-        .register-container{
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            width: 500px;
-            height: 400px;
-            background: linear-gradient(to top, $main-color 10%, $main-color-light);
-            border: 2px solid $grey;
-            border-radius: 25px;
-            box-shadow: 0px 0px 15px 15px $shadow;
-                .reg-inputs{
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: center;
-                    align-items: center;
-                    width: 100%;
-                        label{
-                            display: flex;
-                            justify-content: flex-start;
-                            font-family: 'Roboto';
-                            font-weight: 400;
-                            font-size: 18px;
-                            color: $light;
-                            margin-bottom: 10px;
-                            text-shadow: 0px 0px 5px $shadow;
-                        }
-                        .username-input{
-                            width: 70%;
-                            height: 40px;
-                            margin-bottom: 18px;
-                            padding-left: 10px;
-                            outline: none;
-                            font-family: 'Roboto';
-                            font-weight: 400;
-                            font-size: 16px;
-                            border-style: none;
-                            border-radius: 5px;
-                        }
-                        .username-input::placeholder{
-                            color: $grey;
-                        }
-                        .password-input{
-                            width: 70%;
-                            height: 40px;
-                            margin-bottom: 18px;
-                            padding-left: 10px;
-                            font-family: 'Roboto';
-                            font-weight: 400;
-                            font-size: 16px;
-                            outline: none;
-                            border-style: none;
-                            border-radius: 5px;
-                        }
-                        .password-input::placeholder{
-                            color: $grey;
-                        }
-                }
-        }
-        .btn-register{
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 70%;
-            height: 40px;
-            background-color: $main-color-light;
-            border-style: none;
-            border-radius: 5px;
-            border: 1px solid $light;
-            font-family: 'Roboto';
-            font-weight: 400;
-            font-size: 18px;
-            color: $white;
+    background: var(--header-gradient);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: 0px 10px 30px var(--shadow-color);
+    padding: 36px 24px;
+    gap: 14px;
+    box-sizing: border-box;
 
+    .auth-title {
+      margin: 0 0 4px 0;
+      color: $white;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    }
+
+    .reg-inputs {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      gap: 12px;
+
+      .username-input, .password-input {
+        width: 100%;
+        height: 44px;
+        padding: 0 16px;
+        outline: none;
+        font-family: 'Roboto', sans-serif;
+        font-size: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.12);
+        color: $white;
+        box-sizing: border-box;
+        transition: all 0.2s ease;
+
+        &::placeholder {
+          color: rgba(255, 255, 255, 0.7);
         }
-        .btn-register:hover{
-            box-shadow: 0px 0px 3px 1px $light;
-            transition: 0.3s;
+
+        &:focus {
+          background: rgba(255, 255, 255, 0.22);
+          border-color: $white;
         }
-        @media only screen and (max-width: 650px){
-            .register-container{
-                width: 300px;
-                height: 400px;
-                transition: all 0.5s;
-            }
+      }
+
+      .password-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+        width: 100%;
+
+        .password-input {
+          padding-right: 44px;
         }
+
+        .toggle-password-btn {
+          position: absolute;
+          right: 10px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: transparent;
+          border: none;
+          outline: none;
+          color: rgba(255, 255, 255, 0.75);
+          cursor: pointer;
+          padding: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 16px;
+          border-radius: 4px;
+          transition: all 0.2s ease;
+
+          &:hover {
+            color: $white;
+            transform: translateY(-50%) scale(1.15);
+          }
+
+          &:active {
+            transform: translateY(-50%) scale(0.95);
+          }
+        }
+      }
+    }
+
+    .btn-register {
+      width: 100%;
+      height: 44px;
+      margin-top: 8px;
+      background-color: var(--secundary-color);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 8px;
+      font-family: 'Roboto', sans-serif;
+      font-weight: 700;
+      font-size: 16px;
+      color: $white;
+      cursor: pointer;
+      box-shadow: 0 4px 14px var(--shadow-color);
+      transition: all 0.2s ease;
+
+      &:hover {
+        opacity: 0.9;
+        transform: translateY(-2px);
+      }
+    }
+
+    .auth-switch {
+      margin: 8px 0 0 0;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.85);
+
+      a {
+        color: $white;
+        font-weight: 700;
+        text-decoration: underline;
+        margin-left: 4px;
+        transition: opacity 0.2s ease;
+
+        &:hover {
+          opacity: 0.8;
+        }
+      }
+    }
+  }
 }

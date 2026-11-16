@@ -1,241 +1,255 @@
 @import './variables.scss';
 
-.card-section{
-    display: flex;
-    position: relative;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-    min-width: 100%;
-    height: 91vh;
-    padding: 10px;
-    margin-top: -4px;
-    padding-bottom: 10px;
-    overflow: auto;
-    background: url('./img/librarybackground.jpg');
-    background-size: cover;
-    background-repeat: no-repeat;
-    background-position: top center;
-	background-attachment: fixed;
-    z-index: 0;
-    transition: all 0.5s;
-        .filter{
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            width: 100%;
-            margin-left: 20px;
-            margin-top: 30px;
-                .filter-section{
-                    display: flex;
-                    flex-direction: column;
-                    width: 40%;
-                        .filter-input{
-                            display: flex;
-                            width: 100%;
-                            height: 50px;
-                            font-size: 20px;
-                            background-color: $main-color-light;
-                            color: $white;
-                            font-family: 'Roboto', sans-serif;
-                            font-weight: 400;
-                            border-style: none;
-                            border: 1px solid $white;
-                            padding-left: 15px;
-                            cursor: pointer;
-                        }
-                        .filter-input:hover{
-                            transform: scale(1.01);
-                            transition: 0.3s;
-                            box-shadow: 0px 0px 1px 1px $light;
-                        }
-                        .filter-list{
-                            display: flex;
-                            flex-direction: row;
-                            width: 100%;
-                            background-color: pink;
-                            color: $black;
-                            font-family: 'Roboto', sans-serif;
-                            font-weight: 700;
-                            font-size: 18px;
-                            text-shadow: 0px 0px 1px $light;
-                                .filter-item{
-                                    display: flex;
-                                    flex-direction: column;
-                                    width: 100%;
-                                        .filter-item-content{
-                                            display: flex;
-                                            width: 100%;
-                                            height: 50px;
-                                                h3{
-                                                    display: flex;
-                                                    justify-content: flex-start;
-                                                    align-items: center;
-                                                    width: 80%;
-                                                    padding-left: 10px;
-                                                    font-size: 14px;
-                                                }
-                                                div{
-                                                    display: flex;
-                                                    flex-direction: column;
-                                                    justify-content: center;
-                                                    width: 30%;
-                                                    align-items: center;
-                                                    margin-right: 10px;
-                                                        label{
-                                                            font-size: 13px;
-                                                        }
-                                                        select{
-                                                            width: 100%;
-                                                            height: 25px;
-                                                            font-size: 13px;
-                                                            outline: none;
-                                                            border-style: none;
-                                                            border: 1px solid $grey;
-                                                            background-color: $main-color-light;
-                                                            color: $white;
-                                                            text-align: center;
-                                                        }
-                                                }
-                                        }
-                                }
-                        }
-                }
-                .genders-content{
-                    display: flex;
-                    flex-direction: column;
-                    width: 40%;
-                    border: 1px solid $white;
-                    background-color: pink;
+.card-section {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  min-height: calc(100vh - 64px);
+  padding: 24px 16px 80px;
+  background: linear-gradient(var(--bg-overlay), var(--bg-overlay)),
+              url('./img/librarybackground.jpg') center/cover fixed;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  transition: background 0.3s ease;
 
-                        .genders-input{
-                            display: flex;
-                            width: 100%;
-                            height: 50px;
-                            font-size: 20px;
-                            background-color: $main-color-light;
-                            font-family: 'Roboto', sans-serif;
-                            font-weight: 400;
-                            color: $white;
-                            border-style: none;
-                            border: 1px solid $white;
-                            padding-left: 15px;
-                            cursor: pointer;
-                        }
-                        .genders-input:hover{
-                            transform: scale(1.01);
-                            transition: 0.3s;
-                            box-shadow: 0px 0px 1px 1px $light;
-                        }
-                        .genders-list{
-                            display: flex;
-                            align-items: center;
-                            background-color: pink;
-                            padding-top: 20px;
-                            padding-left: 10px;
-                            padding-bottom: 20px;
-                            width: 100%;
-                            height: 35px;
-                                input[type="checkbox"]{
-                                    display: none;
-                                }
-                                label{
-                                    position: relative;
-                                    font-family: 'Roboto', sans-serif;
-                                    font-weight: 700;
-                                    color: $black;
-                                    padding-left: 25px;
-                                    font-size: 14px;
-                                    text-shadow: 0px 0px 2px $light;
-                                }
-                                label:before{
-                                    content: '';
-                                    background-color: $white;
-                                    border: solid 1px $grey;
-                                    border-radius: 3px;
-                                    width: 1em;
-                                    height: 1em;
-                                    position: absolute;
-                                    left: 0;
-                                    transition: all 0.5s;
-                                    transform: rotate(0deg);
-                                    box-shadow: 0px 0px 3px 0px $shadow;
-                                }
-                                input[type="checkbox"]:checked + label:before{
-                                    background-color: $main-color-light;
-                                    border-color: $light;
-                                    transform: rotate(360deg);
-                                }
-                        }
-                }
-                .btn-filter{
-                    width: 40%;
-                    height: 45px;
-                    border-style: none;
-                    border: 1px solid $white;
-                    background-color: $main-color;
-                    font-size: 20px;
-                    text-align: center;
-                    padding-left: 20px;
-                    color: $white;
-                    text-shadow: 0px 0px 10px $shadow;
-                    cursor: pointer;
-                        .fa-filter{
-                            padding-left: 10px;
-                        }
-                }
-                .btn-filter:hover{
-                    transform: scale(1.01);
-                    transition: 0.3s;
-                    box-shadow: 0px 0px 1px 1px $light;
-                }
-                @media only screen and (max-width: 750px){
-                    .filter-section{
-                        width: 100%;
-                        transition: 0.5s;
-                    }
-                    .genders-content{
-                        width: 100%;
-                        transition: 0.5s;
-                    }
-                    .btn-filter{
-                        width: 100%;
-                        transition: 0.5s;
-                    }
-                }                
+  .filter {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto 30px;
+    gap: 12px;
+
+    .filter-section {
+      width: 100%;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px var(--shadow-color);
+      border: 1px solid var(--border-color);
+
+      .filter-input {
+        width: 100%;
+        height: 48px;
+        font-size: 16px;
+        font-weight: 700;
+        background-color: var(--main-color);
+        color: $white;
+        font-family: 'Roboto', sans-serif;
+        border: none;
+        padding: 0 20px;
+        cursor: pointer;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        transition: background-color 0.2s ease;
+
+        &:hover {
+          background-color: var(--main-color-dark);
         }
-        .cards-container{
-            display: grid;
-            grid-gap: 20px;
-            grid-template-columns: repeat(auto-fit, minmax(200px, auto));
-            justify-items: center;
-            min-width: 80%;
-            height: 100vh;
-            margin-top: 15px;
-        }
-        .no-mangas{
+      }
+
+      .filter-list {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        background-color: var(--bg-card);
+        color: var(--text-primary);
+        font-family: 'Roboto', sans-serif;
+        padding: 12px 16px;
+        gap: 10px;
+
+        .filter-item {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          width: 100%;
+
+          .filter-item-content {
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
-            width: 60%;
-            height: 200px;
-            margin-top: 100px;
-            background-color: $grey;
-            font-family: 'Roboto', sans-serif;
-            font-weight: 400;
-            color: #fefefe;
-            font-size: 25px;
-            border-radius: 5px;
-        }
-        @media only screen and (max-width:600px){
-            .cards-container{
-                grid-template-columns: repeat(auto-fit, minmax(150px, auto));
+            padding: 8px 10px;
+            background: rgba(125, 125, 125, 0.05);
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+
+            h3 {
+              font-size: 14px;
+              font-weight: 700;
+              color: var(--text-primary);
+              margin: 0;
             }
+
+            div {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+
+              label {
+                font-size: 12px;
+                color: var(--text-secondary);
+              }
+
+              select {
+                min-width: 130px;
+                height: 32px;
+                font-size: 13px;
+                outline: none;
+                border: 1px solid var(--border-color);
+                border-radius: 4px;
+                background-color: var(--bg-card);
+                color: var(--text-primary);
+                color-scheme: inherit;
+                padding: 0 6px;
+                cursor: pointer;
+
+                option {
+                  background-color: var(--bg-card);
+                  color: var(--text-primary);
+                }
+              }
+            }
+          }
         }
-}
-.active{
-    display: flex;
+      }
+    }
+
+    .genders-content {
+      width: 100%;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px var(--shadow-color);
+      border: 1px solid var(--border-color);
+
+      .genders-input {
+        width: 100%;
+        height: 48px;
+        font-size: 16px;
+        font-weight: 700;
+        background-color: var(--main-color);
+        color: $white;
+        font-family: 'Roboto', sans-serif;
+        border: none;
+        padding: 0 20px;
+        cursor: pointer;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        transition: background-color 0.2s ease;
+
+        &:hover {
+          background-color: var(--main-color-dark);
+        }
+      }
+
+      .genders-grid {
+        background-color: var(--bg-card);
+        padding: 14px 16px;
+        max-height: 240px;
+        overflow-y: auto;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 8px;
+
+        .genders-item {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+
+          input[type="checkbox"] {
+            cursor: pointer;
+            accent-color: var(--main-color);
+          }
+
+          label {
+            font-size: 13px;
+            color: var(--text-primary);
+            cursor: pointer;
+            user-select: none;
+          }
+        }
+      }
+
+      .no-genders {
+        padding: 15px;
+        text-align: center;
+        background: var(--bg-card);
+        color: var(--text-primary);
+      }
+    }
+
+    .btn-filter {
+      width: 100%;
+      height: 48px;
+      border: none;
+      border-radius: 8px;
+      background-color: var(--secundary-color);
+      font-size: 16px;
+      font-weight: 700;
+      color: $white;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 4px 12px var(--shadow-color);
+      transition: all 0.2s ease;
+
+      &:hover {
+        opacity: 0.92;
+        transform: translateY(-2px);
+      }
+    }
+  }
+
+  .cards-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 20px;
+    justify-items: center;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .no-mangas {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-primary);
+    font-size: 20px;
+  }
 }
 
+@media only screen and (max-width: 600px) {
+  .card-section {
+    padding: 16px 10px 60px;
+
+    .filter {
+      .filter-section .filter-list .filter-item .filter-item-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+
+        div {
+          width: 100%;
+          justify-content: space-between;
+
+          select {
+            flex: 1;
+          }
+        }
+      }
+
+      .genders-content .genders-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .cards-container {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+  }
+}

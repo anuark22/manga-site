@@ -2,29 +2,28 @@ import React, { useState } from 'react';
 import Post from './Post';
 import SideBar from './SideBar';
 import '../styles/Forum.scss';
+import { useClickOutside } from '../hooks/useClickOutside';
 
 const Forum = () => {
-    const display = {
-        display: 'none',
-    }
-    const [style, setStyle] = useState(display);
-    function showItem (){
-        const ham = document.getElementById("postHam");
-        ham.addEventListener('click', closeItem);
-        function closeItem(){
-            if (style.display === 'none'){
-                setStyle({
-                    ...style,
-                    display:'flex',
-                })
-            }else{
-                setStyle({
-                    ...style,
-                    display:'none',
-                    })     
-            }
-        }
-    }
+    const [isOpen, setIsOpen] = useState(false);
+    const [selectedSort, setSelectedSort] = useState('Latest');
+
+    // Cierra el menú desplegable al hacer clic fuera
+    const dropdownRef = useClickOutside(() => {
+        if (isOpen) setIsOpen(false);
+    });
+
+    const toggleDropdown = () => {
+        setIsOpen(prev => !prev);
+    };
+
+    const handleSelectSort = (option) => {
+        setSelectedSort(option);
+        setIsOpen(false);
+    };
+
+    const sortOptions = ['Latest', 'Newer', 'Older', 'Popular', 'Trending', 'Discussions'];
+
     return ( 
         <div className="forum-section">
             <div className="forum-content">
@@ -33,22 +32,30 @@ const Forum = () => {
                     <div className="post-card">
                         <div className="post-btns">
                             <div className="discussion-btn">
-                                <div className="forum-post-select">
-                                    <button type="submit" onClick={()=>{showItem()}} id="postHam" > 
+                                <div className="forum-post-select" ref={dropdownRef}>
+                                    <button type="button" onClick={toggleDropdown} id="postHam"> 
                                         <i className="fa fa-filter" aria-hidden="true"></i>
-                                        <p>Lastest</p>
-                                        <i className="fa fa-angle-down" aria-hidden="true"></i>
+                                        <p>{selectedSort}</p>
+                                        <i className={`fa ${isOpen ? 'fa-angle-up' : 'fa-angle-down'}`} aria-hidden="true"></i>
                                     </button>
-                                    <ul className="forum-post-ul" style={style}>
-                                        <li>Lastest</li>
-                                        <li>Above</li>
-                                        <li>Newer</li>
-                                        <li>Older</li>
-                                        <li>Popular</li>
-                                        <li>Unpopular</li>
+                                    <ul className="forum-post-ul" style={{ display: isOpen ? 'flex' : 'none' }}>
+                                        {sortOptions.map(option => (
+                                            <li 
+                                                key={option}
+                                                onClick={() => handleSelectSort(option)}
+                                                style={{ fontWeight: selectedSort === option ? '700' : '400' }}
+                                            >
+                                                {option}
+                                            </li>
+                                        ))}
                                     </ul>
                                 </div>
-                                <button type="submit" className="refresh-btn"> 
+                                <button 
+                                    type="button" 
+                                    className="refresh-btn" 
+                                    title="Actualizar discusiones"
+                                    onClick={() => alert('Lista de temas actualizada')}
+                                > 
                                     <i className="fa fa-refresh" aria-hidden="true"></i>
                                 </button>
                             </div>
@@ -60,7 +67,7 @@ const Forum = () => {
                 </div>
             </div>
         </div>
-     );
-}
+    );
+};
  
 export default Forum;

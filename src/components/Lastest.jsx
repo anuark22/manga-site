@@ -1,9 +1,10 @@
-import React,{ useState, useEffect} from 'react';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import mangasTopTier from './mangasTopTier';
 import '../styles/Lastest.scss';
 
 const Lastest = () => {
-    const [mangas, setMangas] = useState(mangasTopTier);
+    const [mangas] = useState(mangasTopTier);
     return (  
         <div className="main-header">
            <div className="main-header-bar">Popular Manga Tier</div> 
@@ -19,12 +20,12 @@ const Lastest = () => {
                         mangaName, 
                         mangaDemography
                     }) =>(
-                    <a href="/" key={id} className={card}>
+                    <Link to={`/manga/${id}`} key={id} className={card}>
                             <div className="synopsis">
                             <p><b>Synopsis: </b>{synopsis}</p>
                             </div>
                             <div className="card-content">
-                                <img src={mangaImage} alt="manga"/>
+                                <img src={mangaImage} alt={mangaName}/>
                                 <div className="manga-tittle">
                                     <b>{mangaName}</b>
                                 </div>
@@ -35,7 +36,7 @@ const Lastest = () => {
                                     <b>{mangaDemography}</b>
                                 </div>
                             </div>
-                    </a>
+                    </Link>
                     )):(
                     <div className="no-mangas">
                         <p>No Ranking yet</p>
@@ -45,5 +46,5 @@ const Lastest = () => {
            </div>
         </div>
     );
-}
+};
 export default Lastest;

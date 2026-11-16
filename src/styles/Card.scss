@@ -1,152 +1,162 @@
 @import './variables.scss';
 
-.card{
+.card {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  width: 100%;
+  max-width: 190px;
+  height: 275px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.4);
+  text-decoration: none;
+  background-color: $darkCard;
+  box-sizing: border-box;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+
+  &:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.6);
+
+    .synopsis {
+      opacity: 1;
+    }
+  }
+
+  .synopsis {
+    position: absolute;
+    inset: 0;
+    padding: 16px 12px;
+    font-family: 'Roboto', sans-serif;
+    font-size: 12px;
+    line-height: 1.4;
+    text-align: left;
+    background-color: rgba(20, 28, 58, 0.95);
+    color: $white;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    overflow-y: auto;
+    pointer-events: none;
+    box-sizing: border-box;
+
+    b {
+      color: $third-color;
+      display: block;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+  }
+
+  .card-content {
+    position: relative;
+    width: 100%;
+    height: 100%;
     display: flex;
     flex-direction: column;
-    position: relative;
-    width: 200px;
-    height: 300px;
 
-    position: relative;
-    box-shadow: 0px 0px 5px 1px $shadow;
-        .synopsis{
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            padding-top: 40px;
-            padding-left: 10px;
-            padding-right: 10px;
-            font-family: 'Roboto', sans-serif;
-            font-weight: 400;
-            text-align: justify;
-            top: 0;
-            background-color: $darkCard;
-            color: $white;
-            z-index: 999;
-            opacity: 0;
-                b{
-                    color: $yellowCard;
-                }
-        }
-        .synopsis:hover{
-            opacity: 1;
-            transform: 0.5s;
-        }
-        .card-content{
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            height: 100%;
-            font-family: 'Roboto', sans-serif;
-            font-weight: 700;
-                    img{
-                        position: absolute;
-                        width: 100%;
-                        height: 100%;
-                        border: 1px solid $shadow;
-                        text-align: center;
-                    }
-                    .manga-tittle{
-                        position: absolute;
-                        background-color: $shadow;
-                        padding: 5px;
-                        width: 100%;
-                        font-size: 12px;
-                        color: $white;
-                        text-align: center;
-                    }
-                    .MANGA{
-                        position: absolute;
-                        top: 35px;
-                        left: 5px;
-                        padding: 3px;
-                        background-color: $manga;
-                        border-radius: 5px;
-                        padding: 5px;
-                        color: $white;
-                        font-size: 12px;
-                        text-align: center;
-                        text-shadow: 1px 1px 3px $black;
-                    }
-                    .MANHWA{
-                        position: absolute;
-                        top: 35px;
-                        left: 5px;
-                        padding: 3px;
-                        background-color: $manhwa;
-                        border-radius: 5px;
-                        padding: 5px;
-                        color: $white;
-                        font-size: 12px;
-                        text-align: center;
-                        text-shadow: 1px 1px 3px $black;
-                    }
-                    .MANHUA{
-                        position: absolute;
-                        top: 35px;
-                        left: 5px;
-                        padding: 3px;
-                        background-color: $manhua;
-                        border-radius: 5px;
-                        padding: 5px;
-                        color: $white;
-                        font-size: 12px;
-                        text-align: center;
-                        text-shadow: 1px 1px 3px $black;
-                    }
-                    .SHOUNEN{
-                        position: absolute;
-                        bottom: 0;
-                        background-color: rgba($shounen, .8);
-                        width: 100%;
-                        padding: 4px;
-                        color: $white;
-                        font-size: 13px;
-                        text-align: center;
-                    }
-                    .SEINEN{
-                        position: absolute;
-                        bottom: 0;
-                        background-color: rgba($seinen, .8);
-                        width: 100%;
-                        padding: 4px;
-                        color: $white;
-                        font-size: 13px;
-                        text-align: center;
-                    }
-                    .SHOUJO{
-                        position: absolute;
-                        bottom: 0;
-                        background-color: rgba($shoujo, .8);
-                        width: 100%;
-                        padding: 4px;
-                        color: $white;
-                        font-size: 13px;
-                        text-align: center;
-                    }
-                    .JOSEI{
-                        position: absolute;
-                        bottom: 0;
-                        background-color: rgba($josei, .8);
-                        width: 100%;
-                        padding: 4px;
-                        color: $white;
-                        font-size: 13px;
-                        text-align: center;
-                    }
-        }    
-}
-.card:hover{
-    transform: scale(1.05);
-    transition: 0.5s;
-    box-shadow: 0px 0px 15px 4px $shadow;
-}
-@media only screen and (max-width:600px){
-    .card{
-        transform: scale(0.8);
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
 
+    .manga-tittle {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.3) 80%, transparent 100%);
+      padding: 8px 10px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      color: $white;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      box-sizing: border-box;
     }
-    .card:hover{
-        transform: scale(0.83);
+
+    .MANGA, .MANHWA, .MANHUA {
+      position: absolute;
+      top: 36px;
+      left: 8px;
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
     }
+
+    .MANGA {
+      background-color: $manga;
+      color: $white;
+    }
+    .MANHWA {
+      background-color: $manhwa;
+      color: $darkCard;
+    }
+    .MANHUA {
+      background-color: $manhua;
+      color: $white;
+    }
+
+    .SHOUNEN, .SEINEN, .SHOUJO, .JOSEI {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 5px;
+      color: $white;
+      font-size: 11px;
+      font-weight: 900;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-sizing: border-box;
+    }
+
+    .SHOUNEN {
+      background-color: rgba($shounen, 0.9);
+    }
+    .SEINEN {
+      background-color: rgba($seinen, 0.9);
+    }
+    .SHOUJO {
+      background-color: rgba($shoujo, 0.9);
+    }
+    .JOSEI {
+      background-color: rgba($josei, 0.9);
+    }
+  }
+}
+
+@media only screen and (max-width: 500px) {
+  .card {
+    max-width: 100%;
+    height: 220px;
+
+    .card-content {
+      .manga-tittle {
+        font-size: 11px;
+        padding: 5px 6px;
+      }
+
+      .MANGA, .MANHWA, .MANHUA {
+        top: 28px;
+        font-size: 9px;
+        padding: 2px 6px;
+      }
+
+      .SHOUNEN, .SEINEN, .SHOUJO, .JOSEI {
+        font-size: 10px;
+        padding: 3px;
+      }
+    }
+  }
 }

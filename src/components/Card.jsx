@@ -1,6 +1,7 @@
-import React, { Fragment, useState } from 'react';
+import React, { Fragment } from 'react';
+import { Link } from 'react-router-dom';
 import '../styles/Card.scss';
-import { SearchBarProvider, useSearchTerm } from '../Context/SearchBarContext';
+import { useSearchTerm } from '../Context/SearchBarContext';
 
 const Card = ( {mangas} ) => {
   const { searchTerm } = useSearchTerm(); 
@@ -20,12 +21,12 @@ const Card = ( {mangas} ) => {
                     mangaName, 
                     mangaDemography
                   }) =>(
-                  <a href="/" key={id} className={card}>
+                  <Link to={`/manga/${id}`} key={id} className={card}>
                         <div className="synopsis">
                           <p><b>Synopsis: </b>{synopsis}</p>
                         </div>
                         <div className="card-content">
-                            <img src={mangaImage} alt="manga"/>
+                            <img src={mangaImage} alt={mangaName}/>
                             <div className="manga-tittle">
                                 <b>{mangaName}</b>
                             </div>
@@ -36,7 +37,7 @@ const Card = ( {mangas} ) => {
                                 <b>{mangaDemography}</b>
                             </div>
                         </div>
-                  </a>
+                  </Link>
                 )):(
                   <div className="no-mangas">
                       <p >No Mangas Found</p>
@@ -45,6 +46,6 @@ const Card = ( {mangas} ) => {
             }
           </Fragment>
     );
-}
+};
 
 export default Card;
