@@ -42,10 +42,13 @@ const Forum = () => {
                                         {sortOptions.map(option => (
                                             <li 
                                                 key={option}
+                                                className={selectedSort === option ? 'active-sort' : ''}
                                                 onClick={() => handleSelectSort(option)}
-                                                style={{ fontWeight: selectedSort === option ? '700' : '400' }}
                                             >
-                                                {option}
+                                                <span>{option}</span>
+                                                {selectedSort === option && (
+                                                    <i className="fa fa-check" aria-hidden="true"></i>
+                                                )}
                                             </li>
                                         ))}
                                     </ul>
