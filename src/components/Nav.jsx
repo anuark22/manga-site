@@ -125,45 +125,61 @@ const Nav = () => {
                         <li><Link to="/my-list" onClick={handleLinkClick}><b>YOUR LIST</b></Link></li>
                         <li><Link to="/forum" onClick={handleLinkClick}><b>FORUM</b></Link></li>
                         {isScanOrAdmin && (
-                            <li>
-                                <Link to="/scan-dashboard" onClick={handleLinkClick} style={{ color: 'var(--main-color-light, #f4a261)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                                    <i className="fa fa-cloud-upload"></i> <b>PANEL SCAN</b>
+                            <li className="mobile-action-item">
+                                <Link to="/scan-dashboard" onClick={handleLinkClick} className="mobile-nav-btn scan-btn">
+                                    <span className="mobile-btn-icon"><i className="fa fa-cloud-upload"></i></span>
+                                    <span className="mobile-btn-text">PANEL SCAN</span>
                                 </Link>
                             </li>
                         )}
                         {isAdmin && (
-                            <li>
-                                <Link to="/admin-dashboard" onClick={handleLinkClick} style={{ color: '#818cf8', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                                    <i className="fa fa-shield"></i> <b>PANEL ADMIN</b>
+                            <li className="mobile-action-item">
+                                <Link to="/admin-dashboard" onClick={handleLinkClick} className="mobile-nav-btn admin-btn">
+                                    <span className="mobile-btn-icon"><i className="fa fa-shield"></i></span>
+                                    <span className="mobile-btn-text">PANEL ADMIN</span>
                                 </Link>
                             </li>
                         )}
 
                         {isAuthenticated ? (
                             <>
-                                <li className="mobile-user-info">
+                                <li className="mobile-action-item mobile-user-info">
                                     <Link 
                                         to="/profile" 
                                         onClick={handleLinkClick}
-                                        style={{ color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                                        className="mobile-nav-btn user-btn"
                                     >
-                                        <i className="fa fa-user-circle"></i> {user?.username} <b>(Mi Perfil)</b>
+                                        <span className="mobile-btn-icon"><i className="fa fa-user-circle"></i></span>
+                                        <span className="mobile-btn-text">
+                                            {user?.username} <small>(Mi Perfil)</small>
+                                        </span>
                                     </Link>
                                 </li>
-                                <li>
+                                <li className="mobile-action-item mobile-logout-item">
                                     <button 
                                         type="button" 
                                         onClick={handleLogout}
-                                        style={{ background: 'none', border: 'none', color: 'inherit', font: 'inherit', cursor: 'pointer', padding: 0 }}
+                                        className="mobile-nav-btn logout-btn"
                                     >
-                                        <b>LOGOUT</b>
+                                        <span className="mobile-btn-icon"><i className="fa fa-sign-out"></i></span>
+                                        <span className="mobile-btn-text">LOGOUT</span>
                                     </button>
                                 </li>
                             </>
                         ) : (
                             <>
-                                <li><Link to="/login" onClick={handleLinkClick}>LOGIN</Link></li>
-                                <li><Link to="/register" onClick={handleLinkClick}>REGISTER</Link></li>
+                                <li className="mobile-action-item">
+                                    <Link to="/login" onClick={handleLinkClick} className="mobile-nav-btn auth-btn">
+                                        <span className="mobile-btn-icon"><i className="fa fa-sign-in"></i></span>
+                                        <span className="mobile-btn-text">LOGIN</span>
+                                    </Link>
+                                </li>
+                                <li className="mobile-action-item">
+                                    <Link to="/register" onClick={handleLinkClick} className="mobile-nav-btn auth-btn">
+                                        <span className="mobile-btn-icon"><i className="fa fa-user-plus"></i></span>
+                                        <span className="mobile-btn-text">REGISTER</span>
+                                    </Link>
+                                </li>
                             </>
                         )}
 
