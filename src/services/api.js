@@ -44,9 +44,10 @@ export const getStoredUser = () => {
 async function request(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
   const token = getToken();
+  const isFormData = options.body instanceof FormData;
 
   const headers = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
     ...options.headers,
   };
@@ -120,6 +121,29 @@ export const mangasApi = {
   async getDetail(mangaId) {
     const res = await request(`/Mangas/GetMangaDetail?mangaId=${mangaId}`);
     return (res.items && res.items[0]) || null;
+  },
+
+  async createManga(formData) {
+    const res = await request('/Mangas/CreateManga', {
+      method: 'POST',
+      body: formData
+    });
+    return res;
+  },
+
+  async updateManga(formData) {
+    const res = await request('/Mangas/UpdateManga', {
+      method: 'PUT',
+      body: formData
+    });
+    return res;
+  },
+
+  async deleteManga(mangaId) {
+    const res = await request(`/Mangas/DeleteManga?mangaId=${mangaId}`, {
+      method: 'DELETE'
+    });
+    return res;
   }
 };
 
@@ -138,6 +162,26 @@ export const chaptersApi = {
   async getPages(chapterId) {
     const res = await request(`/MangaChapters/GetChapterPages?chapterId=${chapterId}`);
     return res.items || [];
+  },
+  async createChapter(formData) {
+    const res = await request('/MangaChapters/CreateMangaChapter', {
+      method: 'POST',
+      body: formData
+    });
+    return res;
+  },
+  async updateChapter(formData) {
+    const res = await request('/MangaChapters/UpdateMangaChapter', {
+      method: 'PUT',
+      body: formData
+    });
+    return res;
+  },
+  async deleteChapter(chapterId) {
+    const res = await request(`/MangaChapters/DeleteMangaChapter?chapterId=${chapterId}`, {
+      method: 'DELETE'
+    });
+    return res;
   }
 };
 
@@ -254,8 +298,89 @@ export const filtersApi = {
   }
 };
 
+// ==========================================
+// GÉNEROS API (CRUD)
+// ==========================================
+export const genresApi = {
+  async getGenres(params = {}) {
+    const query = new URLSearchParams();
+    if (params.genreId) query.append('genreId', params.genreId);
+    if (params.genreName) query.append('genreName', params.genreName);
+    const qs = query.toString();
+    const res = await request(`/Genres/GetGenres${qs ? `?${qs}` : ''}`);
+    return res.items || [];
+  },
+  async createGenre(formData) {
+    const res = await request('/Genres/CreateGenre', {
+      method: 'POST',
+      body: formData
+    });
+    return res;
+  },
+  async updateGenre(formData) {
+    const res = await request('/Genres/UpdateGenre', {
+      method: 'PUT',
+      body: formData
+    });
+    return res;
+  },
+  async deleteGenre(genreId) {
+    const res = await request(`/Genres/DeleteGenre?genreId=${genreId}`, {
+      method: 'DELETE'
+    });
+    return res;
+  }
+};
+
+// ==========================================
+// GRUPOS SCAN API
+// ==========================================
+export const scansApi = {
+  async getScans(scanId, scanName) {
+    const query = new URLSearchParams();
+    if (scanId) query.append('scanId', scanId);
+    if (scanName) query.append('scanName', scanName);
+    const qs = query.toString();
+    const res = await request(`/ScansGroups/GetScansGroups${qs ? `?${qs}` : ''}`);
+    return res.items || [];
+  },
+  async createScan(formData) {
+    const res = await request('/ScansGroups/CreateScanGroup', {
+      method: 'POST',
+      body: formData
+    });
+    return res;
+  },
+  async updateScan(formData) {
+    const res = await request('/ScansGroups/UpdateScanGroup', {
+      method: 'PUT',
+      body: formData
+    });
+    return res;
+  },
+  async deleteScan(scanId) {
+    const res = await request(`/ScansGroups/DeleteScanGroup?scanId=${scanId}`, {
+      method: 'DELETE'
+    });
+    return res;
+  }
+};
+
 export const mangaGenresApi = {
-  getMangaGenres: filtersApi.getMangaGenres
+  getMangaGenres: filtersApi.getMangaGenres,
+  async linkGenre(mangaId, genreId) {
+    const res = await request('/MangaGenres/CreateMangaGenre', {
+      method: 'POST',
+      body: JSON.stringify({ mangaId, genreId })
+    });
+    return res;
+  },
+  async unlinkGenre(mangaId, genreId) {
+    const res = await request(`/MangaGenres/DeleteMangaGenre?genreId=${genreId}&mangaId=${mangaId}`, {
+      method: 'DELETE'
+    });
+    return res;
+  }
 };
 
 // ==========================================
@@ -361,9 +486,64 @@ export const userListApi = {
   }
 };
 
+// ==========================================
+// SOLICITUDES DE SCAN GROUPS API
+// ==========================================
+export const scanApplicationsApi = {
+  /**
+   * Envía una solicitud para convertir la cuenta en Scan Group (soporta FormData con logo)
+   */
+  async apply(formData) {
+    const res = await request('/ScanGroupApplications/Apply', {
+      method: 'POST',
+      body: formData
+    });
+    return res;
+  },
+
+  /**
+   * Obtiene la solicitud del usuario autenticado actual para verificar su estado (PENDING, APPROVED, REJECTED)
+   */
+  async getMyApplication() {
+    try {
+      const res = await request('/ScanGroupApplications/MyApplication');
+      return (res.items && res.items[0]) || null;
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * (Admin) Obtiene las solicitudes de Scan Group con filtro opcional por estado
+   */
+  async getApplications(status, applicationId) {
+    const query = new URLSearchParams();
+    if (status) query.append('status', status);
+    if (applicationId) query.append('applicationId', applicationId);
+    const qs = query.toString();
+    const res = await request(`/ScanGroupApplications/GetApplications${qs ? `?${qs}` : ''}`);
+    return res.items || [];
+  },
+
+  /**
+   * (Admin) Aprueba o rechaza una solicitud. Al aprobar, crea el ScanGroup y actualiza el rol del usuario a Scan (3).
+   */
+  async reviewApplication({ applicationId, isApproved, adminNotes }) {
+    const res = await request('/ScanGroupApplications/ReviewApplication', {
+      method: 'POST',
+      body: JSON.stringify({ applicationId, isApproved, adminNotes })
+    });
+    return res;
+  }
+};
+
 export default {
   mangas: mangasApi,
   chapters: chaptersApi,
+  genres: genresApi,
+  mangaGenres: mangaGenresApi,
+  scans: scansApi,
+  scanApplications: scanApplicationsApi,
   notices: noticesApi,
   forum: forumApi,
   filters: filtersApi,

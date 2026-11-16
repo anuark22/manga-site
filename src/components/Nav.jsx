@@ -14,6 +14,13 @@ const Nav = () => {
     const [isOpen, setIsOpen] = useState(false);
     const navigate = useNavigate();
 
+    const isScanOrAdmin = user && (
+        user.roleId === 2 || 
+        user.roleId === 3 || 
+        user.roleName?.toUpperCase() === 'ADMIN' || 
+        user.roleName?.toUpperCase() === 'SCAN'
+    );
+
     // Cierra el menú móvil al hacer clic fuera
     const mobileMenuRef = useClickOutside(() => {
         if (isOpen) setIsOpen(false);
@@ -45,6 +52,11 @@ const Nav = () => {
                     <Link to="/manga-section"><b>LIBRARY</b></Link>
                     <Link to="/my-list"><b>YOUR LIST</b></Link>
                     <Link to="/forum"><b>FORUM</b></Link>
+                    {isScanOrAdmin && (
+                        <Link to="/scan-dashboard" className="scan-panel-link" title="Panel de Scanlation y Gestión">
+                            <i className="fa fa-cloud-upload" style={{ marginRight: '6px' }}></i><b>PANEL SCAN</b>
+                        </Link>
+                    )}
                 </div>
                 <SearchBox />
                 <div className="nav-log-section">
@@ -102,6 +114,13 @@ const Nav = () => {
                         <li><Link to="/manga-section" onClick={handleLinkClick}><b>LIBRARY</b></Link></li>
                         <li><Link to="/my-list" onClick={handleLinkClick}><b>YOUR LIST</b></Link></li>
                         <li><Link to="/forum" onClick={handleLinkClick}><b>FORUM</b></Link></li>
+                        {isScanOrAdmin && (
+                            <li>
+                                <Link to="/scan-dashboard" onClick={handleLinkClick} style={{ color: 'var(--main-color-light, #f4a261)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                    <i className="fa fa-cloud-upload"></i> <b>PANEL SCAN</b>
+                                </Link>
+                            </li>
+                        )}
 
                         {isAuthenticated ? (
                             <>

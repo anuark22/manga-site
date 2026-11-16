@@ -1,0 +1,1720 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { 
+  mangasApi, 
+  chaptersApi, 
+  genresApi, 
+  mangaGenresApi, 
+  scansApi, 
+  filtersApi, 
+  normalizePageUrl 
+} from '../services/api';
+import { useAuth } from '../Context/AuthContext';
+import { useTheme } from '../Context/ThemeContext';
+import imageHelper, { getMangaImage } from '../utils/imageHelper';
+import '../styles/ScanDashboard.scss';
+
+const ScanDashboard = () => {
+  const { user, isAuthenticated } = useAuth();
+  const { theme } = useTheme();
+  const navigate = useNavigate();
+
+  // Pestaña activa: 'chapters' | 'mangas' | 'genres' | 'scans'
+  const [activeTab, setActiveTab] = useState('chapters');
+
+  // Estado general
+  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState(null);
+
+  // Datos globales
+  const [mangas, setMangas] = useState([]);
+  const [genres, setGenres] = useState([]);
+  const [demographics, setDemographics] = useState([]);
+  const [mangaTypes, setMangaTypes] = useState([]);
+  const [scans, setScans] = useState([]);
+
+  // ==========================================
+  // TAB 1: SUBIDA DINÁMICA DE CAPÍTULOS
+  // ==========================================
+  const [selectedMangaId, setSelectedMangaId] = useState('');
+  const [selectedManga, setSelectedManga] = useState(null);
+  const [mangaChapters, setMangaChapters] = useState([]);
+  const [chaptersLoading, setChaptersLoading] = useState(false);
+
+  // Formulario nuevo capítulo
+  const [chapterNumber, setChapterNumber] = useState('');
+  const [chapterTitle, setChapterTitle] = useState('');
+  const [scanId, setScanId] = useState('');
+  const [chapterStatus, setChapterStatus] = useState(true);
+
+  // Páginas preparadas para subir (Drag & drop)
+  // Cada item: { id, file, name, size, previewUrl }
+  const [chapterPages, setChapterPages] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef(null);
+
+  // Edición de capítulo existente
+  const [editingChapter, setEditingChapter] = useState(null);
+
+  // ==========================================
+  // TAB 2: GESTIÓN DE MANGAS
+  // ==========================================
+  const [showMangaModal, setShowMangaModal] = useState(false);
+  const [mangaFormLoading, setMangaFormLoading] = useState(false);
+  const [mangaSearch, setMangaSearch] = useState('');
+  const [editingManga, setEditingManga] = useState(null);
+  const [mangaFormData, setMangaFormData] = useState({
+    mangaTittle: '',
+    alternativeNames: '',
+    mangaka: '',
+    mangaTypeId: '',
+    demographyId: '',
+    editorialName: '',
+    mangaDescription: '',
+    status: 'Publishing',
+    rating: 5,
+    isAmateur: false,
+    isErotic: false,
+    isFeatured: false,
+    selectedGenres: []
+  });
+  const [mangaCoverFile, setMangaCoverFile] = useState(null);
+  const [mangaCoverPreview, setMangaCoverPreview] = useState('');
+
+  // ==========================================
+  // TAB 3: GESTIÓN DE GÉNEROS
+  // ==========================================
+  const [showGenreModal, setShowGenreModal] = useState(false);
+  const [genreFormLoading, setGenreFormLoading] = useState(false);
+  const [editingGenre, setEditingGenre] = useState(null);
+  const [genreName, setGenreName] = useState('');
+  const [genreDescription, setGenreDescription] = useState('');
+  const [genreFile, setGenreFile] = useState(null);
+  const [genrePreview, setGenrePreview] = useState('');
+
+  // ==========================================
+  // TAB 4: GRUPOS SCAN
+  // ==========================================
+  const [showScanModal, setShowScanModal] = useState(false);
+  const [scanFormLoading, setScanFormLoading] = useState(false);
+  const [newScanName, setNewScanName] = useState('');
+  const [newScanDescription, setNewScanDescription] = useState('');
+  const [newScanFile, setNewScanFile] = useState(null);
+  const [newScanPreview, setNewScanPreview] = useState('');
+
+  // Mostrar mensaje toast
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  // 1. Cargar datos maestros al iniciar
+  const loadMasterData = async () => {
+    setLoading(true);
+    try {
+      const [mList, gList, dList, tList, sList] = await Promise.all([
+        mangasApi.getMangas().catch(() => []),
+        filtersApi.getGenres().catch(() => []),
+        filtersApi.getDemographics().catch(() => []),
+        filtersApi.getMangasType().catch(() => []),
+        scansApi.getScans().catch(() => [])
+      ]);
+
+      setMangas(mList);
+      setGenres(gList);
+      setDemographics(dList);
+      setMangaTypes(tList);
+      setScans(sList);
+
+      if (mList.length > 0 && !selectedMangaId) {
+        setSelectedMangaId(mList[0].mangaId);
+      }
+      if (sList.length > 0 && !scanId) {
+        setScanId(sList[0].scanId);
+      }
+    } catch (err) {
+      console.error('Error cargando datos maestros:', err);
+      showToast('Error al cargar datos maestros del servidor', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadMasterData();
+  }, []);
+
+  // 2. Al cambiar el manga seleccionado, cargar sus capítulos
+  useEffect(() => {
+    if (!selectedMangaId) return;
+
+    const found = mangas.find(m => String(m.mangaId) === String(selectedMangaId));
+    setSelectedManga(found || null);
+
+    const loadChapters = async () => {
+      setChaptersLoading(true);
+      try {
+        const chs = await chaptersApi.getByManga(selectedMangaId);
+        // Ordenar por número descendente para ver los más recientes arriba
+        const sorted = [...chs].sort((a, b) => b.chapterNumber - a.chapterNumber);
+        setMangaChapters(sorted);
+
+        // Sugerir el siguiente número de capítulo
+        if (sorted.length > 0) {
+          const highest = Math.max(...sorted.map(c => c.chapterNumber));
+          setChapterNumber(highest + 1);
+        } else {
+          setChapterNumber(1);
+        }
+      } catch (err) {
+        console.warn('Error cargando capítulos del manga:', err);
+        setMangaChapters([]);
+        setChapterNumber(1);
+      } finally {
+        setChaptersLoading(false);
+      }
+    };
+
+    loadChapters();
+  }, [selectedMangaId, mangas]);
+
+  // ==========================================
+  // MANEJO DE ARCHIVOS DINÁMICOS DE CAPÍTULOS
+  // ==========================================
+  const handleFilesSelect = (filesList) => {
+    if (!filesList || filesList.length === 0) return;
+
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    const validFiles = Array.from(filesList).filter(f => allowed.includes(f.type) || /\.(jpe?g|png|webp)$/i.test(f.name));
+
+    if (validFiles.length === 0) {
+      showToast('Solo se permiten imágenes en formato JPG, PNG o WEBP', 'error');
+      return;
+    }
+
+    // Ordenamiento natural por nombre de archivo (01, 02, ..., 10)
+    validFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+
+    const newPages = validFiles.map((file, idx) => ({
+      id: `${Date.now()}-${idx}-${Math.random()}`,
+      file,
+      name: file.name,
+      size: (file.size / 1024).toFixed(1) + ' KB',
+      previewUrl: URL.createObjectURL(file)
+    }));
+
+    setChapterPages(prev => [...prev, ...newPages]);
+    showToast(`Se añadieron ${newPages.length} páginas para el capítulo`);
+  };
+
+  // Drag and drop handlers
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFilesSelect(e.dataTransfer.files);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  // Reordenar páginas
+  const movePage = (index, direction) => {
+    const target = index + direction;
+    if (target < 0 || target >= chapterPages.length) return;
+
+    setChapterPages(prev => {
+      const copy = [...prev];
+      const temp = copy[index];
+      copy[index] = copy[target];
+      copy[target] = temp;
+      return copy;
+    });
+  };
+
+  const removePage = (index) => {
+    setChapterPages(prev => {
+      const copy = [...prev];
+      URL.revokeObjectURL(copy[index].previewUrl);
+      copy.splice(index, 1);
+      return copy;
+    });
+  };
+
+  const clearAllPages = () => {
+    if (chapterPages.length === 0) return;
+    if (window.confirm('¿Deseas quitar todas las páginas seleccionadas?')) {
+      chapterPages.forEach(p => URL.revokeObjectURL(p.previewUrl));
+      setChapterPages([]);
+    }
+  };
+
+  const reversePagesOrder = () => {
+    setChapterPages(prev => [...prev].reverse());
+    showToast('Orden de páginas invertido');
+  };
+
+  // Subir Capítulo a la API
+  const handleUploadChapter = async (e) => {
+    e.preventDefault();
+
+    if (!selectedMangaId) {
+      showToast('Por favor selecciona un manga de destino', 'error');
+      return;
+    }
+
+    if (!chapterNumber || isNaN(Number(chapterNumber))) {
+      showToast('Ingresa un número de capítulo válido', 'error');
+      return;
+    }
+
+    if (chapterPages.length === 0) {
+      showToast('Debes adjuntar al menos una página para el capítulo', 'error');
+      return;
+    }
+
+    if (!scanId) {
+      showToast('Selecciona o registra un grupo de scanlation', 'error');
+      return;
+    }
+
+    setUploading(true);
+    setUploadProgress(10);
+
+    try {
+      const formData = new FormData();
+      formData.append('ChapterNumber', Number(chapterNumber));
+      formData.append('ChapterTitle', chapterTitle.trim() || `Capítulo ${chapterNumber}`);
+      formData.append('MangaId', Number(selectedMangaId));
+      formData.append('ScanId', Number(scanId));
+      formData.append('ChapterStatus', chapterStatus);
+
+      // Adjuntar páginas en su orden establecido
+      chapterPages.forEach(item => {
+        formData.append('Files', item.file);
+      });
+
+      setUploadProgress(40);
+      const res = await chaptersApi.createChapter(formData);
+      setUploadProgress(100);
+
+      showToast(`¡Capítulo ${chapterNumber} publicado exitosamente! 🎉`, 'success');
+
+      // Limpiar formulario de subida
+      setChapterTitle('');
+      chapterPages.forEach(p => URL.revokeObjectURL(p.previewUrl));
+      setChapterPages([]);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+
+      // Recargar capítulos del manga
+      const chs = await chaptersApi.getByManga(selectedMangaId);
+      const sorted = [...chs].sort((a, b) => b.chapterNumber - a.chapterNumber);
+      setMangaChapters(sorted);
+      if (sorted.length > 0) {
+        setChapterNumber(Math.max(...sorted.map(c => c.chapterNumber)) + 1);
+      }
+    } catch (err) {
+      console.error('Error al subir capítulo:', err);
+      showToast(err.message || 'Error al procesar la subida del capítulo', 'error');
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  // Eliminar Capítulo
+  const handleDeleteChapter = async (chap) => {
+    if (!window.confirm(`¿Estás seguro de eliminar el Capítulo ${chap.chapterNumber} ("${chap.chapterTitle}")? Se eliminarán también todas sus páginas.`)) {
+      return;
+    }
+
+    try {
+      await chaptersApi.deleteChapter(chap.chapterId);
+      showToast(`Capítulo ${chap.chapterNumber} eliminado`);
+      setMangaChapters(prev => prev.filter(c => c.chapterId !== chap.chapterId));
+    } catch (err) {
+      showToast(err.message || 'Error al eliminar el capítulo', 'error');
+    }
+  };
+
+  // Guardar edición de capítulo
+  const handleUpdateChapter = async (e) => {
+    e.preventDefault();
+    if (!editingChapter) return;
+
+    try {
+      const formData = new FormData();
+      formData.append('ChapterId', editingChapter.chapterId);
+      formData.append('ChapterNumber', editingChapter.chapterNumber);
+      formData.append('ChapterTitle', editingChapter.chapterTitle);
+      formData.append('ChapterStatus', editingChapter.chapterStatus);
+
+      await chaptersApi.updateChapter(formData);
+      showToast('Capítulo actualizado con éxito');
+
+      setMangaChapters(prev => prev.map(c => c.chapterId === editingChapter.chapterId ? { ...c, ...editingChapter } : c));
+      setEditingChapter(null);
+    } catch (err) {
+      showToast(err.message || 'Error al actualizar el capítulo', 'error');
+    }
+  };
+
+  // ==========================================
+  // MANEJO DE MANGAS (CREAR / EDITAR)
+  // ==========================================
+  const handleOpenNewManga = () => {
+    setEditingManga(null);
+    setMangaFormData({
+      mangaTittle: '',
+      alternativeNames: '',
+      mangaka: '',
+      mangaTypeId: mangaTypes[0]?.mangaTypeId || '1',
+      demographyId: demographics[0]?.demographyId || '1',
+      editorialName: 'Shueisha',
+      mangaDescription: '',
+      status: 'Publishing',
+      rating: 5,
+      isAmateur: false,
+      isErotic: false,
+      isFeatured: false,
+      selectedGenres: []
+    });
+    setMangaCoverFile(null);
+    setMangaCoverPreview('');
+    setShowMangaModal(true);
+  };
+
+  const handleEditManga = (m) => {
+    setEditingManga(m);
+    setMangaFormData({
+      mangaTittle: m.mangaTittle || m.mangaName || '',
+      alternativeNames: m.alternativeNames || '',
+      mangaka: m.mangaka || m.author || '',
+      mangaTypeId: m.mangaTypeId || '1',
+      demographyId: m.demographyId || '1',
+      editorialName: m.editorialName || '',
+      mangaDescription: m.mangaDescription || m.synopsis || '',
+      status: m.status || 'Publishing',
+      rating: m.rating || 5,
+      isAmateur: Boolean(m.isAmateur),
+      isErotic: Boolean(m.isErotic),
+      isFeatured: Boolean(m.isFeatured),
+      selectedGenres: []
+    });
+    setMangaCoverFile(null);
+    setMangaCoverPreview(m.mangaFrontImgUrl ? normalizePageUrl(m.mangaFrontImgUrl) : '');
+    setShowMangaModal(true);
+  };
+
+  const handleSaveManga = async (e) => {
+    e.preventDefault();
+    if (!mangaFormData.mangaTittle.trim()) {
+      showToast('El título del manga es obligatorio', 'error');
+      return;
+    }
+
+    if (!editingManga && !mangaCoverFile) {
+      showToast('Debes seleccionar una imagen de portada para el nuevo manga', 'error');
+      return;
+    }
+
+    setMangaFormLoading(true);
+    try {
+      const formData = new FormData();
+      if (editingManga) {
+        formData.append('MangaId', editingManga.mangaId);
+      }
+      formData.append('MangaTittle', mangaFormData.mangaTittle.trim());
+      formData.append('AlternativeNames', mangaFormData.alternativeNames.trim());
+      formData.append('Mangaka', mangaFormData.mangaka.trim());
+      formData.append('MangaTypeId', Number(mangaFormData.mangaTypeId) || 1);
+      if (mangaFormData.demographyId) {
+        formData.append('DemographyId', Number(mangaFormData.demographyId));
+      }
+      formData.append('EditorialName', mangaFormData.editorialName.trim() || 'Independiente');
+      formData.append('MangaDescription', mangaFormData.mangaDescription.trim());
+      formData.append('Status', mangaFormData.status);
+      formData.append('Rating', Number(mangaFormData.rating) || 5);
+      formData.append('IsAmateur', mangaFormData.isAmateur);
+      formData.append('IsErotic', mangaFormData.isErotic);
+      formData.append('IsFeatured', mangaFormData.isFeatured);
+
+      if (mangaCoverFile) {
+        formData.append('File', mangaCoverFile);
+      }
+
+      if (editingManga) {
+        await mangasApi.updateManga(formData);
+        showToast(`Manga "${mangaFormData.mangaTittle}" actualizado exitosamente`);
+      } else {
+        const res = await mangasApi.createManga(formData);
+        const newMangaId = res?.items?.[0]?.mangaId || res?.mangaId;
+
+        // Si se seleccionaron géneros, asociarlos
+        if (newMangaId && mangaFormData.selectedGenres.length > 0) {
+          for (const gId of mangaFormData.selectedGenres) {
+            try {
+              await mangaGenresApi.linkGenre(newMangaId, gId);
+            } catch (err) {
+              console.warn('Error vinculando género:', err);
+            }
+          }
+        }
+        showToast(`¡Manga "${mangaFormData.mangaTittle}" creado exitosamente!`);
+      }
+
+      setShowMangaModal(false);
+      // Recargar mangas
+      const fresh = await mangasApi.getMangas();
+      setMangas(fresh);
+    } catch (err) {
+      console.error('Error guardando manga:', err);
+      showToast(err.message || 'Error al guardar el manga', 'error');
+    } finally {
+      setMangaFormLoading(false);
+    }
+  };
+
+  const handleDeleteManga = async (m) => {
+    if (!window.confirm(`¿Estás seguro de eliminar el manga "${m.mangaTittle || m.mangaName}"? Esta acción borrará también sus capítulos.`)) {
+      return;
+    }
+
+    try {
+      await mangasApi.deleteManga(m.mangaId);
+      showToast(`Manga "${m.mangaTittle || m.mangaName}" eliminado`);
+      setMangas(prev => prev.filter(item => item.mangaId !== m.mangaId));
+      if (selectedMangaId === m.mangaId) {
+        setSelectedMangaId('');
+      }
+    } catch (err) {
+      showToast(err.message || 'Error al eliminar el manga', 'error');
+    }
+  };
+
+  // ==========================================
+  // MANEJO DE GÉNEROS (CREAR / EDITAR)
+  // ==========================================
+  const handleOpenNewGenre = () => {
+    setEditingGenre(null);
+    setGenreName('');
+    setGenreDescription('');
+    setGenreFile(null);
+    setGenrePreview('');
+    setShowGenreModal(true);
+  };
+
+  const handleEditGenre = (g) => {
+    setEditingGenre(g);
+    setGenreName(g.genreName || '');
+    setGenreDescription(g.genreDescription || '');
+    setGenreFile(null);
+    setGenrePreview(g.genreImgUrl ? normalizePageUrl(g.genreImgUrl) : '');
+    setShowGenreModal(true);
+  };
+
+  const handleSaveGenre = async (e) => {
+    e.preventDefault();
+    if (!genreName.trim()) {
+      showToast('Ingresa el nombre del género', 'error');
+      return;
+    }
+
+    setGenreFormLoading(true);
+    try {
+      const formData = new FormData();
+      if (editingGenre) {
+        formData.append('GenreId', editingGenre.genreId);
+      }
+      formData.append('GenreName', genreName.trim());
+      formData.append('GenreDescription', genreDescription.trim());
+      if (genreFile) {
+        formData.append('File', genreFile);
+      }
+
+      if (editingGenre) {
+        await genresApi.updateGenre(formData);
+        showToast(`Género "${genreName}" actualizado`);
+      } else {
+        await genresApi.createGenre(formData);
+        showToast(`Género "${genreName}" creado con éxito`);
+      }
+
+      setShowGenreModal(false);
+      const freshGenres = await filtersApi.getGenres();
+      setGenres(freshGenres);
+    } catch (err) {
+      showToast(err.message || 'Error al guardar género', 'error');
+    } finally {
+      setGenreFormLoading(false);
+    }
+  };
+
+  const handleDeleteGenre = async (g) => {
+    if (!window.confirm(`¿Estás seguro de eliminar el género "${g.genreName}"?`)) return;
+
+    try {
+      await genresApi.deleteGenre(g.genreId);
+      showToast(`Género "${g.genreName}" eliminado`);
+      setGenres(prev => prev.filter(item => item.genreId !== g.genreId));
+    } catch (err) {
+      showToast(err.message || 'Error al eliminar género', 'error');
+    }
+  };
+
+  // ==========================================
+  // MANEJO DE GRUPOS SCAN
+  // ==========================================
+  const handleSaveScan = async (e) => {
+    e.preventDefault();
+    if (!newScanName.trim()) {
+      showToast('Ingresa el nombre del grupo scan', 'error');
+      return;
+    }
+
+    setScanFormLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('ScanName', newScanName.trim());
+      formData.append('ScanDescription', newScanDescription.trim() || 'Grupo de scanlation');
+      formData.append('EmailNotificaction', 1);
+      formData.append('ScanStatus', true);
+      if (newScanFile) {
+        formData.append('File', newScanFile);
+      }
+
+      await scansApi.createScan(formData);
+      showToast(`Grupo Scan "${newScanName}" creado`);
+      setShowScanModal(false);
+      setNewScanName('');
+      setNewScanDescription('');
+      setNewScanFile(null);
+      setNewScanPreview('');
+
+      const freshScans = await scansApi.getScans();
+      setScans(freshScans);
+    } catch (err) {
+      showToast(err.message || 'Error al registrar grupo scan', 'error');
+    } finally {
+      setScanFormLoading(false);
+    }
+  };
+
+  // Verificación de autenticación y rol
+  // Permite acceso a administradores (roleId 2) y scans (roleId 3)
+  const isAuthorized = isAuthenticated && (
+    user?.roleId === 2 || 
+    user?.roleId === 3 || 
+    user?.roleName?.toUpperCase() === 'ADMIN' || 
+    user?.roleName?.toUpperCase() === 'SCAN'
+  );
+
+  // Filtrado de mangas en Tab 2
+  const filteredMangas = mangas.filter(m => {
+    const q = mangaSearch.toLowerCase();
+    const title = (m.mangaTittle || m.mangaName || '').toLowerCase();
+    const author = (m.mangaka || m.author || '').toLowerCase();
+    return title.includes(q) || author.includes(q);
+  });
+
+  return (
+    <div className={`scan-dashboard-wrapper theme-${theme}`}>
+      {/* Toast de notificaciones */}
+      {toast && (
+        <div className={`dashboard-toast toast-${toast.type}`}>
+          <i className={`fa ${toast.type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'}`}></i>
+          <span>{toast.message}</span>
+        </div>
+      )}
+
+      {/* Control de Acceso no autorizado */}
+      {!isAuthenticated ? (
+        <div className="auth-guard-container">
+          <div className="guard-card">
+            <i className="fa fa-lock guard-icon"></i>
+            <h2>Acceso Restringido al Panel de Scan</h2>
+            <p>Debes iniciar sesión con una cuenta de Scan o Administrador para gestionar y subir contenido.</p>
+            <div className="guard-actions">
+              <Link to="/login" className="btn-primary">
+                <i className="fa fa-sign-in"></i> Iniciar Sesión
+              </Link>
+              <Link to="/manga-section" className="btn-secondary">
+                <i className="fa fa-th-large"></i> Volver a la Biblioteca
+              </Link>
+            </div>
+          </div>
+        </div>
+      ) : !isAuthorized ? (
+        <div className="auth-guard-container">
+          <div className="guard-card">
+            <i className="fa fa-shield guard-icon warning"></i>
+            <h2>Permisos Insuficientes</h2>
+            <p>
+              Estás conectado como <strong>{user?.username || 'Usuario'}</strong> con rol <strong>{user?.roleName || 'Cliente'}</strong>.
+              Este panel requiere rol de <strong>Scan</strong> o <strong>Administrador</strong>.
+            </p>
+            <p className="guard-hint">
+              * Nota de desarrollo: Si deseas probar el panel, inicia sesión con la cuenta de administrador registrada o solicita rol de Scan.
+            </p>
+            <div className="guard-actions">
+              <Link to="/profile" className="btn-secondary">
+                <i className="fa fa-user"></i> Ver Mi Perfil
+              </Link>
+              <Link to="/manga-section" className="btn-primary">
+                <i className="fa fa-book"></i> Explorar Mangas
+              </Link>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="dashboard-content-container">
+          {/* HEADER DEL PANEL */}
+          <header className="dashboard-header">
+            <div className="header-meta">
+              <div className="badge-role">
+                <i className="fa fa-pencil-square-o"></i> Panel de Scanlation
+              </div>
+              <h1 className="header-title">Centro de Gestión y Publicación</h1>
+              <p className="header-desc">
+                Sube nuevos capítulos con previsualización dinámica, registra obras manga y administra los géneros de la plataforma.
+              </p>
+            </div>
+
+            <div className="user-status-card">
+              <div className="status-avatar">
+                <i className="fa fa-user-circle"></i>
+              </div>
+              <div className="status-info">
+                <span className="user-name">{user?.username || 'Admin'}</span>
+                <span className="user-badge">{user?.roleName || 'SCAN / ADMIN'}</span>
+              </div>
+            </div>
+          </header>
+
+          {/* TARJETAS DE ESTADÍSTICAS RÁPIDAS */}
+          <section className="stats-row">
+            <div className="stat-card">
+              <div className="stat-icon icon-manga">
+                <i className="fa fa-book"></i>
+              </div>
+              <div className="stat-data">
+                <span className="stat-value">{mangas.length}</span>
+                <span className="stat-label">Mangas Registrados</span>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon icon-chapters">
+                <i className="fa fa-file-text-o"></i>
+              </div>
+              <div className="stat-data">
+                <span className="stat-value">{mangaChapters.length}</span>
+                <span className="stat-label">Capítulos ({selectedManga?.mangaTittle || 'Seleccionado'})</span>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon icon-genres">
+                <i className="fa fa-tags"></i>
+              </div>
+              <div className="stat-data">
+                <span className="stat-value">{genres.length}</span>
+                <span className="stat-label">Géneros Disponibles</span>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-icon icon-scans">
+                <i className="fa fa-users"></i>
+              </div>
+              <div className="stat-data">
+                <span className="stat-value">{scans.length}</span>
+                <span className="stat-label">Grupos Scan</span>
+              </div>
+            </div>
+          </section>
+
+          {/* NAVEGACIÓN POR PESTAÑAS */}
+          <nav className="dashboard-nav-tabs">
+            <button
+              type="button"
+              className={`nav-tab-btn ${activeTab === 'chapters' ? 'active' : ''}`}
+              onClick={() => setActiveTab('chapters')}
+            >
+              <i className="fa fa-cloud-upload"></i> Subir Capítulos
+            </button>
+            <button
+              type="button"
+              className={`nav-tab-btn ${activeTab === 'mangas' ? 'active' : ''}`}
+              onClick={() => setActiveTab('mangas')}
+            >
+              <i className="fa fa-book"></i> Gestionar Mangas
+            </button>
+            <button
+              type="button"
+              className={`nav-tab-btn ${activeTab === 'genres' ? 'active' : ''}`}
+              onClick={() => setActiveTab('genres')}
+            >
+              <i className="fa fa-tags"></i> Géneros
+            </button>
+            <button
+              type="button"
+              className={`nav-tab-btn ${activeTab === 'scans' ? 'active' : ''}`}
+              onClick={() => setActiveTab('scans')}
+            >
+              <i className="fa fa-users"></i> Grupos Scan
+            </button>
+          </nav>
+
+          {/* ========================================================= */}
+          {/* TAB 1: SUBIDA DINÁMICA DE CAPÍTULOS                       */}
+          {/* ========================================================= */}
+          {activeTab === 'chapters' && (
+            <div className="tab-pane chapters-tab">
+              <div className="chapter-split-layout">
+                {/* Columna Izquierda: Formulario de Subida Dinámica */}
+                <div className="upload-form-column">
+                  <div className="panel-box">
+                    <h2 className="box-title">
+                      <i className="fa fa-upload"></i> Publicar Nuevo Capítulo
+                    </h2>
+
+                    <form onSubmit={handleUploadChapter} className="chapter-form">
+                      {/* Paso 1: Seleccionar Manga */}
+                      <div className="form-group">
+                        <label className="input-label">
+                          <i className="fa fa-book"></i> 1. Selecciona el Manga de Destino *
+                        </label>
+                        <select
+                          className="form-select manga-picker-select"
+                          value={selectedMangaId}
+                          onChange={(e) => setSelectedMangaId(e.target.value)}
+                          required
+                        >
+                          <option value="">-- Elige un manga --</option>
+                          {mangas.map(m => (
+                            <option key={m.mangaId} value={m.mangaId}>
+                              {m.mangaTittle || m.mangaName} ({m.mangaTypeName || 'Manga'})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Resumen del manga seleccionado */}
+                      {selectedManga && (
+                        <div className="selected-manga-summary">
+                          <img
+                            src={getMangaImage(selectedManga)}
+                            alt={selectedManga.mangaTittle}
+                            className="summary-cover"
+                            onError={(e) => { e.target.onerror = null; e.target.src = imageHelper.defaultManga; }}
+                          />
+                          <div className="summary-details">
+                            <h4>{selectedManga.mangaTittle || selectedManga.mangaName}</h4>
+                            <p>Autor: <strong>{selectedManga.mangaka || selectedManga.author || 'Desconocido'}</strong></p>
+                            <p>Capítulos subidos: <strong>{mangaChapters.length}</strong></p>
+                            <span className="summary-badge">{selectedManga.status || 'Publishing'}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Paso 2: Metadatos del Capítulo */}
+                      <div className="form-row">
+                        <div className="form-group col-half">
+                          <label className="input-label">
+                            <i className="fa fa-hashtag"></i> 2. Número de Capítulo *
+                          </label>
+                          <input
+                            type="number"
+                            step="any"
+                            min="0"
+                            className="form-input"
+                            value={chapterNumber}
+                            onChange={(e) => setChapterNumber(e.target.value)}
+                            placeholder="Ej. 1"
+                            required
+                          />
+                        </div>
+
+                        <div className="form-group col-half">
+                          <label className="input-label">
+                            <i className="fa fa-users"></i> Grupo Scan *
+                          </label>
+                          <select
+                            className="form-select"
+                            value={scanId}
+                            onChange={(e) => setScanId(e.target.value)}
+                            required
+                          >
+                            <option value="">-- Selecciona Scan --</option>
+                            {scans.map(s => (
+                              <option key={s.scanId} value={s.scanId}>
+                                {s.scanName}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="form-group">
+                        <label className="input-label">
+                          <i className="fa fa-pencil"></i> Título del Capítulo (Opcional)
+                        </label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          value={chapterTitle}
+                          onChange={(e) => setChapterTitle(e.target.value)}
+                          placeholder="Ej. The Death and the Strawberry"
+                        />
+                      </div>
+
+                      {/* Paso 3: Subida Dinámica de Páginas (Drag & Drop) */}
+                      <div className="form-group">
+                        <div className="dropzone-header">
+                          <label className="input-label">
+                            <i className="fa fa-picture-o"></i> 3. Páginas del Capítulo ({chapterPages.length} seleccionadas) *
+                          </label>
+                          {chapterPages.length > 1 && (
+                            <div className="dropzone-actions">
+                              <button
+                                type="button"
+                                className="btn-micro"
+                                onClick={reversePagesOrder}
+                                title="Invertir el orden de las páginas"
+                              >
+                                <i className="fa fa-exchange"></i> Invertir
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-micro danger"
+                                onClick={clearAllPages}
+                                title="Quitar todas las páginas"
+                              >
+                                <i className="fa fa-trash"></i> Vaciar
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Zona interactiva Dropzone */}
+                        <div
+                          className="dropzone-area"
+                          onDrop={handleDrop}
+                          onDragOver={handleDragOver}
+                          onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                        >
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            multiple
+                            accept="image/jpeg,image/png,image/webp"
+                            style={{ display: 'none' }}
+                            onChange={(e) => handleFilesSelect(e.target.files)}
+                          />
+                          <div className="dropzone-prompt">
+                            <i className="fa fa-cloud-upload dropzone-icon"></i>
+                            <p className="prompt-main">
+                              Arrastra y suelta aquí las páginas del capítulo
+                            </p>
+                            <p className="prompt-sub">
+                              o haz clic para seleccionar archivos (JPG, PNG, WEBP). Se ordenarán automáticamente por nombre.
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Cuadrícula de Previsualización Dinámica con Reordenamiento */}
+                        {chapterPages.length > 0 && (
+                          <div className="pages-preview-grid">
+                            {chapterPages.map((page, index) => (
+                              <div key={page.id} className="page-thumbnail-card">
+                                <div className="thumbnail-wrapper">
+                                  <img src={page.previewUrl} alt={page.name} />
+                                  <span className="page-order-badge">#{index + 1}</span>
+                                </div>
+                                <div className="thumbnail-info">
+                                  <span className="file-name" title={page.name}>{page.name}</span>
+                                  <span className="file-size">{page.size}</span>
+                                </div>
+                                <div className="thumbnail-controls">
+                                  <button
+                                    type="button"
+                                    className="btn-order"
+                                    onClick={() => movePage(index, -1)}
+                                    disabled={index === 0}
+                                    title="Mover antes"
+                                  >
+                                    <i className="fa fa-arrow-left"></i>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn-remove"
+                                    onClick={() => removePage(index)}
+                                    title="Eliminar esta página"
+                                  >
+                                    <i className="fa fa-times"></i>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn-order"
+                                    onClick={() => movePage(index, 1)}
+                                    disabled={index === chapterPages.length - 1}
+                                    title="Mover después"
+                                  >
+                                    <i className="fa fa-arrow-right"></i>
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Barra de progreso de subida */}
+                      {uploading && (
+                        <div className="upload-progress-box">
+                          <div className="progress-info">
+                            <span>Subiendo y procesando páginas en el servidor...</span>
+                            <span>{uploadProgress}%</span>
+                          </div>
+                          <div className="progress-track">
+                            <div className="progress-bar" style={{ width: `${uploadProgress}%` }}></div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Botón de envío */}
+                      <button
+                        type="submit"
+                        className="btn-submit-upload"
+                        disabled={uploading || chapterPages.length === 0}
+                      >
+                        {uploading ? (
+                          <>
+                            <i className="fa fa-spinner fa-spin"></i> Subiendo Capítulo...
+                          </>
+                        ) : (
+                          <>
+                            <i className="fa fa-cloud-upload"></i> Publicar Capítulo ({chapterPages.length} Páginas)
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  </div>
+                </div>
+
+                {/* Columna Derecha: Lista de Capítulos del Manga Seleccionado */}
+                <div className="chapters-list-column">
+                  <div className="panel-box">
+                    <div className="box-header-row">
+                      <h2 className="box-title">
+                        <i className="fa fa-list-ol"></i> Capítulos de {selectedManga?.mangaTittle || 'Manga'} ({mangaChapters.length})
+                      </h2>
+                      {selectedManga && (
+                        <Link
+                          to={`/manga/${selectedManga.mangaId}`}
+                          className="btn-link-action"
+                          title="Ver en la vista pública"
+                        >
+                          <i className="fa fa-external-link"></i> Ver Manga
+                        </Link>
+                      )}
+                    </div>
+
+                    {chaptersLoading ? (
+                      <div className="loading-state">
+                        <i className="fa fa-spinner fa-spin"></i>
+                        <p>Cargando capítulos...</p>
+                      </div>
+                    ) : mangaChapters.length === 0 ? (
+                      <div className="empty-state">
+                        <i className="fa fa-book-open"></i>
+                        <p>Este manga aún no tiene capítulos subidos.</p>
+                        <span>¡Sé el primero en publicar el capítulo 1 usando el formulario de la izquierda!</span>
+                      </div>
+                    ) : (
+                      <div className="chapters-table-wrapper">
+                        <table className="dashboard-table">
+                          <thead>
+                            <tr>
+                              <th>Capítulo</th>
+                              <th>Título</th>
+                              <th>Fecha</th>
+                              <th>Acciones</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {mangaChapters.map(chap => (
+                              <tr key={chap.chapterId}>
+                                <td className="chapter-col-number">
+                                  <strong>Cap. {chap.chapterNumber}</strong>
+                                </td>
+                                <td className="chapter-col-title">
+                                  {chap.chapterTitle || 'Sin título'}
+                                </td>
+                                <td className="chapter-col-date">
+                                  {chap.uploadedAt ? chap.uploadedAt.substring(0, 10) : 'Reciente'}
+                                </td>
+                                <td className="chapter-col-actions">
+                                  <Link
+                                    to={`/manga/${selectedMangaId}/chapter/${chap.chapterId}`}
+                                    className="btn-action-read"
+                                    title="Leer en el visor"
+                                  >
+                                    <i className="fa fa-eye"></i>
+                                  </Link>
+                                  <button
+                                    type="button"
+                                    className="btn-action-edit"
+                                    onClick={() => setEditingChapter({ ...chap })}
+                                    title="Editar datos"
+                                  >
+                                    <i className="fa fa-pencil"></i>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn-action-delete"
+                                    onClick={() => handleDeleteChapter(chap)}
+                                    title="Eliminar capítulo y páginas"
+                                  >
+                                    <i className="fa fa-trash"></i>
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* TAB 2: GESTIÓN DE MANGAS (CRUD)                           */}
+          {/* ========================================================= */}
+          {activeTab === 'mangas' && (
+            <div className="tab-pane mangas-tab">
+              <div className="panel-box">
+                <div className="box-header-row">
+                  <div className="box-title-group">
+                    <h2 className="box-title">
+                      <i className="fa fa-book"></i> Catálogo de Mangas ({filteredMangas.length})
+                    </h2>
+                    <p className="box-subtitle">Registra nuevas obras, actualiza sinopsis, demografías y géneros.</p>
+                  </div>
+
+                  <div className="header-actions">
+                    <div className="search-bar-inline">
+                      <i className="fa fa-search"></i>
+                      <input
+                        type="text"
+                        placeholder="Buscar manga o autor..."
+                        value={mangaSearch}
+                        onChange={(e) => setMangaSearch(e.target.value)}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      onClick={handleOpenNewManga}
+                    >
+                      <i className="fa fa-plus"></i> Registrar Manga
+                    </button>
+                  </div>
+                </div>
+
+                {filteredMangas.length === 0 ? (
+                  <div className="empty-state">
+                    <i className="fa fa-search"></i>
+                    <p>No se encontraron mangas con los criterios de búsqueda.</p>
+                  </div>
+                ) : (
+                  <div className="mangas-grid">
+                    {filteredMangas.map(m => (
+                      <div key={m.mangaId} className="manga-admin-card">
+                        <div className="manga-card-cover-box">
+                          <img
+                            src={getMangaImage(m)}
+                            alt={m.mangaTittle || m.mangaName}
+                            className="card-cover-img"
+                            onError={(e) => { e.target.onerror = null; e.target.src = imageHelper.defaultManga; }}
+                          />
+                          <span className={`card-type-tag ${m.mangaTypeName || 'Manga'}`}>
+                            {m.mangaTypeName || 'Manga'}
+                          </span>
+                        </div>
+                        <div className="manga-card-body">
+                          <h3 className="manga-name">{m.mangaTittle || m.mangaName}</h3>
+                          <p className="manga-author">Autor: <span>{m.mangaka || m.author || 'Desconocido'}</span></p>
+                          <p className="manga-demography">Demografía: <span>{m.demographyName || 'General'}</span></p>
+                          <div className="manga-tags-row">
+                            <span className="badge-status">{m.status || 'Publishing'}</span>
+                            <span className="badge-rating"><i className="fa fa-star"></i> {m.rating || 5}</span>
+                          </div>
+                        </div>
+                        <div className="manga-card-footer">
+                          <button
+                            type="button"
+                            className="btn-card-action upload"
+                            onClick={() => {
+                              setSelectedMangaId(m.mangaId);
+                              setActiveTab('chapters');
+                            }}
+                            title="Subir capítulos a este manga"
+                          >
+                            <i className="fa fa-upload"></i> Subir Cap.
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-card-action edit"
+                            onClick={() => handleEditManga(m)}
+                            title="Editar información"
+                          >
+                            <i className="fa fa-pencil"></i>
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-card-action delete"
+                            onClick={() => handleDeleteManga(m)}
+                            title="Eliminar manga"
+                          >
+                            <i className="fa fa-trash"></i>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* TAB 3: GESTIÓN DE GÉNEROS (CRUD)                          */}
+          {/* ========================================================= */}
+          {activeTab === 'genres' && (
+            <div className="tab-pane genres-tab">
+              <div className="panel-box">
+                <div className="box-header-row">
+                  <div className="box-title-group">
+                    <h2 className="box-title">
+                      <i className="fa fa-tags"></i> Géneros de la Plataforma ({genres.length})
+                    </h2>
+                    <p className="box-subtitle">Crea nuevos géneros con imagen ilustrativa o edita los existentes.</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={handleOpenNewGenre}
+                  >
+                    <i className="fa fa-plus"></i> Crear Género
+                  </button>
+                </div>
+
+                <div className="genres-grid-admin">
+                  {genres.map(g => (
+                    <div key={g.genreId} className="genre-admin-card">
+                      <div className="genre-card-img-box">
+                        {g.genreImgUrl ? (
+                          <img src={normalizePageUrl(g.genreImgUrl)} alt={g.genreName} />
+                        ) : (
+                          <div className="genre-card-placeholder">
+                            <i className="fa fa-tag"></i>
+                          </div>
+                        )}
+                      </div>
+                      <div className="genre-card-content">
+                        <h4 className="genre-title">{g.genreName}</h4>
+                        <p className="genre-desc">{g.genreDescription || 'Sin descripción'}</p>
+                      </div>
+                      <div className="genre-card-actions">
+                        <button
+                          type="button"
+                          className="btn-action-edit"
+                          onClick={() => handleEditGenre(g)}
+                          title="Editar género"
+                        >
+                          <i className="fa fa-pencil"></i>
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-action-delete"
+                          onClick={() => handleDeleteGenre(g)}
+                          title="Eliminar género"
+                        >
+                          <i className="fa fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* TAB 4: GRUPOS SCAN                                        */}
+          {/* ========================================================= */}
+          {activeTab === 'scans' && (
+            <div className="tab-pane scans-tab">
+              <div className="panel-box">
+                <div className="box-header-row">
+                  <div className="box-title-group">
+                    <h2 className="box-title">
+                      <i className="fa fa-users"></i> Grupos de Scanlation ({scans.length})
+                    </h2>
+                    <p className="box-subtitle">Equipos registrados que suben capítulos y proyectos a la web.</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={() => setShowScanModal(true)}
+                  >
+                    <i className="fa fa-plus"></i> Registrar Grupo Scan
+                  </button>
+                </div>
+
+                <div className="scans-grid-admin">
+                  {scans.map(s => (
+                    <div key={s.scanId} className="scan-team-card">
+                      <div className="team-avatar-box">
+                        {s.scanImgUrl ? (
+                          <img src={normalizePageUrl(s.scanImgUrl)} alt={s.scanName} />
+                        ) : (
+                          <i className="fa fa-users"></i>
+                        )}
+                      </div>
+                      <div className="team-details">
+                        <h4>{s.scanName}</h4>
+                        <p>{s.scanDescription || 'Grupo de traducción y edición'}</p>
+                        <span className="team-id-badge">ID Scan: #{s.scanId}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL: REGISTRAR / EDITAR MANGA                           */}
+      {/* ========================================================= */}
+      {showMangaModal && (
+        <div className="modal-backdrop" onClick={() => setShowMangaModal(false)}>
+          <div className="modal-dialog modal-large" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>
+                <i className="fa fa-book"></i> {editingManga ? 'Editar Manga' : 'Registrar Nuevo Manga'}
+              </h3>
+              <button
+                type="button"
+                className="btn-modal-close"
+                onClick={() => setShowMangaModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveManga} className="modal-form">
+              <div className="modal-body-scroll">
+                <div className="form-row">
+                  <div className="form-group col-half">
+                    <label className="input-label">Título del Manga *</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={mangaFormData.mangaTittle}
+                      onChange={(e) => setMangaFormData({ ...mangaFormData, mangaTittle: e.target.value })}
+                      placeholder="Ej. Chainsaw Man"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group col-half">
+                    <label className="input-label">Nombres Alternativos</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={mangaFormData.alternativeNames}
+                      onChange={(e) => setMangaFormData({ ...mangaFormData, alternativeNames: e.target.value })}
+                      placeholder="Ej. Cheinsō Man"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group col-third">
+                    <label className="input-label">Mangaka / Autor *</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={mangaFormData.mangaka}
+                      onChange={(e) => setMangaFormData({ ...mangaFormData, mangaka: e.target.value })}
+                      placeholder="Ej. Tatsuki Fujimoto"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group col-third">
+                    <label className="input-label">Tipo de Manga *</label>
+                    <select
+                      className="form-select"
+                      value={mangaFormData.mangaTypeId}
+                      onChange={(e) => setMangaFormData({ ...mangaFormData, mangaTypeId: e.target.value })}
+                      required
+                    >
+                      {mangaTypes.map(t => (
+                        <option key={t.mangaTypeId} value={t.mangaTypeId}>
+                          {t.mangaTypeName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group col-third">
+                    <label className="input-label">Demografía *</label>
+                    <select
+                      className="form-select"
+                      value={mangaFormData.demographyId}
+                      onChange={(e) => setMangaFormData({ ...mangaFormData, demographyId: e.target.value })}
+                      required
+                    >
+                      {demographics.map(d => (
+                        <option key={d.demographyId} value={d.demographyId}>
+                          {d.name || d.demographyName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group col-half">
+                    <label className="input-label">Editorial</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={mangaFormData.editorialName}
+                      onChange={(e) => setMangaFormData({ ...mangaFormData, editorialName: e.target.value })}
+                      placeholder="Ej. Shueisha"
+                    />
+                  </div>
+
+                  <div className="form-group col-half">
+                    <label className="input-label">Estado de Publicación</label>
+                    <select
+                      className="form-select"
+                      value={mangaFormData.status}
+                      onChange={(e) => setMangaFormData({ ...mangaFormData, status: e.target.value })}
+                    >
+                      <option value="Publishing">En Publicación (Publishing)</option>
+                      <option value="Finished">Finalizado (Finished)</option>
+                      <option value="On Hiatus">En Pausa (On Hiatus)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="input-label">Sinopsis / Descripción *</label>
+                  <textarea
+                    rows={4}
+                    className="form-textarea"
+                    value={mangaFormData.mangaDescription}
+                    onChange={(e) => setMangaFormData({ ...mangaFormData, mangaDescription: e.target.value })}
+                    placeholder="Describe la trama del manga..."
+                    required
+                  />
+                </div>
+
+                {/* Portada */}
+                <div className="form-group">
+                  <label className="input-label">
+                    Imagen de Portada {!editingManga && '*'}
+                  </label>
+                  <div className="cover-picker-box">
+                    {mangaCoverPreview && (
+                      <img src={mangaCoverPreview} alt="Preview Portada" className="cover-preview-img" />
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          setMangaCoverFile(file);
+                          setMangaCoverPreview(URL.createObjectURL(file));
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Checkboxes de Géneros (solo en creación) */}
+                {!editingManga && genres.length > 0 && (
+                  <div className="form-group">
+                    <label className="input-label">Asignar Géneros</label>
+                    <div className="genres-checkbox-grid">
+                      {genres.map(g => {
+                        const isChecked = mangaFormData.selectedGenres.includes(g.genreId);
+                        return (
+                          <label key={g.genreId} className="genre-check-item">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                const next = e.target.checked
+                                  ? [...mangaFormData.selectedGenres, g.genreId]
+                                  : mangaFormData.selectedGenres.filter(id => id !== g.genreId);
+                                setMangaFormData({ ...mangaFormData, selectedGenres: next });
+                              }}
+                            />
+                            <span>{g.genreName}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Flags adicionales */}
+                <div className="checkboxes-row">
+                  <label className="custom-check-label">
+                    <input
+                      type="checkbox"
+                      checked={mangaFormData.isAmateur}
+                      onChange={(e) => setMangaFormData({ ...mangaFormData, isAmateur: e.target.checked })}
+                    />
+                    <span>¿Es Obra Amateur?</span>
+                  </label>
+                  <label className="custom-check-label">
+                    <input
+                      type="checkbox"
+                      checked={mangaFormData.isErotic}
+                      onChange={(e) => setMangaFormData({ ...mangaFormData, isErotic: e.target.checked })}
+                    />
+                    <span>¿Contenido Erótico?</span>
+                  </label>
+                  <label className="custom-check-label">
+                    <input
+                      type="checkbox"
+                      checked={mangaFormData.isFeatured}
+                      onChange={(e) => setMangaFormData({ ...mangaFormData, isFeatured: e.target.checked })}
+                    />
+                    <span>¿Destacar en la portada?</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setShowMangaModal(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={mangaFormLoading}
+                >
+                  {mangaFormLoading ? (
+                    <><i className="fa fa-spinner fa-spin"></i> Guardando...</>
+                  ) : (
+                    <><i className="fa fa-save"></i> Guardar Manga</>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL: EDITAR CAPÍTULO                                    */}
+      {/* ========================================================= */}
+      {editingChapter && (
+        <div className="modal-backdrop" onClick={() => setEditingChapter(null)}>
+          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3><i className="fa fa-pencil"></i> Editar Capítulo #{editingChapter.chapterNumber}</h3>
+              <button type="button" className="btn-modal-close" onClick={() => setEditingChapter(null)}>✕</button>
+            </div>
+            <form onSubmit={handleUpdateChapter} className="modal-form">
+              <div className="modal-body-scroll">
+                <div className="form-group">
+                  <label className="input-label">Número de Capítulo</label>
+                  <input
+                    type="number"
+                    step="any"
+                    className="form-input"
+                    value={editingChapter.chapterNumber}
+                    onChange={(e) => setEditingChapter({ ...editingChapter, chapterNumber: Number(e.target.value) })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="input-label">Título del Capítulo</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={editingChapter.chapterTitle || ''}
+                    onChange={(e) => setEditingChapter({ ...editingChapter, chapterTitle: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="custom-check-label">
+                    <input
+                      type="checkbox"
+                      checked={editingChapter.chapterStatus}
+                      onChange={(e) => setEditingChapter({ ...editingChapter, chapterStatus: e.target.checked })}
+                    />
+                    <span>Capítulo Activo y Visible para Lectores</span>
+                  </label>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn-secondary" onClick={() => setEditingChapter(null)}>Cancelar</button>
+                <button type="submit" className="btn-primary">Guardar Cambios</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL: CREAR / EDITAR GÉNERO                              */}
+      {/* ========================================================= */}
+      {showGenreModal && (
+        <div className="modal-backdrop" onClick={() => setShowGenreModal(false)}>
+          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3><i className="fa fa-tags"></i> {editingGenre ? 'Editar Género' : 'Crear Nuevo Género'}</h3>
+              <button type="button" className="btn-modal-close" onClick={() => setShowGenreModal(false)}>✕</button>
+            </div>
+            <form onSubmit={handleSaveGenre} className="modal-form">
+              <div className="modal-body-scroll">
+                <div className="form-group">
+                  <label className="input-label">Nombre del Género *</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={genreName}
+                    onChange={(e) => setGenreName(e.target.value)}
+                    placeholder="Ej. Cyberpunk"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="input-label">Descripción</label>
+                  <textarea
+                    rows={3}
+                    className="form-textarea"
+                    value={genreDescription}
+                    onChange={(e) => setGenreDescription(e.target.value)}
+                    placeholder="Describe las características de este género..."
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="input-label">Imagen Representativa</label>
+                  <div className="cover-picker-box">
+                    {genrePreview && (
+                      <img src={genrePreview} alt="Preview Género" className="cover-preview-img" />
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          setGenreFile(file);
+                          setGenrePreview(URL.createObjectURL(file));
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn-secondary" onClick={() => setShowGenreModal(false)}>Cancelar</button>
+                <button type="submit" className="btn-primary" disabled={genreFormLoading}>
+                  {genreFormLoading ? <><i className="fa fa-spinner fa-spin"></i> Guardando...</> : 'Guardar Género'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL: REGISTRAR GRUPO SCAN                               */}
+      {/* ========================================================= */}
+      {showScanModal && (
+        <div className="modal-backdrop" onClick={() => setShowScanModal(false)}>
+          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3><i className="fa fa-users"></i> Registrar Grupo Scan</h3>
+              <button type="button" className="btn-modal-close" onClick={() => setShowScanModal(false)}>✕</button>
+            </div>
+            <form onSubmit={handleSaveScan} className="modal-form">
+              <div className="modal-body-scroll">
+                <div className="form-group">
+                  <label className="input-label">Nombre del Grupo Scan *</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={newScanName}
+                    onChange={(e) => setNewScanName(e.target.value)}
+                    placeholder="Ej. Shinigami Scanlation"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="input-label">Descripción</label>
+                  <textarea
+                    rows={3}
+                    className="form-textarea"
+                    value={newScanDescription}
+                    onChange={(e) => setNewScanDescription(e.target.value)}
+                    placeholder="Detalles del grupo, idiomas o proyectos..."
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="input-label">Logo / Imagen</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        setNewScanFile(file);
+                        setNewScanPreview(URL.createObjectURL(file));
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn-secondary" onClick={() => setShowScanModal(false)}>Cancelar</button>
+                <button type="submit" className="btn-primary" disabled={scanFormLoading}>
+                  {scanFormLoading ? <><i className="fa fa-spinner fa-spin"></i> Registrando...</> : 'Registrar Scan'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ScanDashboard;

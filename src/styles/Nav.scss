@@ -56,6 +56,20 @@
         color: $third-color;
         transform: translateY(-1px);
       }
+
+      &.scan-panel-link {
+        background: rgba(255, 255, 255, 0.14);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        padding: 5px 12px;
+        border-radius: 8px;
+        color: #fff7ed;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.25);
+          color: #ffffff;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+      }
     }
   }
 
