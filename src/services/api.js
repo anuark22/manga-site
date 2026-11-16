@@ -263,12 +263,38 @@ export const forumApi = {
   },
 
   /**
+   * Obtiene un post específico por su ID
+   */
+  async getPostById(postId) {
+    const res = await request(`/Forum/GetPosts?postId=${postId}`);
+    return (res.items && res.items[0]) || null;
+  },
+
+  /**
    * Agrega un comentario a un post (Requiere autenticación)
    */
   async addComment({ postId, content }) {
     return await request('/Forum/AddComment', {
       method: 'POST',
-      body: JSON.stringify({ postId, content })
+      body: JSON.stringify({ postId: Number(postId), content })
+    });
+  },
+
+  /**
+   * Elimina un comentario (Requiere autenticación del autor o Admin)
+   */
+  async deleteComment(commentId) {
+    return await request(`/Forum/DeleteComment?commentId=${commentId}`, {
+      method: 'DELETE'
+    });
+  },
+
+  /**
+   * Elimina un post (Requiere autenticación del autor o Admin)
+   */
+  async deletePost(postId) {
+    return await request(`/Forum/DeletePost?postId=${postId}`, {
+      method: 'DELETE'
     });
   }
 };

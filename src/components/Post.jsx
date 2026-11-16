@@ -31,7 +31,7 @@ const Post = ({ posts = [], loading = false }) => {
                     const dateStr = item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'Reciente';
 
                     return (
-                        <div key={id} className="post-container" style={{ cursor: 'pointer' }}>
+                        <Link to={`/forum/post/${id}`} key={id} className="post-container" title="Ver discusión completa">
                             <Gravatar email={email}/>
                             <div className="post-related">
                                 <div className="post-tittle">
@@ -61,7 +61,7 @@ const Post = ({ posts = [], loading = false }) => {
                                     <i className="fa fa-eye" aria-hidden="true"></i> {views} 
                                 </div>
                             </div>
-                        </div>
+                        </Link>
                     );
                 }) : (
                     <div>
