@@ -583,6 +583,71 @@
       width: 100%;
       min-width: 0;
       box-sizing: border-box;
+
+      .btn-primary {
+        background: var(--main-color);
+        color: #ffffff;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 20px;
+        font-weight: 700;
+        font-size: 0.92rem;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 14px var(--shadow-color);
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        white-space: nowrap;
+        flex-shrink: 0;
+        text-decoration: none;
+
+        i {
+          font-size: 0.95rem;
+        }
+
+        &:hover:not(:disabled) {
+          background: var(--main-color-dark);
+          transform: translateY(-2px);
+          box-shadow: 0 6px 18px var(--shadow-color);
+          color: #ffffff;
+        }
+
+        &:active:not(:disabled) {
+          transform: translateY(0);
+        }
+
+        &:disabled {
+          opacity: 0.55;
+          cursor: not-allowed;
+          transform: none;
+          box-shadow: none;
+        }
+      }
+
+      .btn-secondary {
+        background: rgba(125, 125, 125, 0.08);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 10px 18px;
+        font-weight: 600;
+        font-size: 0.92rem;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.25s ease;
+        white-space: nowrap;
+        text-decoration: none;
+
+        &:hover:not(:disabled) {
+          background: rgba(125, 125, 125, 0.16);
+          border-color: var(--main-color);
+          transform: translateY(-2px);
+          color: var(--main-color);
+        }
+      }
     }
 
     .box-title-group {
@@ -625,6 +690,12 @@
         flex-direction: column;
         align-items: flex-start;
         gap: 12px;
+
+        .btn-primary, .btn-secondary {
+          width: 100%;
+          justify-content: center;
+          padding: 12px 18px;
+        }
       }
 
       .box-title {

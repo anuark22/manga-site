@@ -116,3 +116,102 @@ option {
   background-color: var(--bg-card);
   color: var(--text-primary);
 }
+
+/* ==========================================================================
+   SISTEMA DE BOTONES GLOBAL (UNIFIED BUTTON DESIGN SYSTEM)
+   ========================================================================== */
+button {
+  font-family: inherit;
+  font-size: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--main-color);
+  color: #ffffff !important;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px var(--shadow-color);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.btn-primary i {
+  font-size: 0.95rem;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--main-color-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px var(--shadow-color);
+  color: #ffffff !important;
+  text-decoration: none;
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+.btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(125, 125, 125, 0.08);
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(125, 125, 125, 0.16);
+  border-color: var(--main-color);
+  transform: translateY(-2px);
+  color: var(--main-color) !important;
+  text-decoration: none;
+}
+
+.btn-secondary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
