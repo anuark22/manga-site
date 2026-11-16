@@ -284,6 +284,34 @@
       }
     }
 
+    .pc-only {
+      display: inline-flex !important;
+
+      @media (max-width: 768px) {
+        display: none !important;
+      }
+
+      @media (hover: none) and (pointer: coarse) {
+        display: none !important;
+      }
+    }
+
+    .zoom-lens-btn {
+      &.active {
+        .theme-dark & {
+          background-color: #0284c7 !important;
+          color: #ffffff !important;
+          box-shadow: 0 0 10px rgba(56, 189, 248, 0.6) !important;
+        }
+
+        .theme-pastel & {
+          background-color: var(--main-color) !important;
+          color: #ffffff !important;
+          box-shadow: 0 0 10px rgba(217, 107, 67, 0.5) !important;
+        }
+      }
+    }
+
     .fullscreen-btn {
       padding: 6px 10px;
       border-radius: 8px;
@@ -375,6 +403,14 @@
   align-items: center;
   min-height: 300px;
   box-sizing: border-box;
+
+  &.lens-active {
+    cursor: crosshair;
+
+    .page-img {
+      cursor: crosshair;
+    }
+  }
 
   .image-skeleton {
     display: flex;
@@ -470,6 +506,125 @@
       opacity: 1;
       position: static;
     }
+  }
+}
+
+// Lupa de inspección / Zoom Lens (Forma cuadrada con área amplia para lectura)
+.manga-zoom-lens {
+  position: absolute;
+  border-radius: 12px;
+  pointer-events: none;
+  z-index: 150;
+  box-sizing: border-box;
+  overflow: hidden;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: high-quality;
+  will-change: left, top, background-position;
+  animation: lensPop 0.14s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  .theme-dark & {
+    border: 3px solid #38bdf8;
+    box-shadow: 
+      0 0 0 2px rgba(15, 23, 42, 0.9),
+      0 16px 45px rgba(0, 0, 0, 0.85),
+      inset 0 0 35px rgba(0, 0, 0, 0.45);
+  }
+
+  .theme-pastel & {
+    border: 3px solid var(--main-color);
+    box-shadow: 
+      0 0 0 2px rgba(255, 255, 255, 0.95),
+      0 14px 40px rgba(184, 74, 34, 0.45),
+      inset 0 0 30px rgba(0, 0, 0, 0.25);
+  }
+
+  .lens-center-crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.85);
+    border: 1.5px solid rgba(0, 0, 0, 0.7);
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
+    pointer-events: none;
+  }
+
+  .lens-zoom-badge {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    background-color: rgba(0, 0, 0, 0.72);
+    color: #ffffff;
+    backdrop-filter: blur(4px);
+    pointer-events: none;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  }
+}
+
+@keyframes lensPop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+// Toast informativo flotante al activar la lupa
+.reader-toast {
+  position: fixed;
+  top: 68px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 20px;
+  border-radius: 24px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: toastSlideDown 0.25s ease-out;
+  pointer-events: none;
+
+  .theme-dark & {
+    background-color: rgba(15, 23, 42, 0.94);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.35);
+  }
+
+  .theme-pastel & {
+    background-color: rgba(255, 255, 255, 0.96);
+    color: var(--main-color);
+    border: 1px solid rgba(217, 107, 67, 0.35);
+  }
+
+  i {
+    font-size: 14px;
+  }
+}
+
+@keyframes toastSlideDown {
+  0% {
+    transform: translate(-50%, -10px);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(-50%, 0);
+    opacity: 1;
   }
 }
 

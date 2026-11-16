@@ -37,6 +37,24 @@ const MangaReader = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
 
+  // Lupa de lectura (Solo PC)
+  const [zoomLensActive, setZoomLensActive] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
+  const toggleZoomLens = useCallback(() => {
+    setZoomLensActive(prev => {
+      const next = !prev;
+      setToastMessage(next ? 'Lupa activada (2.4x) — Mueve el ratón sobre la imagen' : 'Lupa desactivada');
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!toastMessage) return;
+    const timer = setTimeout(() => setToastMessage(''), 3000);
+    return () => clearTimeout(timer);
+  }, [toastMessage]);
+
   // Referencias para auto-scroll y observación
   const pageRefs = useRef({});
   const controlsTimeoutRef = useRef(null);
@@ -228,6 +246,8 @@ const MangaReader = () => {
         toggleFullscreen();
       } else if (e.key === 'm' || e.key === 'M') {
         setReadingMode(prev => (prev === 'cascade' ? 'paginated' : 'cascade'));
+      } else if (e.key === 'z' || e.key === 'Z') {
+        toggleZoomLens();
       }
     };
 
@@ -292,7 +312,10 @@ const MangaReader = () => {
   // Toggle barra de controles al hacer clic
   const handleReaderClick = (e) => {
     // Si hizo clic en un botón, control o link, no alternar
-    if (e.target.closest('button, select, input, a, .control-btn, .nav-btn')) return;
+    if (e.target.closest('button, select, input, a, .control-btn, .nav-btn, .manga-zoom-lens')) return;
+
+    // Si la lupa está activa, no interferir con la navegación ni controles
+    if (zoomLensActive) return;
 
     if (readingMode === 'paginated') {
       // En modo paginado: clic en tercio izquierdo = retroceder, tercio derecho = avanzar, centro = toggle controls
@@ -448,6 +471,17 @@ const MangaReader = () => {
             </button>
           </div>
 
+          {/* Lupa de aumento (Solo PC) */}
+          <button
+            type="button"
+            className={`control-btn zoom-lens-btn pc-only ${zoomLensActive ? 'active' : ''}`}
+            onClick={toggleZoomLens}
+            title={zoomLensActive ? 'Desactivar Lupa de aumento (Z)' : 'Activar Lupa de aumento (Z) [Solo PC]'}
+          >
+            <i className="fa fa-search-plus" aria-hidden="true"></i>
+            <span className="btn-label">Lupa</span>
+          </button>
+
           {/* Pantalla completa */}
           <button
             type="button"
@@ -459,6 +493,14 @@ const MangaReader = () => {
           </button>
         </div>
       </header>
+
+      {/* Toast informativo al activar/desactivar Lupa */}
+      {toastMessage && (
+        <div className="reader-toast">
+          <i className="fa fa-search-plus"></i>
+          <span>{toastMessage}</span>
+        </div>
+      )}
 
       {/* ========================================================= */}
       {/* CUERPO DEL LECTOR (CANVAS DE PÁGINAS) */}
@@ -510,6 +552,7 @@ const MangaReader = () => {
                     alt={`Página ${page.pageNumber} - ${mangaName}`}
                     pageNumber={page.pageNumber}
                     totalPages={pages.length}
+                    zoomLensActive={zoomLensActive}
                   />
                   <div className="page-footer-pill">
                     {page.pageNumber} / {pages.length}
@@ -563,29 +606,34 @@ const MangaReader = () => {
                   alt={`Página ${currentPage} de ${pages.length}`}
                   pageNumber={currentPage}
                   totalPages={pages.length}
+                  zoomLensActive={zoomLensActive}
                 />
               </div>
             )}
 
-            {/* Zonas de clic transparentes a izquierda y derecha */}
-            <div
-              className="tap-zone tap-left"
-              onClick={handlePrevPage}
-              title="Página anterior (←)"
-            >
-              <div className="tap-indicator">
-                <i className="fa fa-chevron-left"></i>
-              </div>
-            </div>
-            <div
-              className="tap-zone tap-right"
-              onClick={handleNextPage}
-              title="Página siguiente (→)"
-            >
-              <div className="tap-indicator">
-                <i className="fa fa-chevron-right"></i>
-              </div>
-            </div>
+            {/* Zonas de clic transparentes a izquierda y derecha (ocultas si la lupa está activa para facilitar inspección) */}
+            {!zoomLensActive && (
+              <>
+                <div
+                  className="tap-zone tap-left"
+                  onClick={handlePrevPage}
+                  title="Página anterior (←)"
+                >
+                  <div className="tap-indicator">
+                    <i className="fa fa-chevron-left"></i>
+                  </div>
+                </div>
+                <div
+                  className="tap-zone tap-right"
+                  onClick={handleNextPage}
+                  title="Página siguiente (→)"
+                >
+                  <div className="tap-indicator">
+                    <i className="fa fa-chevron-right"></i>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
       </main>
@@ -673,12 +721,72 @@ const MangaReader = () => {
 };
 
 /**
- * Componente de Imagen con Skeleton loader y reintento en caso de fallo
+ * Componente de Imagen con Skeleton loader, Lupa de inspección y reintento en caso de fallo
  */
-const ReaderImage = ({ src, alt, pageNumber, totalPages }) => {
+const ReaderImage = ({ src, alt, pageNumber, totalPages, zoomLensActive }) => {
   const [loaded, setLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
+
+  // Estados de la Lupa de inspección
+  const [isHovering, setIsHovering] = useState(false);
+  const [lensState, setLensState] = useState({
+    x: 0,
+    y: 0,
+    bgX: 0,
+    bgY: 0,
+    bgWidth: 0,
+    bgHeight: 0
+  });
+
+  const frameRef = useRef(null);
+  const imgRef = useRef(null);
+
+  const handleMouseMove = (e) => {
+    if (!zoomLensActive || !loaded || !imgRef.current || !frameRef.current) return;
+
+    const img = imgRef.current;
+    const rect = img.getBoundingClientRect();
+    const frameRect = frameRef.current.getBoundingClientRect();
+
+    const clientX = e.clientX;
+    const clientY = e.clientY;
+
+    // Verificar si el cursor está sobre la imagen
+    if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) {
+      if (isHovering) setIsHovering(false);
+      return;
+    }
+
+    const mouseXOnImg = clientX - rect.left;
+    const mouseYOnImg = clientY - rect.top;
+
+    const zoomFactor = 2.4;
+    const lensSize = 340; // Área cuadrada amplia (340x340px) para máxima legibilidad
+
+    const bgWidth = rect.width * zoomFactor;
+    const bgHeight = rect.height * zoomFactor;
+    const bgX = -(mouseXOnImg * zoomFactor - lensSize / 2);
+    const bgY = -(mouseYOnImg * zoomFactor - lensSize / 2);
+
+    // Posición del lente en coordenadas relativas a frameRef
+    const lensX = (clientX - frameRect.left) - lensSize / 2;
+    const lensY = (clientY - frameRect.top) - lensSize / 2;
+
+    setLensState({
+      x: lensX,
+      y: lensY,
+      bgX,
+      bgY,
+      bgWidth,
+      bgHeight
+    });
+    setIsHovering(true);
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovering(false);
+  };
 
   const handleRetry = (e) => {
     e.stopPropagation();
@@ -688,7 +796,12 @@ const ReaderImage = ({ src, alt, pageNumber, totalPages }) => {
   };
 
   return (
-    <div className={`manga-page-frame ${loaded ? 'is-loaded' : 'is-loading'}`}>
+    <div
+      ref={frameRef}
+      className={`manga-page-frame ${loaded ? 'is-loaded' : 'is-loading'} ${zoomLensActive ? 'lens-active' : ''}`}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+    >
       {!loaded && !hasError && (
         <div className="image-skeleton">
           <i className="fa fa-spinner fa-spin skeleton-spinner"></i>
@@ -706,6 +819,7 @@ const ReaderImage = ({ src, alt, pageNumber, totalPages }) => {
         </div>
       ) : (
         <img
+          ref={imgRef}
           key={retryKey}
           src={src}
           alt={alt}
@@ -714,6 +828,26 @@ const ReaderImage = ({ src, alt, pageNumber, totalPages }) => {
           onLoad={() => setLoaded(true)}
           onError={() => setHasError(true)}
         />
+      )}
+
+      {/* Lupa de Aumento con área cuadrada amplia (340x340px) */}
+      {loaded && zoomLensActive && isHovering && (
+        <div
+          className="manga-zoom-lens square"
+          style={{
+            width: '340px',
+            height: '340px',
+            left: `${lensState.x}px`,
+            top: `${lensState.y}px`,
+            backgroundImage: `url(${src})`,
+            backgroundSize: `${lensState.bgWidth}px ${lensState.bgHeight}px`,
+            backgroundPosition: `${lensState.bgX}px ${lensState.bgY}px`,
+            backgroundRepeat: 'no-repeat'
+          }}
+        >
+          <span className="lens-center-crosshair"></span>
+          <span className="lens-zoom-badge">2.4x</span>
+        </div>
       )}
     </div>
   );
