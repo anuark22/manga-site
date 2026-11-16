@@ -1,0 +1,383 @@
+@import './variables.scss';
+
+.recent-chapters-section {
+  width: 100%;
+  max-width: 100%;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 22px 24px;
+  box-shadow: 0px 8px 25px var(--shadow-color);
+  box-sizing: border-box;
+  transition: background 0.3s ease, border-color 0.3s ease;
+
+  .recent-section-header {
+    margin-bottom: 20px;
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+
+      .section-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--main-color);
+        color: #ffffff;
+        padding: 4px 12px;
+        border-radius: 6px;
+        font-family: 'Roboto', sans-serif;
+        font-weight: 800;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        box-shadow: 0 2px 6px var(--shadow-color);
+
+        i {
+          font-size: 12px;
+          color: #ffdd57;
+        }
+      }
+
+      .section-title {
+        font-size: 21px;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin: 0;
+        letter-spacing: -0.3px;
+      }
+    }
+
+    .section-subtitle {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin: 0;
+      line-height: 1.4;
+    }
+  }
+
+  .recent-loading-box, .recent-empty-box {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-size: 14px;
+
+    i {
+      font-size: 28px;
+      color: var(--main-color);
+    }
+  }
+
+  .recent-chapters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 18px;
+    width: 100%;
+    box-sizing: border-box;
+
+    .recent-chapter-card {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+      text-decoration: none;
+      box-shadow: 0 4px 12px var(--shadow-color);
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+      cursor: pointer;
+      position: relative;
+      box-sizing: border-box;
+
+      &:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 24px var(--shadow-color);
+        border-color: var(--main-color);
+
+        .card-thumb-wrap img {
+          transform: scale(1.05);
+        }
+
+        .play-overlay {
+          opacity: 1;
+
+          .play-icon-circle {
+            transform: scale(1.08);
+          }
+        }
+
+        .cta-button {
+          background: var(--main-color-dark);
+          transform: scale(1.02);
+        }
+      }
+
+      .card-thumb-wrap {
+        position: relative;
+        width: 100%;
+        height: 240px;
+        overflow: hidden;
+        background: #0d1322;
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+          transition: transform 0.35s ease;
+        }
+
+        .thumb-overlay {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, transparent 55%);
+          pointer-events: none;
+        }
+
+        .chapter-badge {
+          position: absolute;
+          top: 10px;
+          left: 10px;
+          background: var(--main-color);
+          color: #ffffff;
+          font-weight: 800;
+          font-size: 11px;
+          padding: 4px 10px;
+          border-radius: 8px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          z-index: 2;
+          letter-spacing: 0.3px;
+
+          i {
+            font-size: 11px;
+          }
+        }
+
+        .time-badge {
+          position: absolute;
+          bottom: 10px;
+          right: 10px;
+          background: rgba(0, 0, 0, 0.72);
+          backdrop-filter: blur(4px);
+          color: #ffffff;
+          font-size: 11px;
+          font-weight: 600;
+          padding: 3px 8px;
+          border-radius: 6px;
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          z-index: 2;
+
+          i {
+            font-size: 10px;
+            color: #ffdd57;
+          }
+        }
+
+        .play-overlay {
+          position: absolute;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.35);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          opacity: 0;
+          transition: opacity 0.25s ease;
+          z-index: 3;
+
+          .play-icon-circle {
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            background: var(--main-color);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 17px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+            transform: scale(0.9);
+            transition: transform 0.25s ease;
+            padding-left: 3px;
+          }
+        }
+      }
+
+      .card-details {
+        padding: 12px 14px 14px;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        gap: 5px;
+
+        .manga-type-tag {
+          font-size: 10px;
+          font-weight: 800;
+          text-transform: uppercase;
+          color: var(--main-color);
+          letter-spacing: 0.5px;
+        }
+
+        .manga-name {
+          font-size: 14px;
+          font-weight: 800;
+          color: var(--text-primary);
+          margin: 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          line-height: 1.3;
+        }
+
+        .chapter-title {
+          font-size: 12px;
+          color: var(--text-secondary);
+          margin: 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .scan-tag {
+          font-size: 11px;
+          color: var(--text-secondary);
+          opacity: 0.85;
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          margin-top: 2px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+
+          i {
+            color: var(--main-color);
+          }
+        }
+
+        .card-footer-cta {
+          margin-top: auto;
+          padding-top: 10px;
+
+          .cta-button {
+            width: 100%;
+            padding: 8px 12px;
+            background: var(--main-color);
+            color: #ffffff;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            box-shadow: 0 2px 8px var(--shadow-color);
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+
+            i {
+              font-size: 11px;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Media Queries Responsive
+@media only screen and (max-width: 960px) {
+  .recent-chapters-section {
+    padding: 18px 16px;
+
+    .recent-chapters-grid {
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 14px;
+    }
+  }
+}
+
+@media only screen and (max-width: 640px) {
+  .recent-chapters-section {
+    padding: 14px 12px;
+    border-radius: 12px;
+
+    .recent-section-header {
+      margin-bottom: 14px;
+
+      .title-row {
+        .section-title {
+          font-size: 18px;
+        }
+      }
+    }
+
+    .recent-chapters-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+
+      .recent-chapter-card {
+        border-radius: 10px;
+
+        .card-thumb-wrap {
+          height: 180px;
+
+          .chapter-badge {
+            top: 6px;
+            left: 6px;
+            font-size: 10px;
+            padding: 3px 7px;
+          }
+
+          .time-badge {
+            bottom: 6px;
+            right: 6px;
+            font-size: 10px;
+            padding: 2px 6px;
+          }
+        }
+
+        .card-details {
+          padding: 8px 10px 10px;
+
+          .manga-name {
+            font-size: 12px;
+          }
+
+          .chapter-title {
+            font-size: 11px;
+          }
+
+          .card-footer-cta {
+            padding-top: 6px;
+
+            .cta-button {
+              padding: 6px 8px;
+              font-size: 11px;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+@media only screen and (max-width: 380px) {
+  .recent-chapters-section {
+    .recent-chapters-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+}

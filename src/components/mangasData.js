@@ -96,6 +96,22 @@ export const canonicalMangas = [
       { number: 3, title: 'Hacia la capital real', releaseDate: '2024-01-25' },
       { number: 4, title: 'El grimorio del trébol de cinco hojas', releaseDate: '2024-02-01' }
     ]
+  },
+  {
+    id: 'bleach',
+    mangaId: 1,
+    mangaImage: '/Files/24893f3f-8738-475f-9c4b-af7a16f08bb5.png',
+    mangaName: 'BLEACH',
+    mangaType: 'MANGA',
+    mangaDemography: 'SHOUNEN',
+    card: 'card',
+    author: 'Tite Kubo',
+    rating: '4.9',
+    status: 'Publishing',
+    synopsis: 'Ichigo Kurosaki es un estudiante de secundaria con la habilidad de ver espíritus. Su vida cambia por completo al conocer a Rukia Kuchiki, una segadora de almas (Shinigami), y recibir sus poderes para proteger a los vivos y a las almas errantes.',
+    chapters: [
+      { chapterId: 3, number: 1, title: 'The Death and the Strawberry', releaseDate: '2026-10-24' }
+    ]
   }
 ];
 

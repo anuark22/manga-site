@@ -32,8 +32,16 @@ export function getMangaImage(manga) {
   if (!manga) return sololevelingImg;
   const rawUrl = manga.mangaImage || manga.mangaFrontImgUrl;
   const title = (manga.mangaName || manga.mangaTittle || '').toLowerCase();
+  const rawLower = (typeof rawUrl === 'string' ? rawUrl : '').toLowerCase();
 
-  // Si la API proporciona una URL hacia /Files/ (ej. Bleach subido al backend o archivos guardados en BD)
+  // 1. Primero verificar si coincide con los mangas canónicos de muestra locales por título o nombre de archivo
+  for (const [key, img] of Object.entries(localMangaMap)) {
+    if (title.includes(key) || rawLower.includes(key.replace(/\s+/g, '')) || rawLower.includes(key)) {
+      return img;
+    }
+  }
+
+  // 2. Si la API proporciona una URL hacia /Files/ (ej. Bleach u otros mangas subidos al backend)
   if (rawUrl && typeof rawUrl === 'string') {
     if (rawUrl.includes('/Files/')) {
       const fileName = rawUrl.split('/Files/')[1];
@@ -41,13 +49,6 @@ export function getMangaImage(manga) {
     }
     if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
       return rawUrl;
-    }
-  }
-
-  // Si coincide con los mangas canónicos de muestra locales
-  for (const [key, img] of Object.entries(localMangaMap)) {
-    if (title.includes(key)) {
-      return img;
     }
   }
 

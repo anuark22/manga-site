@@ -6,8 +6,10 @@ import { getMangaImage } from '../utils/imageHelper';
 import '../styles/Lastest.scss';
 
 const Lastest = () => {
-    const [mangas, setMangas] = useState(mangasTopTier);
+    const [mangas, setMangas] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [isPaused, setIsPaused] = useState(false);
 
     useEffect(() => {
         let isMounted = true;
@@ -15,10 +17,22 @@ const Lastest = () => {
             try {
                 const data = await mangasApi.getPopular(10);
                 if (isMounted && data && data.length > 0) {
-                    setMangas(data);
+                    let list = [...data];
+                    // Si la API devuelve menos de 6 mangas (ej. 5), complementar con los canónicos (como Bleach)
+                    if (list.length < 6) {
+                        const fallbackMangas = mangasTopTier.filter(
+                            fb => !list.some(m => (m.mangaName || m.mangaTittle || '').toLowerCase() === (fb.mangaName || fb.mangaTittle || '').toLowerCase())
+                        );
+                        list = [...list, ...fallbackMangas];
+                    }
+                    // Limitamos exactamente a los 6 más populares
+                    setMangas(list.slice(0, 6));
+                } else if (isMounted) {
+                    setMangas(mangasTopTier.slice(0, 6));
                 }
             } catch (err) {
                 console.warn('Usando mangasTopTier fallback:', err);
+                if (isMounted) setMangas(mangasTopTier.slice(0, 6));
             } finally {
                 if (isMounted) setLoading(false);
             }
@@ -28,52 +42,135 @@ const Lastest = () => {
         return () => { isMounted = false; };
     }, []);
 
-    return (  
-        <div className="main-header">
-           <div className="main-header-bar">Popular Manga Tier</div> 
-           <div className="top-tier-mangas">
-            {
-                    loading && mangas.length === 0 ? (
-                        <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                            Cargando mangas populares...
-                        </div>
-                    ) :
-                    mangas.length > 0 ?
-                    mangas.map((manga, idx) => {
-                        const id = manga.mangaId || manga.id || (idx + 1);
-                        const mangaName = manga.mangaName || manga.mangaTittle;
-                        const synopsis = manga.synopsis || manga.mangaDescription;
-                        const mangaType = manga.mangaType || manga.mangaTypeName || 'Manga';
-                        const mangaDemography = manga.mangaDemography || manga.demographyName || 'Shounen';
-                        const mangaImage = getMangaImage(manga);
-                        const cardClass = manga.card || `card card-${(idx % 5) + 1}`;
+    // Se muestran exactamente 4 tarjetas simultáneas en la ventana visible
+    const visibleCount = 4;
+    // Si hay 6 mangas y se ven 4, los índices de desplazamiento son 0, 1, 2 (maxIndex = 2)
+    const maxIndex = Math.max(0, mangas.length - visibleCount);
 
-                        return (
-                            <Link to={`/manga/${id}`} key={id} className={cardClass}>
-                                <div className="synopsis">
-                                    <p><b>Synopsis: </b>{synopsis}</p>
-                                </div>
-                                <div className="card-content">
-                                    <img src={mangaImage} alt={mangaName}/>
-                                    <div className="manga-tittle">
-                                        <b>{mangaName}</b>
-                                    </div>
-                                    <div className={mangaType}>
-                                        {mangaType}
-                                    </div>
-                                    <div className={mangaDemography}>
-                                        <b>{mangaDemography}</b>
-                                    </div>
-                                </div>
-                            </Link>
-                        );
-                    }) : (
-                    <div className="no-mangas">
-                        <p>No Ranking yet</p>
+    // Rotación automática dinámica
+    useEffect(() => {
+        if (isPaused || mangas.length <= visibleCount) return;
+        const timer = setInterval(() => {
+            setCurrentIndex(prev => (prev >= maxIndex ? 0 : prev + 1));
+        }, 3800);
+        return () => clearInterval(timer);
+    }, [isPaused, mangas.length, maxIndex]);
+
+    const handlePrev = () => {
+        setCurrentIndex(prev => (prev > 0 ? prev - 1 : maxIndex));
+    };
+
+    const handleNext = () => {
+        setCurrentIndex(prev => (prev < maxIndex ? prev + 1 : 0));
+    };
+
+    return (
+        <div
+            className="main-header popular-slider-container"
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+        >
+            <div className="slider-header-row">
+                <div className="popular-badge">
+                    <i className="fa fa-fire"></i> Popular Manga Tier
+                </div>
+                <div className="slider-controls">
+                    <button
+                        type="button"
+                        className="slider-nav-btn prev"
+                        onClick={handlePrev}
+                        title="Manga anterior"
+                        aria-label="Anterior"
+                    >
+                        <i className="fa fa-chevron-left"></i>
+                    </button>
+                    <div className="slider-dots">
+                        {Array.from({ length: maxIndex + 1 }).map((_, idx) => (
+                            <button
+                                key={idx}
+                                type="button"
+                                className={`slider-dot ${currentIndex === idx ? 'active' : ''}`}
+                                onClick={() => setCurrentIndex(idx)}
+                                aria-label={`Slide ${idx + 1}`}
+                            />
+                        ))}
                     </div>
-                    )
-            }
-           </div>
+                    <button
+                        type="button"
+                        className="slider-nav-btn next"
+                        onClick={handleNext}
+                        title="Manga siguiente"
+                        aria-label="Siguiente"
+                    >
+                        <i className="fa fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div className="slider-viewport">
+                {loading && mangas.length === 0 ? (
+                    <div className="slider-loading">
+                        <i className="fa fa-spinner fa-spin"></i> Cargando mangas populares...
+                    </div>
+                ) : mangas.length > 0 ? (
+                    <div
+                        className="slider-track"
+                        style={{
+                            // Desplaza suavemente según el currentIndex calculando ancho y gap (14px)
+                            transform: `translateX(calc(-${currentIndex} * ((100% - (3 * 14px)) / 4 + 14px)))`
+                        }}
+                    >
+                        {mangas.map((manga, idx) => {
+                            const id = manga.mangaId || manga.id || (idx + 1);
+                            const mangaName = manga.mangaName || manga.mangaTittle;
+                            const synopsis = manga.synopsis || manga.mangaDescription || 'Sin sinopsis disponible.';
+                            const mangaType = manga.mangaType || manga.mangaTypeName || 'Manga';
+                            const mangaDemography = manga.mangaDemography || manga.demographyName || 'Shounen';
+                            const mangaImage = getMangaImage(manga);
+
+                            return (
+                                <Link
+                                    to={`/manga/${id}`}
+                                    key={`${id}-${idx}`}
+                                    className="popular-card"
+                                    title={mangaName}
+                                >
+                                    <div className="card-thumb">
+                                        <img src={mangaImage} alt={mangaName} />
+                                        <div className="card-gradient-top" />
+                                        <div className="card-gradient-bottom" />
+                                        
+                                        <span className={`type-badge ${mangaType.toUpperCase()}`}>
+                                            {mangaType}
+                                        </span>
+
+                                        <div className="card-title-bar">
+                                            <h4>{mangaName}</h4>
+                                        </div>
+
+                                        <div className="card-footer-meta">
+                                            <span className="demography-badge">{mangaDemography}</span>
+                                            {manga.rating && (
+                                                <span className="rating-badge">
+                                                    <i className="fa fa-star"></i> {manga.rating}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="card-synopsis-hover">
+                                        <b>{mangaName}</b>
+                                        <p>{synopsis}</p>
+                                    </div>
+                                </Link>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <div className="no-mangas">
+                        <p>No hay mangas populares disponibles.</p>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

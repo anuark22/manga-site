@@ -151,6 +151,10 @@ export const mangasApi = {
 // CAPÍTULOS API
 // ==========================================
 export const chaptersApi = {
+  async getAll() {
+    const res = await request('/MangaChapters/GetMangaChapters');
+    return res.items || [];
+  },
   async getByManga(mangaId) {
     const res = await request(`/MangaChapters/GetMangaChapters?mangaId=${mangaId}`);
     return res.items || [];

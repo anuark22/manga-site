@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Lastest from './Lastest';
+import RecentChapters from './RecentChapters';
 import '../styles/Main.scss';
 import NoticeCard from './NoticeCard';
 import { noticesApi } from '../services/api';
@@ -30,7 +31,8 @@ const Main = () => {
     return (
         <div className="main-container">
             <div className="main-content">
-                <Lastest/>
+                <Lastest />
+                <RecentChapters />
             </div>
             <div className="main-sidebar">
                 <div className="notices-bar">Notices / Noticias</div>
