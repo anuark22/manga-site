@@ -54,6 +54,15 @@ const ScanDashboard = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef(null);
+  const appendFileInputRef = useRef(null);
+
+  // Estados para reordenamiento visual y UX avanzada
+  const [draggedPageIndex, setDraggedPageIndex] = useState(null);
+  const [dragOverPageIndex, setDragOverPageIndex] = useState(null);
+  const [lightboxPageIndex, setLightboxPageIndex] = useState(null);
+  const [editingPositionIndex, setEditingPositionIndex] = useState(null);
+  const [targetPositionInput, setTargetPositionInput] = useState('');
+  const [sequenceWarnings, setSequenceWarnings] = useState([]);
 
   // Edición de capítulo existente
   const [editingChapter, setEditingChapter] = useState(null);
@@ -231,14 +240,19 @@ const ScanDashboard = () => {
       file,
       name: file.name,
       size: (file.size / 1024).toFixed(1) + ' KB',
+      sizeBytes: file.size,
       previewUrl: URL.createObjectURL(file)
     }));
 
     setChapterPages(prev => [...prev, ...newPages]);
     showToast(`Se añadieron ${newPages.length} páginas para el capítulo`);
+
+    // Resetear los inputs de archivo para permitir re-selección
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (appendFileInputRef.current) appendFileInputRef.current.value = '';
   };
 
-  // Drag and drop handlers
+  // Drag and drop de archivos sobre la zona dropzone
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -252,7 +266,73 @@ const ScanDashboard = () => {
     e.stopPropagation();
   };
 
-  // Reordenar páginas
+  // ==========================================
+  // DRAG & DROP ENTRE TARJETAS DE PÁGINAS
+  // ==========================================
+  const handleCardDragStart = (e, index) => {
+    setDraggedPageIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', index.toString());
+  };
+
+  const handleCardDragOver = (e, index) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverPageIndex !== index) {
+      setDragOverPageIndex(index);
+    }
+  };
+
+  const handleCardDragEnd = () => {
+    setDraggedPageIndex(null);
+    setDragOverPageIndex(null);
+  };
+
+  const handleCardDrop = (e, targetIndex) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (draggedPageIndex === null || draggedPageIndex === targetIndex) {
+      setDraggedPageIndex(null);
+      setDragOverPageIndex(null);
+      return;
+    }
+
+    setChapterPages(prev => {
+      const copy = [...prev];
+      const [draggedItem] = copy.splice(draggedPageIndex, 1);
+      copy.splice(targetIndex, 0, draggedItem);
+      return copy;
+    });
+
+    setDraggedPageIndex(null);
+    setDragOverPageIndex(null);
+    showToast(`Página reubicada a la posición #${targetIndex + 1}`);
+  };
+
+  // Salto directo a posición por teclado / clic
+  const jumpToPosition = (fromIndex, toPositionOneBased) => {
+    const parsed = parseInt(toPositionOneBased, 10);
+    if (isNaN(parsed)) {
+      setEditingPositionIndex(null);
+      return;
+    }
+    const toIndex = Math.max(0, Math.min(chapterPages.length - 1, parsed - 1));
+    if (fromIndex === toIndex) {
+      setEditingPositionIndex(null);
+      return;
+    }
+
+    setChapterPages(prev => {
+      const copy = [...prev];
+      const [movedItem] = copy.splice(fromIndex, 1);
+      copy.splice(toIndex, 0, movedItem);
+      return copy;
+    });
+    setEditingPositionIndex(null);
+    showToast(`Página movida a la posición #${toIndex + 1}`);
+  };
+
+  // Reordenar páginas paso a paso
   const movePage = (index, direction) => {
     const target = index + direction;
     if (target < 0 || target >= chapterPages.length) return;
@@ -280,6 +360,7 @@ const ScanDashboard = () => {
     if (window.confirm('¿Deseas quitar todas las páginas seleccionadas?')) {
       chapterPages.forEach(p => URL.revokeObjectURL(p.previewUrl));
       setChapterPages([]);
+      setSequenceWarnings([]);
     }
   };
 
@@ -287,6 +368,82 @@ const ScanDashboard = () => {
     setChapterPages(prev => [...prev].reverse());
     showToast('Orden de páginas invertido');
   };
+
+  const sortPagesByName = (ascending = true) => {
+    setChapterPages(prev => {
+      const copy = [...prev];
+      copy.sort((a, b) => {
+        const cmp = a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+        return ascending ? cmp : -cmp;
+      });
+      return copy;
+    });
+    showToast(ascending ? 'Páginas ordenadas por nombre (01 → 99)' : 'Páginas ordenadas por nombre (99 → 01)');
+  };
+
+  // Detección inteligente de posibles saltos en la secuencia de páginas
+  useEffect(() => {
+    if (chapterPages.length < 2) {
+      setSequenceWarnings([]);
+      return;
+    }
+
+    const numbers = [];
+    chapterPages.forEach((page, idx) => {
+      // Extrae la última secuencia de dígitos antes de la extensión (ej. "ch01_p05" -> 5)
+      const matches = page.name.match(/(\d+)(?!.*\d)/);
+      if (matches) {
+        numbers.push({ index: idx, num: parseInt(matches[1], 10), name: page.name });
+      }
+    });
+
+    if (numbers.length >= Math.ceil(chapterPages.length * 0.75)) {
+      const missing = [];
+      for (let i = 0; i < numbers.length - 1; i++) {
+        const curr = numbers[i].num;
+        const next = numbers[i + 1].num;
+        if (next > curr + 1) {
+          const diff = next - curr - 1;
+          if (diff <= 3) {
+            for (let m = curr + 1; m < next; m++) {
+              missing.push(m);
+            }
+          } else {
+            missing.push(`${curr + 1}...${next - 1}`);
+          }
+        }
+      }
+      if (missing.length > 0) {
+        setSequenceWarnings([`Posible salto detectado en nombres: falta página #${missing.join(', #')}`]);
+      } else {
+        setSequenceWarnings([]);
+      }
+    } else {
+      setSequenceWarnings([]);
+    }
+  }, [chapterPages]);
+
+  // Navegación con teclado en el modal Lightbox de zoom
+  useEffect(() => {
+    if (lightboxPageIndex === null) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setLightboxPageIndex(null);
+      if (e.key === 'ArrowLeft') {
+        setLightboxPageIndex(prev => (prev > 0 ? prev - 1 : prev));
+      }
+      if (e.key === 'ArrowRight') {
+        setLightboxPageIndex(prev => (prev < chapterPages.length - 1 ? prev + 1 : prev));
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxPageIndex, chapterPages.length]);
+
+  // Cálculo del peso total de páginas
+  const totalSizeBytes = chapterPages.reduce((acc, p) => acc + (p.file?.size || p.sizeBytes || 0), 0);
+  const totalSizeFormatted = totalSizeBytes > 1024 * 1024
+    ? (totalSizeBytes / (1024 * 1024)).toFixed(2) + ' MB'
+    : (totalSizeBytes / 1024).toFixed(1) + ' KB';
 
   // Subir Capítulo a la API
   const handleUploadChapter = async (e) => {
@@ -1001,24 +1158,48 @@ const ScanDashboard = () => {
                       </div>
 
                       {/* Paso 3: Subida Dinámica de Páginas (Drag & Drop) */}
-                      <div className="form-group">
+                      <div className="form-group pages-upload-section">
                         <div className="dropzone-header">
                           <label className="input-label">
                             <i className="fa fa-picture-o"></i> 3. Páginas del Capítulo ({chapterPages.length} seleccionadas) *
                           </label>
-                          {chapterPages.length > 1 && (
-                            <div className="dropzone-actions">
+                          {chapterPages.length > 0 && (
+                            <div className="dropzone-actions-bar">
                               <button
                                 type="button"
-                                className="btn-micro"
+                                className="btn-action-tool"
+                                onClick={() => sortPagesByName(true)}
+                                title="Ordenar automáticamente por nombre (01 → 99)"
+                              >
+                                <i className="fa fa-sort-numeric-asc"></i> 01 → 99
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-action-tool"
+                                onClick={() => sortPagesByName(false)}
+                                title="Ordenar automáticamente por nombre (99 → 01)"
+                              >
+                                <i className="fa fa-sort-numeric-desc"></i> 99 → 01
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-action-tool"
                                 onClick={reversePagesOrder}
-                                title="Invertir el orden de las páginas"
+                                title="Invertir el orden actual de las páginas"
                               >
                                 <i className="fa fa-exchange"></i> Invertir
                               </button>
                               <button
                                 type="button"
-                                className="btn-micro danger"
+                                className="btn-action-tool btn-tool-add"
+                                onClick={() => appendFileInputRef.current && appendFileInputRef.current.click()}
+                                title="Añadir más páginas a la lista"
+                              >
+                                <i className="fa fa-plus-circle"></i> Añadir más
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-action-tool danger"
                                 onClick={clearAllPages}
                                 title="Quitar todas las páginas"
                               >
@@ -1028,9 +1209,20 @@ const ScanDashboard = () => {
                           )}
                         </div>
 
+                        {/* Alerta de detección de saltos en secuencia */}
+                        {sequenceWarnings.length > 0 && (
+                          <div className="sequence-warning-banner">
+                            <i className="fa fa-exclamation-triangle"></i>
+                            <div className="warning-content">
+                              <strong>Advertencia de secuencia:</strong>
+                              <span>{sequenceWarnings.join(' · ')}</span>
+                            </div>
+                          </div>
+                        )}
+
                         {/* Zona interactiva Dropzone */}
                         <div
-                          className="dropzone-area"
+                          className={`dropzone-area ${chapterPages.length > 0 ? 'compact' : ''}`}
                           onDrop={handleDrop}
                           onDragOver={handleDragOver}
                           onClick={() => fileInputRef.current && fileInputRef.current.click()}
@@ -1043,63 +1235,184 @@ const ScanDashboard = () => {
                             style={{ display: 'none' }}
                             onChange={(e) => handleFilesSelect(e.target.files)}
                           />
+                          <input
+                            ref={appendFileInputRef}
+                            type="file"
+                            multiple
+                            accept="image/jpeg,image/png,image/webp"
+                            style={{ display: 'none' }}
+                            onChange={(e) => handleFilesSelect(e.target.files)}
+                          />
                           <div className="dropzone-prompt">
                             <i className="fa fa-cloud-upload dropzone-icon"></i>
                             <p className="prompt-main">
-                              Arrastra y suelta aquí las páginas del capítulo
+                              {chapterPages.length > 0
+                                ? 'Arrastra o haz clic para añadir más páginas'
+                                : 'Arrastra y suelta aquí las páginas del capítulo'}
                             </p>
                             <p className="prompt-sub">
-                              o haz clic para seleccionar archivos (JPG, PNG, WEBP). Se ordenarán automáticamente por nombre.
+                              Formatos JPG, PNG, WEBP. Puedes reordenar arrastrando las miniaturas o haciendo clic en el número de página.
                             </p>
                           </div>
                         </div>
 
-                        {/* Cuadrícula de Previsualización Dinámica con Reordenamiento */}
+                        {/* Cuadrícula de Previsualización Dinámica con Drag & Drop y Reordenamiento */}
                         {chapterPages.length > 0 && (
-                          <div className="pages-preview-grid">
-                            {chapterPages.map((page, index) => (
-                              <div key={page.id} className="page-thumbnail-card">
-                                <div className="thumbnail-wrapper">
-                                  <img src={page.previewUrl} alt={page.name} />
-                                  <span className="page-order-badge">#{index + 1}</span>
-                                </div>
-                                <div className="thumbnail-info">
-                                  <span className="file-name" title={page.name}>{page.name}</span>
-                                  <span className="file-size">{page.size}</span>
-                                </div>
-                                <div className="thumbnail-controls">
-                                  <button
-                                    type="button"
-                                    className="btn-order"
-                                    onClick={() => movePage(index, -1)}
-                                    disabled={index === 0}
-                                    title="Mover antes"
+                          <div className="pages-preview-container">
+                            <div className="preview-grid-toolbar">
+                              <span className="grid-hint">
+                                <i className="fa fa-info-circle"></i> Arrastra las tarjetas para reordenar, o haz clic en <strong>#</strong> para editar la posición.
+                              </span>
+                              <span className="grid-weight">
+                                <i className="fa fa-database"></i> Peso total: <strong>{totalSizeFormatted}</strong>
+                              </span>
+                            </div>
+
+                            <div className="pages-preview-grid">
+                              {chapterPages.map((page, index) => {
+                                const isDragging = draggedPageIndex === index;
+                                const isDragOver = dragOverPageIndex === index;
+                                const isEditingPos = editingPositionIndex === index;
+
+                                return (
+                                  <div
+                                    key={page.id}
+                                    className={`page-thumbnail-card ${isDragging ? 'is-dragging' : ''} ${isDragOver ? 'is-drag-over' : ''} ${index === 0 ? 'is-cover' : ''}`}
+                                    draggable={!isEditingPos}
+                                    onDragStart={(e) => handleCardDragStart(e, index)}
+                                    onDragOver={(e) => handleCardDragOver(e, index)}
+                                    onDragEnd={handleCardDragEnd}
+                                    onDrop={(e) => handleCardDrop(e, index)}
                                   >
-                                    <i className="fa fa-arrow-left"></i>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="btn-remove"
-                                    onClick={() => removePage(index)}
-                                    title="Eliminar esta página"
-                                  >
-                                    <i className="fa fa-times"></i>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="btn-order"
-                                    onClick={() => movePage(index, 1)}
-                                    disabled={index === chapterPages.length - 1}
-                                    title="Mover después"
-                                  >
-                                    <i className="fa fa-arrow-right"></i>
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
+                                    <div
+                                      className="thumbnail-wrapper"
+                                      onDoubleClick={() => setLightboxPageIndex(index)}
+                                      title="Doble clic para ver en tamaño completo"
+                                    >
+                                      <img src={page.previewUrl} alt={page.name} />
+
+                                      {/* Badge de Portada para la página #1 */}
+                                      {index === 0 && (
+                                        <span className="cover-badge">
+                                          <i className="fa fa-bookmark"></i> PORTADA
+                                        </span>
+                                      )}
+
+                                      {/* Badge o Input de número de página */}
+                                      {isEditingPos ? (
+                                        <div className="page-position-editor" onClick={(e) => e.stopPropagation()}>
+                                          <span>#</span>
+                                          <input
+                                            type="number"
+                                            min="1"
+                                            max={chapterPages.length}
+                                            value={targetPositionInput}
+                                            onChange={(e) => setTargetPositionInput(e.target.value)}
+                                            onBlur={() => jumpToPosition(index, targetPositionInput)}
+                                            onKeyDown={(e) => {
+                                              if (e.key === 'Enter') jumpToPosition(index, targetPositionInput);
+                                              if (e.key === 'Escape') setEditingPositionIndex(null);
+                                            }}
+                                            autoFocus
+                                          />
+                                        </div>
+                                      ) : (
+                                        <span
+                                          className="page-order-badge clickable"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setEditingPositionIndex(index);
+                                            setTargetPositionInput(String(index + 1));
+                                          }}
+                                          title="Clic para escribir otra posición"
+                                        >
+                                          #{index + 1} <i className="fa fa-pencil"></i>
+                                        </span>
+                                      )}
+
+                                      {/* Botón flotante para zoom / Lightbox */}
+                                      <button
+                                        type="button"
+                                        className="btn-card-zoom"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setLightboxPageIndex(index);
+                                        }}
+                                        title="Inspeccionar página en grande"
+                                      >
+                                        <i className="fa fa-search-plus"></i>
+                                      </button>
+                                    </div>
+
+                                    <div className="thumbnail-info">
+                                      <span className="file-name" title={page.name}>{page.name}</span>
+                                      <span className="file-size">{page.size}</span>
+                                    </div>
+
+                                    <div className="thumbnail-controls">
+                                      <button
+                                        type="button"
+                                        className="btn-order"
+                                        onClick={() => movePage(index, -1)}
+                                        disabled={index === 0}
+                                        title="Mover antes"
+                                      >
+                                        <i className="fa fa-arrow-left"></i>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="btn-remove"
+                                        onClick={() => removePage(index)}
+                                        title="Eliminar esta página"
+                                      >
+                                        <i className="fa fa-times"></i>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="btn-order"
+                                        onClick={() => movePage(index, 1)}
+                                        disabled={index === chapterPages.length - 1}
+                                        title="Mover después"
+                                      >
+                                        <i className="fa fa-arrow-right"></i>
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
                         )}
                       </div>
+
+                      {/* Resumen de Pre-vuelo (Pre-flight Check) */}
+                      {chapterPages.length > 0 && selectedManga && (
+                        <div className="preflight-summary-card">
+                          <div className="summary-cover-thumb">
+                            <img src={chapterPages[0].previewUrl} alt="Portada" />
+                            <span className="cover-label">Pág. #1</span>
+                          </div>
+                          <div className="summary-info-col">
+                            <h4 className="summary-title">
+                              <i className="fa fa-check-circle"></i> Capítulo {chapterNumber || '?'} listo para publicación
+                            </h4>
+                            <p className="summary-manga">
+                              Manga destino: <strong>{selectedManga.mangaTittle}</strong>
+                            </p>
+                            <div className="summary-tags-row">
+                              <span className="summary-tag">
+                                <i className="fa fa-files-o"></i> {chapterPages.length} páginas
+                              </span>
+                              <span className="summary-tag">
+                                <i className="fa fa-database"></i> {totalSizeFormatted}
+                              </span>
+                              <span className="summary-tag">
+                                <i className="fa fa-file-image-o"></i> Cierre: Pág. #{chapterPages.length} ({chapterPages[chapterPages.length - 1].name})
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Barra de progreso de subida */}
                       {uploading && (
@@ -1976,6 +2289,81 @@ const ScanDashboard = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* ========================================================= */}
+      {/* MODAL LIGHTBOX: INSPECCIÓN ZOOM DE PÁGINA                  */}
+      {/* ========================================================= */}
+      {lightboxPageIndex !== null && chapterPages[lightboxPageIndex] && (
+        <div className="page-lightbox-backdrop" onClick={() => setLightboxPageIndex(null)}>
+          <div className="page-lightbox-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="page-lightbox-header">
+              <div className="header-meta-group">
+                <span className="lightbox-page-badge">
+                  Página #{lightboxPageIndex + 1} de {chapterPages.length}
+                  {lightboxPageIndex === 0 && ' (PORTADA)'}
+                </span>
+                <span className="lightbox-page-name">{chapterPages[lightboxPageIndex].name}</span>
+                <span className="lightbox-page-size">({chapterPages[lightboxPageIndex].size})</span>
+              </div>
+              <div className="header-actions-group">
+                {lightboxPageIndex !== 0 && (
+                  <button
+                    type="button"
+                    className="btn-set-cover"
+                    onClick={() => {
+                      jumpToPosition(lightboxPageIndex, 1);
+                      setLightboxPageIndex(0);
+                    }}
+                    title="Mover esta página al inicio (Portada)"
+                  >
+                    <i className="fa fa-bookmark"></i> Fijar como Portada (#1)
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="btn-lightbox-close"
+                  onClick={() => setLightboxPageIndex(null)}
+                  title="Cerrar (Esc)"
+                >
+                  <i className="fa fa-times"></i>
+                </button>
+              </div>
+            </div>
+
+            <div className="page-lightbox-body">
+              <button
+                type="button"
+                className="btn-lightbox-nav prev"
+                disabled={lightboxPageIndex === 0}
+                onClick={() => setLightboxPageIndex(prev => prev - 1)}
+                title="Página anterior (←)"
+              >
+                <i className="fa fa-chevron-left"></i>
+              </button>
+
+              <div className="lightbox-image-viewport">
+                <img
+                  src={chapterPages[lightboxPageIndex].previewUrl}
+                  alt={chapterPages[lightboxPageIndex].name}
+                />
+              </div>
+
+              <button
+                type="button"
+                className="btn-lightbox-nav next"
+                disabled={lightboxPageIndex === chapterPages.length - 1}
+                onClick={() => setLightboxPageIndex(prev => prev + 1)}
+                title="Página siguiente (→)"
+              >
+                <i className="fa fa-chevron-right"></i>
+              </button>
+            </div>
+
+            <div className="page-lightbox-footer">
+              <span>Usa las flechas <strong>←</strong> y <strong>→</strong> del teclado para navegar entre páginas, o <strong>Esc</strong> para cerrar</span>
+            </div>
           </div>
         </div>
       )}
