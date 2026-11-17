@@ -202,10 +202,18 @@ export const normalizePageUrl = (url) => {
 // ==========================================
 export const noticesApi = {
   /**
-   * Obtiene la lista de noticias (filtradas opcionalmente por estado activo)
+   * Obtiene la lista de noticias (filtradas opcionalmente por estado activo o todas si includeInactive = true)
    */
-  async getNotices(isActive = true) {
-    const res = await request(`/Notices/GetNotices?isActive=${isActive}`);
+  async getNotices(isActive = null, includeInactive = false) {
+    const params = new URLSearchParams();
+    if (typeof isActive === 'boolean') {
+      params.append('isActive', isActive.toString());
+    }
+    if (includeInactive) {
+      params.append('includeInactive', 'true');
+    }
+    const qs = params.toString();
+    const res = await request(`/Notices/GetNotices${qs ? `?${qs}` : ''}`);
     return res.items || [];
   },
 
@@ -213,7 +221,7 @@ export const noticesApi = {
    * Obtiene una noticia específica por su ID
    */
   async getNoticeById(noticeId) {
-    const res = await request(`/Notices/GetNotices?noticeId=${noticeId}`);
+    const res = await request(`/Notices/GetNotices?noticeId=${noticeId}&includeInactive=true`);
     return (res.items && res.items[0]) || null;
   },
 
@@ -235,6 +243,26 @@ export const noticesApi = {
     const res = await request('/Notices/UpdateNotice', {
       method: 'PUT',
       body: formData
+    });
+    return res;
+  },
+
+  /**
+   * Alterna el estado activo/inactivo de una noticia (Requiere rol Admin)
+   */
+  async toggleActive(noticeId) {
+    const res = await request(`/Notices/ToggleActive?noticeId=${noticeId}`, {
+      method: 'PATCH'
+    });
+    return res;
+  },
+
+  /**
+   * Alterna si la noticia es destacada (Requiere rol Admin)
+   */
+  async toggleFeatured(noticeId) {
+    const res = await request(`/Notices/ToggleFeatured?noticeId=${noticeId}`, {
+      method: 'PATCH'
     });
     return res;
   },

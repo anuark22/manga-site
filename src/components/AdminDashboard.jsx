@@ -6,8 +6,10 @@ import {
   scanApplicationsApi, 
   scansApi, 
   mangasApi,
+  noticesApi,
   normalizePageUrl 
 } from '../services/api';
+import { getNoticeImage } from '../utils/imageHelper';
 import { useAuth } from '../Context/AuthContext';
 import { useTheme } from '../Context/ThemeContext';
 import '../styles/AdminDashboard.scss';
@@ -17,7 +19,7 @@ const AdminDashboard = () => {
   const { theme } = useTheme();
   const navigate = useNavigate();
 
-  // Pestañas: 'applications' | 'users' | 'roles'
+  // Pestañas: 'applications' | 'users' | 'roles' | 'notices'
   const [activeTab, setActiveTab] = useState('applications');
 
   // Estados generales
@@ -30,6 +32,32 @@ const AdminDashboard = () => {
   const [rolesList, setRolesList] = useState([]);
   const [scansList, setScansList] = useState([]);
   const [mangasCount, setMangasCount] = useState(0);
+  const [noticesList, setNoticesList] = useState([]);
+
+  // Filtros de noticias
+  const [noticesSearch, setNoticesSearch] = useState('');
+  const [noticesStatusFilter, setNoticesStatusFilter] = useState('ALL'); // 'ALL' | 'ACTIVE' | 'INACTIVE' | 'FEATURED'
+  const [noticesCategoryFilter, setNoticesCategoryFilter] = useState('ALL');
+
+  // Modal Crear / Editar Noticia
+  const [showNoticeModal, setShowNoticeModal] = useState(false);
+  const [editingNotice, setEditingNotice] = useState(null);
+  const [noticeForm, setNoticeForm] = useState({
+    title: '',
+    subtitle: '',
+    content: '',
+    category: 'Manga',
+    file: null,
+    extraFile: null,
+    imageCaption: '',
+    quote: '',
+    isFeatured: false,
+    readTime: '2 min',
+    isActive: true,
+    previewMain: '',
+    previewExtra: ''
+  });
+  const [noticeSaving, setNoticeSaving] = useState(false);
 
   // Filtros de aplicaciones
   const [appStatusFilter, setAppStatusFilter] = useState('ALL'); // 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'
@@ -66,7 +94,7 @@ const AdminDashboard = () => {
   const loadAdminData = async () => {
     setLoading(true);
     try {
-      const [apps, users, roles, scans, mangas] = await Promise.all([
+      const [apps, users, roles, scans, mangas, notices] = await Promise.all([
         scanApplicationsApi.getApplications().catch(err => {
           console.warn('Error cargando solicitudes:', err);
           return [];
@@ -83,7 +111,11 @@ const AdminDashboard = () => {
           console.warn('Error cargando scans:', err);
           return [];
         }),
-        mangasApi.getMangas().catch(() => [])
+        mangasApi.getMangas().catch(() => []),
+        noticesApi.getNotices(null, true).catch(err => {
+          console.warn('Error cargando noticias:', err);
+          return [];
+        })
       ]);
 
       setApplications(apps);
@@ -91,6 +123,7 @@ const AdminDashboard = () => {
       setRolesList(roles);
       setScansList(scans);
       setMangasCount(mangas.length);
+      setNoticesList(notices);
     } catch (err) {
       console.error('Error general cargando datos de administración:', err);
       showToast('Error al conectar con los servicios administrativos', 'error');
@@ -264,6 +297,143 @@ const AdminDashboard = () => {
   };
 
   // ==========================================
+  // GESTIÓN DE NOTICIAS (CREAR / EDITAR / ESTADOS)
+  // ==========================================
+  const handleOpenCreateNotice = () => {
+    setEditingNotice(null);
+    setNoticeForm({
+      title: '',
+      subtitle: '',
+      content: '',
+      category: 'Manga',
+      file: null,
+      extraFile: null,
+      imageCaption: '',
+      quote: '',
+      isFeatured: false,
+      readTime: '2 min',
+      isActive: true,
+      previewMain: '',
+      previewExtra: ''
+    });
+    setShowNoticeModal(true);
+  };
+
+  const handleOpenEditNotice = (notice) => {
+    setEditingNotice(notice);
+    setNoticeForm({
+      title: notice.title || notice.noticeTittle || '',
+      subtitle: notice.subtitle || '',
+      content: notice.content || notice.noticeContent || '',
+      category: notice.category || 'Manga',
+      file: null,
+      extraFile: null,
+      imageCaption: notice.imageCaption || '',
+      quote: notice.quote || '',
+      isFeatured: !!notice.isFeatured,
+      readTime: notice.readTime || '2 min',
+      isActive: notice.isActive ?? true,
+      previewMain: getNoticeImage(notice),
+      previewExtra: notice.extraImgUrl || ''
+    });
+    setShowNoticeModal(true);
+  };
+
+  const handleToggleNoticeActive = async (noticeId) => {
+    try {
+      await noticesApi.toggleActive(noticeId);
+      setNoticesList(prev => prev.map(n => {
+        if ((n.noticeId || n.id) === noticeId) {
+          const nextVal = !n.isActive;
+          showToast(`Noticia marcada como ${nextVal ? 'Activa' : 'Inactiva'}`);
+          return { ...n, isActive: nextVal };
+        }
+        return n;
+      }));
+    } catch (err) {
+      console.error('Error cambiando estado activo:', err);
+      showToast('No se pudo cambiar el estado de la noticia', 'error');
+    }
+  };
+
+  const handleToggleNoticeFeatured = async (noticeId) => {
+    try {
+      await noticesApi.toggleFeatured(noticeId);
+      setNoticesList(prev => prev.map(n => {
+        if ((n.noticeId || n.id) === noticeId) {
+          const nextVal = !n.isFeatured;
+          showToast(`Noticia ${nextVal ? 'fijada como Destacada' : 'desmarcada de Destacada'}`);
+          return { ...n, isFeatured: nextVal };
+        }
+        return n;
+      }));
+    } catch (err) {
+      console.error('Error cambiando estado destacada:', err);
+      showToast('No se pudo cambiar la condición destacada', 'error');
+    }
+  };
+
+  const handleDeleteNotice = async (noticeId) => {
+    if (!window.confirm('¿Estás seguro de eliminar esta noticia? Esta acción no se puede deshacer.')) return;
+
+    try {
+      await noticesApi.deleteNotice(noticeId);
+      setNoticesList(prev => prev.filter(n => (n.noticeId || n.id) !== noticeId));
+      showToast('Noticia eliminada correctamente');
+    } catch (err) {
+      console.error('Error al eliminar noticia:', err);
+      showToast('No se pudo eliminar la noticia', 'error');
+    }
+  };
+
+  const handleSubmitNotice = async (e) => {
+    e.preventDefault();
+    if (!noticeForm.title.trim() || !noticeForm.content.trim()) {
+      showToast('Por favor completa el título y el contenido', 'error');
+      return;
+    }
+
+    setNoticeSaving(true);
+    try {
+      const formData = new FormData();
+      formData.append('Title', noticeForm.title.trim());
+      formData.append('Subtitle', noticeForm.subtitle.trim());
+      formData.append('Content', noticeForm.content.trim());
+      formData.append('Category', noticeForm.category);
+      formData.append('ImageCaption', noticeForm.imageCaption.trim());
+      formData.append('Quote', noticeForm.quote.trim());
+      formData.append('IsFeatured', noticeForm.isFeatured ? 'true' : 'false');
+      formData.append('ReadTime', noticeForm.readTime.trim() || '2 min');
+      formData.append('IsActive', noticeForm.isActive ? 'true' : 'false');
+
+      if (noticeForm.file) {
+        formData.append('File', noticeForm.file);
+      }
+      if (noticeForm.extraFile) {
+        formData.append('ExtraFile', noticeForm.extraFile);
+      }
+
+      if (editingNotice) {
+        formData.append('NoticeId', editingNotice.noticeId || editingNotice.id);
+        await noticesApi.updateNotice(formData);
+        showToast('Noticia actualizada con éxito');
+      } else {
+        await noticesApi.createNotice(formData);
+        showToast('Noticia creada y publicada con éxito');
+      }
+
+      setShowNoticeModal(false);
+      const freshNotices = await noticesApi.getNotices(null, true);
+      setNoticesList(freshNotices);
+    } catch (err) {
+      console.error('Error guardando noticia:', err);
+      showToast(err.message || 'Error al guardar la noticia', 'error');
+    } finally {
+      setNoticeSaving(false);
+    }
+  };
+
+  // ==========================================
   // FILTRADO DE DATOS
   // ==========================================
   const pendingCount = applications.filter(a => a.status === 'PENDING').length;
@@ -286,6 +456,30 @@ const AdminDashboard = () => {
       (u.email && u.email.toLowerCase().includes(q));
     return matchesRole && matchesSearch;
   });
+
+  const filteredNotices = noticesList.filter(notice => {
+    const q = noticesSearch.toLowerCase();
+    const title = (notice.title || notice.noticeTittle || '').toLowerCase();
+    const sub = (notice.subtitle || '').toLowerCase();
+    const content = (notice.content || notice.noticeContent || '').toLowerCase();
+    const author = (notice.authorName || '').toLowerCase();
+    const matchesSearch = !q || title.includes(q) || sub.includes(q) || content.includes(q) || author.includes(q);
+
+    let matchesStatus = true;
+    if (noticesStatusFilter === 'ACTIVE') matchesStatus = !!notice.isActive;
+    else if (noticesStatusFilter === 'INACTIVE') matchesStatus = !notice.isActive;
+    else if (noticesStatusFilter === 'FEATURED') matchesStatus = !!notice.isFeatured;
+
+    let matchesCat = true;
+    if (noticesCategoryFilter !== 'ALL') {
+      matchesCat = (notice.category || 'Manga').toUpperCase() === noticesCategoryFilter;
+    }
+
+    return matchesSearch && matchesStatus && matchesCat;
+  });
+
+  const activeNoticesCount = noticesList.filter(n => n.isActive).length;
+  const featuredNoticesCount = noticesList.filter(n => n.isFeatured).length;
 
   const isAdmin = user && (user.roleId === 2 || user.roleName?.toUpperCase() === 'ADMIN');
 
@@ -410,6 +604,19 @@ const AdminDashboard = () => {
                 <span className="stat-label">Roles del Sistema</span>
               </div>
             </div>
+
+            <div className="stat-card">
+              <div className="stat-icon icon-notices">
+                <i className="fa fa-newspaper-o"></i>
+              </div>
+              <div className="stat-data">
+                <div className="value-with-badge">
+                  <span className="stat-value">{noticesList.length}</span>
+                  {featuredNoticesCount > 0 && <span className="alert-badge">{featuredNoticesCount} Destacadas</span>}
+                </div>
+                <span className="stat-label">Noticias Registradas</span>
+              </div>
+            </div>
           </section>
 
           {/* NAVEGACIÓN POR PESTAÑAS */}
@@ -437,6 +644,13 @@ const AdminDashboard = () => {
               onClick={() => setActiveTab('roles')}
             >
               <i className="fa fa-shield"></i> Roles del Sistema ({rolesList.length})
+            </button>
+            <button
+              type="button"
+              className={`nav-tab-btn ${activeTab === 'notices' ? 'active' : ''}`}
+              onClick={() => setActiveTab('notices')}
+            >
+              <i className="fa fa-newspaper-o"></i> Gestión de Noticias ({noticesList.length})
             </button>
             <Link to="/scan-dashboard" className="nav-tab-btn link-external">
               <i className="fa fa-cloud-upload"></i> Ir a Panel Scan <i className="fa fa-external-link"></i>
@@ -795,6 +1009,194 @@ const AdminDashboard = () => {
               </div>
             </div>
           )}
+
+          {/* ========================================================= */}
+          {/* TAB 4: GESTIÓN DE NOTICIAS                                */}
+          {/* ========================================================= */}
+          {activeTab === 'notices' && (
+            <div className="tab-pane notices-tab">
+              <div className="panel-box">
+                <div className="box-header-row">
+                  <div className="box-title-group">
+                    <h2 className="box-title">
+                      <i className="fa fa-newspaper-o"></i> Publicaciones y Noticias del Sistema ({filteredNotices.length})
+                    </h2>
+                    <p className="box-subtitle">
+                      Crea, edita y configura las noticias de la web, define noticias destacadas para el carrusel hero y administra su visibilidad.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={handleOpenCreateNotice}
+                  >
+                    <i className="fa fa-plus-circle"></i> Nueva Noticia
+                  </button>
+                </div>
+
+                {/* FILTROS Y BÚSQUEDA */}
+                <div className="table-filters-bar">
+                  <div className="search-input-wrap">
+                    <i className="fa fa-search"></i>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Buscar por título, subtítulo o contenido..."
+                      value={noticesSearch}
+                      onChange={(e) => setNoticesSearch(e.target.value)}
+                    />
+                    {noticesSearch && (
+                      <button
+                        type="button"
+                        className="btn-clear"
+                        onClick={() => setNoticesSearch('')}
+                      >
+                        <i className="fa fa-times"></i>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="filter-select-wrap">
+                    <label>Estado:</label>
+                    <select
+                      className="form-select"
+                      value={noticesStatusFilter}
+                      onChange={(e) => setNoticesStatusFilter(e.target.value)}
+                    >
+                      <option value="ALL">Todas ({noticesList.length})</option>
+                      <option value="ACTIVE">Activas ({activeNoticesCount})</option>
+                      <option value="INACTIVE">Inactivas ({noticesList.length - activeNoticesCount})</option>
+                      <option value="FEATURED">Destacadas ({featuredNoticesCount})</option>
+                    </select>
+                  </div>
+
+                  <div className="filter-select-wrap">
+                    <label>Categoría:</label>
+                    <select
+                      className="form-select"
+                      value={noticesCategoryFilter}
+                      onChange={(e) => setNoticesCategoryFilter(e.target.value)}
+                    >
+                      <option value="ALL">Todas las Categorías</option>
+                      <option value="MANGA">Manga</option>
+                      <option value="ANIME">Anime</option>
+                      <option value="LANZAMIENTOS">Lanzamientos</option>
+                      <option value="COMUNIDAD">Comunidad</option>
+                      <option value="EDITORIAL">Editorial</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* GRILLA / LISTADO DE NOTICIAS */}
+                {filteredNotices.length === 0 ? (
+                  <div className="empty-results-box">
+                    <i className="fa fa-newspaper-o"></i>
+                    <p>No se encontraron noticias con los filtros seleccionados.</p>
+                  </div>
+                ) : (
+                  <div className="notices-admin-grid">
+                    {filteredNotices.map((notice) => {
+                      const nId = notice.noticeId || notice.id;
+                      return (
+                        <div key={nId} className={`notice-admin-card ${!notice.isActive ? 'inactive' : ''}`}>
+                          <div className="notice-admin-thumb">
+                            <img src={getNoticeImage(notice)} alt={notice.title} />
+                            <div className="thumb-badges">
+                              <span className={`status-pill ${notice.isActive ? 'active' : 'inactive'}`}>
+                                {notice.isActive ? 'Activa' : 'Inactiva'}
+                              </span>
+                              {notice.isFeatured && (
+                                <span className="featured-pill">
+                                  <i className="fa fa-star"></i> Destacada
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="notice-admin-body">
+                            <div className="notice-meta-line">
+                              <span className="category-tag">{notice.category || 'Manga'}</span>
+                              <span className="readtime-tag">
+                                <i className="fa fa-clock-o"></i> {notice.readTime || '2 min'}
+                              </span>
+                              <span className="date-tag">
+                                <i className="fa fa-calendar"></i> {new Date(notice.createdAt).toLocaleDateString()}
+                              </span>
+                            </div>
+
+                            <h3 className="notice-admin-title">{notice.title || notice.noticeTittle}</h3>
+                            {notice.subtitle && (
+                              <p className="notice-admin-sub">{notice.subtitle}</p>
+                            )}
+                            <p className="notice-admin-excerpt">{notice.content || notice.noticeContent}</p>
+
+                            <div className="notice-admin-footer">
+                              <div className="author-tag">
+                                <i className="fa fa-user-circle"></i> {notice.authorName || 'Admin'}
+                              </div>
+
+                              <div className="actions-button-group">
+                                {/* Toggle Destacada */}
+                                <button
+                                  type="button"
+                                  className={`btn-icon-action ${notice.isFeatured ? 'btn-star active' : 'btn-star'}`}
+                                  onClick={() => handleToggleNoticeFeatured(nId)}
+                                  title={notice.isFeatured ? 'Quitar de Destacadas' : 'Marcar como Noticia Destacada'}
+                                >
+                                  <i className={`fa ${notice.isFeatured ? 'fa-star' : 'fa-star-o'}`}></i>
+                                </button>
+
+                                {/* Toggle Activa */}
+                                <button
+                                  type="button"
+                                  className={`btn-icon-action ${notice.isActive ? 'btn-visibility' : 'btn-visibility inactive'}`}
+                                  onClick={() => handleToggleNoticeActive(nId)}
+                                  title={notice.isActive ? 'Desactivar Noticia' : 'Activar Noticia'}
+                                >
+                                  <i className={`fa ${notice.isActive ? 'fa-eye' : 'fa-eye-slash'}`}></i>
+                                </button>
+
+                                {/* Ver en la Web */}
+                                <Link
+                                  to={`/news/${nId}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="btn-icon-action btn-view"
+                                  title="Ver en el portal de noticias"
+                                >
+                                  <i className="fa fa-external-link"></i>
+                                </Link>
+
+                                {/* Editar */}
+                                <button
+                                  type="button"
+                                  className="btn-icon-action btn-edit"
+                                  onClick={() => handleOpenEditNotice(notice)}
+                                  title="Editar noticia completa"
+                                >
+                                  <i className="fa fa-pencil"></i>
+                                </button>
+
+                                {/* Eliminar */}
+                                <button
+                                  type="button"
+                                  className="btn-icon-action btn-delete"
+                                  onClick={() => handleDeleteNotice(nId)}
+                                  title="Eliminar noticia"
+                                >
+                                  <i className="fa fa-trash"></i>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -996,6 +1398,219 @@ const AdminDashboard = () => {
                     <><i className="fa fa-spinner fa-spin"></i> Guardando...</>
                   ) : (
                     <><i className="fa fa-save"></i> Guardar Rol</>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL: CREAR / EDITAR NOTICIA                             */}
+      {/* ========================================================= */}
+      {showNoticeModal && (
+        <div className="admin-modal-backdrop" onClick={() => setShowNoticeModal(false)}>
+          <div className="admin-modal-dialog modal-notice-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-modal-header">
+              <h3>
+                <i className="fa fa-newspaper-o"></i>
+                {editingNotice ? `Editar Noticia #${editingNotice.noticeId || editingNotice.id}` : 'Crear Nueva Noticia'}
+              </h3>
+              <button type="button" className="btn-close" onClick={() => setShowNoticeModal(false)}>
+                <i className="fa fa-times"></i>
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitNotice} className="admin-modal-form">
+              {/* Título */}
+              <div className="form-group">
+                <label className="input-label">Título de la Noticia *</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={noticeForm.title}
+                  onChange={(e) => setNoticeForm({ ...noticeForm, title: e.target.value })}
+                  placeholder="Ej. One Piece entra en pausa programada de 3 semanas"
+                  required
+                />
+              </div>
+
+              {/* Subtítulo */}
+              <div className="form-group">
+                <label className="input-label">Subtítulo / Bajada (Opcional)</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={noticeForm.subtitle}
+                  onChange={(e) => setNoticeForm({ ...noticeForm, subtitle: e.target.value })}
+                  placeholder="Ej. Eiichiro Oda comparte un mensaje especial con los seguidores"
+                />
+              </div>
+
+              {/* Fila: Categoría y Tiempo de Lectura */}
+              <div className="form-row-grid">
+                <div className="form-group">
+                  <label className="input-label">Categoría *</label>
+                  <select
+                    className="form-select"
+                    value={noticeForm.category}
+                    onChange={(e) => setNoticeForm({ ...noticeForm, category: e.target.value })}
+                  >
+                    <option value="Manga">Manga</option>
+                    <option value="Anime">Anime</option>
+                    <option value="Lanzamientos">Lanzamientos</option>
+                    <option value="Comunidad">Comunidad</option>
+                    <option value="Editorial">Editorial</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="input-label">Tiempo Estimado de Lectura</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={noticeForm.readTime}
+                    onChange={(e) => setNoticeForm({ ...noticeForm, readTime: e.target.value })}
+                    placeholder="Ej. 2 min, 3 min"
+                  />
+                </div>
+              </div>
+
+              {/* Fila: Imagen Principal y Captura de Foto */}
+              <div className="form-row-grid">
+                <div className="form-group">
+                  <label className="input-label">
+                    Imagen Principal {editingNotice ? '(Opcional para cambiarla)' : '*'}
+                  </label>
+                  <input
+                    type="file"
+                    className="form-input"
+                    accept="image/png, image/jpeg, image/webp"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        setNoticeForm({
+                          ...noticeForm,
+                          file,
+                          previewMain: URL.createObjectURL(file)
+                        });
+                      }
+                    }}
+                  />
+                  {noticeForm.previewMain && (
+                    <div className="modal-img-preview">
+                      <img src={noticeForm.previewMain} alt="Vista previa principal" />
+                      <span>Vista previa de imagen principal</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label className="input-label">
+                    Imagen Secundaria / Ilustración (Opcional)
+                  </label>
+                  <input
+                    type="file"
+                    className="form-input"
+                    accept="image/png, image/jpeg, image/webp"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        setNoticeForm({
+                          ...noticeForm,
+                          extraFile: file,
+                          previewExtra: URL.createObjectURL(file)
+                        });
+                      }
+                    }}
+                  />
+                  {noticeForm.previewExtra && (
+                    <div className="modal-img-preview">
+                      <img src={noticeForm.previewExtra} alt="Vista previa secundaria" />
+                      <span>Vista previa de imagen secundaria</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Pie de foto de la imagen */}
+              <div className="form-group">
+                <label className="input-label">Pie de Foto de la Imagen Principal (Opcional)</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={noticeForm.imageCaption}
+                  onChange={(e) => setNoticeForm({ ...noticeForm, imageCaption: e.target.value })}
+                  placeholder="Ej. Arte promocional oficial del lanzamiento"
+                />
+              </div>
+
+              {/* Cita Destacada */}
+              <div className="form-group">
+                <label className="input-label">Cita Destacada / Quote (Opcional)</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={noticeForm.quote}
+                  onChange={(e) => setNoticeForm({ ...noticeForm, quote: e.target.value })}
+                  placeholder="Ej. «Lo que viene superará todas las expectativas» — Autor"
+                />
+              </div>
+
+              {/* Contenido / Cuerpo */}
+              <div className="form-group">
+                <label className="input-label">Contenido Completo de la Noticia *</label>
+                <textarea
+                  className="form-textarea"
+                  rows={6}
+                  value={noticeForm.content}
+                  onChange={(e) => setNoticeForm({ ...noticeForm, content: e.target.value })}
+                  placeholder="Escribe el cuerpo completo del artículo..."
+                  required
+                />
+              </div>
+
+              {/* Opciones: Destacada y Activa */}
+              <div className="form-checkboxes-row">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={noticeForm.isFeatured}
+                    onChange={(e) => setNoticeForm({ ...noticeForm, isFeatured: e.target.checked })}
+                  />
+                  <span><strong>Fijar como Noticia Destacada</strong> (aparecerá en el banner principal hero)</span>
+                </label>
+
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={noticeForm.isActive}
+                    onChange={(e) => setNoticeForm({ ...noticeForm, isActive: e.target.checked })}
+                  />
+                  <span><strong>Noticia Activa</strong> (visible para todos los usuarios en la web)</span>
+                </label>
+              </div>
+
+              <div className="admin-modal-footer">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setShowNoticeModal(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={noticeSaving}
+                >
+                  {noticeSaving ? (
+                    <><i className="fa fa-spinner fa-spin"></i> Guardando...</>
+                  ) : editingNotice ? (
+                    <><i className="fa fa-save"></i> Guardar Cambios</>
+                  ) : (
+                    <><i className="fa fa-paper-plane"></i> Publicar Noticia</>
                   )}
                 </button>
               </div>

@@ -104,6 +104,19 @@ export function getNoticeCompanionImages(notice) {
     });
   }
 
+  // Si la noticia tiene una imagen secundaria en la base de datos
+  if (notice.extraImgUrl && typeof notice.extraImgUrl === 'string') {
+    let resolvedExtra = notice.extraImgUrl;
+    if (resolvedExtra.includes('/Files/')) {
+      const fileName = resolvedExtra.split('/Files/')[1];
+      resolvedExtra = `/Files/${fileName}`;
+    }
+    list.unshift({
+      url: resolvedExtra,
+      caption: 'Ilustración / Captura complementaria del artículo'
+    });
+  }
+
   // Si la noticia tiene imágenes adicionales en su modelo
   if (Array.isArray(notice.extraImages)) {
     notice.extraImages.forEach(img => {

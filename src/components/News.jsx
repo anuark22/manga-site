@@ -174,11 +174,12 @@ const News = () => {
 
   // Deducir categoría de la noticia
   const getCategoryOfNotice = (notice) => {
-    const rawId = notice.noticeId || notice.id;
+    if (notice?.category) return notice.category;
+    const rawId = notice?.noticeId || notice?.id;
     if (sampleNoticesDetails[rawId]?.category) {
       return sampleNoticesDetails[rawId].category;
     }
-    const txt = `${notice.title || ''} ${notice.content || ''}`.toLowerCase();
+    const txt = `${notice?.title || ''} ${notice?.content || ''}`.toLowerCase();
     if (txt.includes('anime') || txt.includes('película') || txt.includes('teaser')) return 'Anime';
     if (txt.includes('comunidad') || txt.includes('foro') || txt.includes('servidor')) return 'Comunidad';
     return 'Manga';
@@ -350,6 +351,9 @@ const News = () => {
 
           <header className="article-header">
             <h1 className="article-title">{selectedNotice.title || selectedNotice.noticeTittle}</h1>
+            {selectedNotice.subtitle && (
+              <p className="article-lead-subtitle">{selectedNotice.subtitle}</p>
+            )}
             <div className="article-author-row">
               <div className="author-info">
                 <i className="fa fa-user-circle"></i>
@@ -379,7 +383,7 @@ const News = () => {
             <div className="image-overlay-hint">
               <i className="fa fa-search-plus"></i> Clic para ampliar imagen
             </div>
-            <p className="image-caption">Imagen oficial del lanzamiento / anuncio</p>
+            <p className="image-caption">{selectedNotice.imageCaption || 'Imagen oficial del lanzamiento / anuncio'}</p>
           </div>
 
           {/* Cuerpo del Artículo */}
@@ -395,10 +399,10 @@ const News = () => {
             )}
 
             {/* Cita Destacada */}
-            {sampleNoticesDetails[selectedNotice.noticeId || selectedNotice.id]?.quote && (
+            {(selectedNotice.quote || sampleNoticesDetails[selectedNotice.noticeId || selectedNotice.id]?.quote) && (
               <blockquote className="article-quote-box">
                 <i className="fa fa-quote-left quote-icon"></i>
-                <p>{sampleNoticesDetails[selectedNotice.noticeId || selectedNotice.id].quote}</p>
+                <p>{selectedNotice.quote || sampleNoticesDetails[selectedNotice.noticeId || selectedNotice.id]?.quote}</p>
               </blockquote>
             )}
 
