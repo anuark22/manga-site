@@ -1666,6 +1666,330 @@
   // TAB 4: GESTIÓN DE NOTICIAS
   // ===========================================================================
   .notices-tab {
+    .notices-toolbar-card {
+      background: rgba(var(--bg-card-rgb), 0.6);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 12px 16px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      box-shadow: 0 4px 16px var(--shadow-color);
+      backdrop-filter: blur(8px);
+      box-sizing: border-box;
+      width: 100%;
+
+      .notices-status-pills {
+        display: inline-flex;
+        align-items: center;
+        background: rgba(var(--bg-card-rgb), 0.85);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 4px;
+        gap: 6px;
+        flex-wrap: wrap;
+
+        .pill-btn {
+          background: transparent;
+          border: 1px solid transparent;
+          padding: 7px 14px;
+          border-radius: 8px;
+          font-size: 0.84rem;
+          font-weight: 700;
+          color: var(--text-secondary);
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          white-space: nowrap;
+
+          i {
+            font-size: 0.85rem;
+          }
+
+          .pill-count {
+            background: rgba(125, 125, 125, 0.15);
+            padding: 2px 7px;
+            border-radius: 20px;
+            font-size: 0.74rem;
+            font-weight: 800;
+            transition: all 0.2s ease;
+          }
+
+          &:hover {
+            color: var(--text-primary);
+            background: rgba(125, 125, 125, 0.08);
+          }
+
+          &.active {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+            border-color: var(--border-color);
+
+            .pill-count {
+              background: var(--main-color);
+              color: #ffffff;
+            }
+          }
+
+          &.pill-active.active {
+            color: #10b981;
+            border-color: rgba(16, 185, 129, 0.4);
+
+            i {
+              color: #10b981;
+            }
+
+            .pill-count {
+              background: #10b981;
+              color: #ffffff;
+            }
+          }
+
+          &.pill-inactive.active {
+            color: #ef4444;
+            border-color: rgba(239, 68, 68, 0.4);
+
+            i {
+              color: #ef4444;
+            }
+
+            .pill-count {
+              background: #ef4444;
+              color: #ffffff;
+            }
+          }
+
+          &.pill-featured.active {
+            color: #f59e0b;
+            border-color: rgba(245, 158, 11, 0.4);
+
+            i {
+              color: #f59e0b;
+            }
+
+            .pill-count {
+              background: #f59e0b;
+              color: #ffffff;
+            }
+          }
+        }
+      }
+
+      .notices-controls-group {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+        justify-content: flex-end;
+        min-width: 0;
+        flex-wrap: wrap;
+
+        .modern-select-box {
+          position: relative;
+          display: flex;
+          align-items: center;
+          min-width: 190px;
+
+          .select-icon {
+            position: absolute;
+            left: 12px;
+            color: var(--main-color);
+            font-size: 0.85rem;
+            pointer-events: none;
+            z-index: 1;
+          }
+
+          .modern-select-input {
+            appearance: none !important;
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
+
+            &::-ms-expand {
+              display: none;
+            }
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 9px 34px 9px 34px;
+            color: var(--text-primary);
+            font-size: 0.86rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            outline: none;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+
+            &:hover {
+              border-color: var(--main-color);
+            }
+
+            &:focus {
+              border-color: var(--main-color);
+              box-shadow: 0 0 0 3px rgba(var(--main-color-rgb), 0.18);
+            }
+
+            option {
+              background: var(--bg-card);
+              color: var(--text-primary);
+            }
+          }
+
+          .select-caret {
+            position: absolute;
+            right: 12px;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            pointer-events: none;
+            z-index: 1;
+          }
+        }
+
+        .modern-search-box {
+          position: relative;
+          display: flex;
+          align-items: center;
+          min-width: 240px;
+          flex: 1;
+          max-width: 340px;
+
+          .search-icon {
+            position: absolute;
+            left: 12px;
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            pointer-events: none;
+          }
+
+          .modern-search-input {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 9px 34px 9px 34px;
+            color: var(--text-primary);
+            font-size: 0.86rem;
+            width: 100%;
+            outline: none;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+
+            &::placeholder {
+              color: var(--text-secondary);
+              opacity: 0.7;
+            }
+
+            &:hover {
+              border-color: var(--main-color);
+            }
+
+            &:focus {
+              border-color: var(--main-color);
+              box-shadow: 0 0 0 3px rgba(var(--main-color-rgb), 0.18);
+            }
+          }
+
+          .btn-clear-input {
+            position: absolute;
+            right: 8px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px 6px;
+            border-radius: 50%;
+            font-size: 0.8rem;
+            line-height: 1;
+            transition: all 0.2s;
+
+            &:hover {
+              color: #ef4444;
+              background: rgba(239, 68, 68, 0.12);
+            }
+          }
+        }
+
+        .btn-reset-toolbar {
+          background: transparent;
+          border: 1px dashed var(--border-color);
+          color: var(--text-secondary);
+          border-radius: 10px;
+          padding: 8px 14px;
+          font-size: 0.82rem;
+          font-weight: 700;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          transition: all 0.2s ease;
+          white-space: nowrap;
+
+          &:hover {
+            color: var(--main-color);
+            border-color: var(--main-color);
+            background: rgba(var(--main-color-rgb), 0.08);
+          }
+        }
+      }
+
+      @media (max-width: 992px) {
+        flex-direction: column;
+        align-items: stretch;
+
+        .notices-status-pills {
+          width: 100%;
+          justify-content: flex-start;
+
+          .pill-btn {
+            flex: 1;
+            justify-content: center;
+          }
+        }
+
+        .notices-controls-group {
+          width: 100%;
+          justify-content: stretch;
+
+          .modern-select-box,
+          .modern-search-box {
+            flex: 1;
+            min-width: 160px;
+            max-width: none;
+          }
+        }
+      }
+
+      @media (max-width: 600px) {
+        padding: 10px;
+
+        .notices-status-pills {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 4px;
+
+          .pill-btn {
+            font-size: 0.78rem;
+            padding: 6px 10px;
+          }
+        }
+
+        .notices-controls-group {
+          flex-direction: column;
+          align-items: stretch;
+
+          .modern-select-box,
+          .modern-search-box {
+            width: 100%;
+          }
+        }
+      }
+    }
+
     .notices-admin-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));

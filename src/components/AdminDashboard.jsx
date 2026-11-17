@@ -1034,56 +1034,106 @@ const AdminDashboard = () => {
                   </button>
                 </div>
 
-                {/* FILTROS Y BÚSQUEDA */}
-                <div className="table-filters-bar">
-                  <div className="search-input-wrap">
-                    <i className="fa fa-search"></i>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="Buscar por título, subtítulo o contenido..."
-                      value={noticesSearch}
-                      onChange={(e) => setNoticesSearch(e.target.value)}
-                    />
-                    {noticesSearch && (
+                {/* TOOLBAR ESTILIZADA DE FILTROS Y BÚSQUEDA */}
+                <div className="notices-toolbar-card">
+                  {/* Píldoras de estado */}
+                  <div className="notices-status-pills">
+                    <button
+                      type="button"
+                      className={`pill-btn ${noticesStatusFilter === 'ALL' ? 'active' : ''}`}
+                      onClick={() => setNoticesStatusFilter('ALL')}
+                    >
+                      <span>Todas</span>
+                      <span className="pill-count">{noticesList.length}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`pill-btn pill-active ${noticesStatusFilter === 'ACTIVE' ? 'active' : ''}`}
+                      onClick={() => setNoticesStatusFilter('ACTIVE')}
+                    >
+                      <i className="fa fa-eye"></i>
+                      <span>Activas</span>
+                      <span className="pill-count">{activeNoticesCount}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`pill-btn pill-inactive ${noticesStatusFilter === 'INACTIVE' ? 'active' : ''}`}
+                      onClick={() => setNoticesStatusFilter('INACTIVE')}
+                    >
+                      <i className="fa fa-eye-slash"></i>
+                      <span>Inactivas</span>
+                      <span className="pill-count">{noticesList.length - activeNoticesCount}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`pill-btn pill-featured ${noticesStatusFilter === 'FEATURED' ? 'active' : ''}`}
+                      onClick={() => setNoticesStatusFilter('FEATURED')}
+                    >
+                      <i className="fa fa-star"></i>
+                      <span>Destacadas</span>
+                      <span className="pill-count">{featuredNoticesCount}</span>
+                    </button>
+                  </div>
+
+                  {/* Controles de Búsqueda y Categoría */}
+                  <div className="notices-controls-group">
+                    {/* Selector de Categoría con ícono y flecha personalizada */}
+                    <div className="modern-select-box">
+                      <i className="fa fa-tag select-icon"></i>
+                      <select
+                        className="modern-select-input"
+                        value={noticesCategoryFilter}
+                        onChange={(e) => setNoticesCategoryFilter(e.target.value)}
+                        aria-label="Filtrar por categoría"
+                      >
+                        <option value="ALL">Todas las Categorías</option>
+                        <option value="MANGA">Manga</option>
+                        <option value="ANIME">Anime</option>
+                        <option value="LANZAMIENTOS">Lanzamientos</option>
+                        <option value="COMUNIDAD">Comunidad</option>
+                        <option value="EDITORIAL">Editorial</option>
+                      </select>
+                      <i className="fa fa-chevron-down select-caret"></i>
+                    </div>
+
+                    {/* Barra de Búsqueda moderna */}
+                    <div className="modern-search-box">
+                      <i className="fa fa-search search-icon"></i>
+                      <input
+                        type="text"
+                        className="modern-search-input"
+                        placeholder="Buscar noticias..."
+                        value={noticesSearch}
+                        onChange={(e) => setNoticesSearch(e.target.value)}
+                        aria-label="Buscar noticias por título, subtítulo o contenido"
+                      />
+                      {noticesSearch && (
+                        <button
+                          type="button"
+                          className="btn-clear-input"
+                          onClick={() => setNoticesSearch('')}
+                          title="Limpiar búsqueda"
+                        >
+                          <i className="fa fa-times"></i>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Botón de limpiar filtros cuando hay filtros activos */}
+                    {(noticesSearch || noticesStatusFilter !== 'ALL' || noticesCategoryFilter !== 'ALL') && (
                       <button
                         type="button"
-                        className="btn-clear"
-                        onClick={() => setNoticesSearch('')}
+                        className="btn-reset-toolbar"
+                        onClick={() => {
+                          setNoticesSearch('');
+                          setNoticesStatusFilter('ALL');
+                          setNoticesCategoryFilter('ALL');
+                        }}
+                        title="Restablecer todos los filtros"
                       >
-                        <i className="fa fa-times"></i>
+                        <i className="fa fa-undo"></i> Limpiar
                       </button>
                     )}
-                  </div>
-
-                  <div className="filter-select-wrap">
-                    <label>Estado:</label>
-                    <select
-                      className="form-select"
-                      value={noticesStatusFilter}
-                      onChange={(e) => setNoticesStatusFilter(e.target.value)}
-                    >
-                      <option value="ALL">Todas ({noticesList.length})</option>
-                      <option value="ACTIVE">Activas ({activeNoticesCount})</option>
-                      <option value="INACTIVE">Inactivas ({noticesList.length - activeNoticesCount})</option>
-                      <option value="FEATURED">Destacadas ({featuredNoticesCount})</option>
-                    </select>
-                  </div>
-
-                  <div className="filter-select-wrap">
-                    <label>Categoría:</label>
-                    <select
-                      className="form-select"
-                      value={noticesCategoryFilter}
-                      onChange={(e) => setNoticesCategoryFilter(e.target.value)}
-                    >
-                      <option value="ALL">Todas las Categorías</option>
-                      <option value="MANGA">Manga</option>
-                      <option value="ANIME">Anime</option>
-                      <option value="LANZAMIENTOS">Lanzamientos</option>
-                      <option value="COMUNIDAD">Comunidad</option>
-                      <option value="EDITORIAL">Editorial</option>
-                    </select>
                   </div>
                 </div>
 
