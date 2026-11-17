@@ -73,9 +73,55 @@ export function getNoticeImage(notice) {
   return notice1Img;
 }
 
+/**
+ * Resuelve imágenes secundarias o de galería para una noticia
+ */
+export function getNoticeCompanionImages(notice) {
+  if (!notice) return [];
+
+  const title = (notice.title || notice.noticeTittle || '').toLowerCase();
+  const list = [];
+
+  if (title.includes('my hero') || title.includes('boku no hero')) {
+    list.push({
+      url: bokunoheroImg,
+      caption: 'Ilustración conmemorativa de Kohei Horikoshi para el volumen final.'
+    });
+  } else if (title.includes('one piece')) {
+    list.push({
+      url: notice1Img,
+      caption: 'Comunicado oficial del departamento editorial de Shueisha.'
+    });
+  } else if (title.includes('chainsaw')) {
+    list.push({
+      url: notice1Img,
+      caption: 'Arte conceptual del estudio MAPPA para el estreno cinematográfico.'
+    });
+  } else if (title.includes('jujutsu')) {
+    list.push({
+      url: notice1Img,
+      caption: 'Gráfico conmemorativo de récord de ventas globales en Weekly Shonen Jump.'
+    });
+  }
+
+  // Si la noticia tiene imágenes adicionales en su modelo
+  if (Array.isArray(notice.extraImages)) {
+    notice.extraImages.forEach(img => {
+      if (typeof img === 'string') {
+        list.push({ url: img, caption: 'Imagen adicional del artículo' });
+      } else if (img && img.url) {
+        list.push(img);
+      }
+    });
+  }
+
+  return list;
+}
+
 export default {
   getMangaImage,
   getNoticeImage,
+  getNoticeCompanionImages,
   defaultManga: sololevelingImg,
   defaultNotice: notice1Img
 };

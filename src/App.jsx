@@ -7,6 +7,7 @@ import Login from './components/Login';
 import Register from './components/Register';
 import Forum from './components/Forum';
 import ForumPostDetail from './components/ForumPostDetail';
+import News from './components/News';
 import Main from './components/Main';
 import MangaDetail from './components/MangaDetail';
 import Profile from './components/Profile';
@@ -33,6 +34,10 @@ function App() {
           <Route path="/forum" element={<Forum />} />
           <Route path="/forum/post/:id" element={<ForumPostDetail />} />
           <Route path="/forum/:id" element={<ForumPostDetail />} />
+          <Route path="/news" element={<News />} />
+          <Route path="/news/:id" element={<News />} />
+          <Route path="/notices" element={<News />} />
+          <Route path="/notices/:id" element={<News />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/scan-dashboard" element={<ScanDashboard />} />
           <Route path="/scan-panel" element={<ScanDashboard />} />

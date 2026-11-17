@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Lastest from './Lastest';
 import RecentChapters from './RecentChapters';
 import '../styles/Main.scss';
@@ -35,7 +36,10 @@ const Main = () => {
                 <RecentChapters />
             </div>
             <div className="main-sidebar">
-                <div className="notices-bar">Notices / Noticias</div>
+                <Link to="/news" className="notices-bar" title="Ver portal de noticias">
+                    <span>Notices / Noticias</span>
+                    <i className="fa fa-arrow-right" style={{ fontSize: '13px', marginLeft: 'auto' }}></i>
+                </Link>
                 {loading && notices.length === 0 ? (
                     <div style={{ padding: '16px', color: 'var(--text-secondary)', textAlign: 'center' }}>
                         Cargando noticias...

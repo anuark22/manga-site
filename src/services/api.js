@@ -201,9 +201,52 @@ export const normalizePageUrl = (url) => {
 // NOTICIAS API
 // ==========================================
 export const noticesApi = {
+  /**
+   * Obtiene la lista de noticias (filtradas opcionalmente por estado activo)
+   */
   async getNotices(isActive = true) {
     const res = await request(`/Notices/GetNotices?isActive=${isActive}`);
     return res.items || [];
+  },
+
+  /**
+   * Obtiene una noticia específica por su ID
+   */
+  async getNoticeById(noticeId) {
+    const res = await request(`/Notices/GetNotices?noticeId=${noticeId}`);
+    return (res.items && res.items[0]) || null;
+  },
+
+  /**
+   * Crea una nueva noticia (Requiere rol Admin, soporta FormData con archivo)
+   */
+  async createNotice(formData) {
+    const res = await request('/Notices/CreateNotice', {
+      method: 'POST',
+      body: formData
+    });
+    return res;
+  },
+
+  /**
+   * Actualiza una noticia existente (Requiere rol Admin)
+   */
+  async updateNotice(formData) {
+    const res = await request('/Notices/UpdateNotice', {
+      method: 'PUT',
+      body: formData
+    });
+    return res;
+  },
+
+  /**
+   * Elimina una noticia por su ID (Requiere rol Admin)
+   */
+  async deleteNotice(noticeId) {
+    const res = await request(`/Notices/DeleteNotice?noticeId=${noticeId}`, {
+      method: 'DELETE'
+    });
+    return res;
   }
 };
 

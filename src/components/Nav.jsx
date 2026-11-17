@@ -57,6 +57,7 @@ const Nav = () => {
                     <Link to="/manga-section"><b>LIBRARY</b></Link>
                     <Link to="/my-list"><b>YOUR LIST</b></Link>
                     <Link to="/forum"><b>FORUM</b></Link>
+                    <Link to="/news"><b>NEWS</b></Link>
                     {isScanOrAdmin && (
                         <Link to="/scan-dashboard" className="scan-panel-link" title="Panel de Scanlation y Gestión">
                             <i className="fa fa-cloud-upload" style={{ marginRight: '6px' }}></i><b>PANEL SCAN</b>
@@ -124,6 +125,7 @@ const Nav = () => {
                         <li><Link to="/manga-section" onClick={handleLinkClick}><b>LIBRARY</b></Link></li>
                         <li><Link to="/my-list" onClick={handleLinkClick}><b>YOUR LIST</b></Link></li>
                         <li><Link to="/forum" onClick={handleLinkClick}><b>FORUM</b></Link></li>
+                        <li><Link to="/news" onClick={handleLinkClick}><b>NEWS</b></Link></li>
                         {isScanOrAdmin && (
                             <li className="mobile-action-item">
                                 <Link to="/scan-dashboard" onClick={handleLinkClick} className="mobile-nav-btn scan-btn">
