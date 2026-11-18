@@ -1346,48 +1346,59 @@ const AdminDashboard = () => {
           {/* TAB 5: AUDITORÍA DE REPORTES DE CAPÍTULOS                 */}
           {/* ========================================================= */}
           {activeTab === 'reports' && (
-            <div className="tab-pane reports-tab">
+            <div className="tab-pane applications-tab reports-tab">
               <div className="panel-box">
-                <div className="panel-toolbar">
-                  <div className="search-input-box">
-                    <i className="fa fa-search"></i>
-                    <input
-                      type="text"
-                      placeholder="Buscar por manga, scan group, usuario o descripción..."
-                      value={reportsSearch}
-                      onChange={(e) => setReportsSearch(e.target.value)}
-                    />
+                <div className="box-header-row">
+                  <div className="box-title-group">
+                    <h2 className="box-title">
+                      <i className="fa fa-flag"></i> Auditoría de Reportes de Capítulos ({filteredReports.length})
+                    </h2>
+                    <p className="box-subtitle">
+                      Revisa reportes enviados por la comunidad, inspecciona capítulos con fallos y toma acciones sobre el capítulo o Scan Group.
+                    </p>
                   </div>
 
-                  <div className="filter-pills">
-                    <button
-                      type="button"
-                      className={`pill-btn ${reportsStatusFilter === 'PENDING' ? 'active' : ''}`}
-                      onClick={() => setReportsStatusFilter('PENDING')}
-                    >
-                      Pendientes ({pendingReportsCount})
-                    </button>
-                    <button
-                      type="button"
-                      className={`pill-btn ${reportsStatusFilter === 'RESOLVED' ? 'active' : ''}`}
-                      onClick={() => setReportsStatusFilter('RESOLVED')}
-                    >
-                      Resueltos ({reportsList.filter(r => r.status === 'RESOLVED').length})
-                    </button>
-                    <button
-                      type="button"
-                      className={`pill-btn ${reportsStatusFilter === 'DISMISSED' ? 'active' : ''}`}
-                      onClick={() => setReportsStatusFilter('DISMISSED')}
-                    >
-                      Descartados ({reportsList.filter(r => r.status === 'DISMISSED').length})
-                    </button>
-                    <button
-                      type="button"
-                      className={`pill-btn ${reportsStatusFilter === 'ALL' ? 'active' : ''}`}
-                      onClick={() => setReportsStatusFilter('ALL')}
-                    >
-                      Todos ({reportsList.length})
-                    </button>
+                  <div className="header-filters-row">
+                    <div className="status-pills">
+                      <button
+                        type="button"
+                        className={`pill-btn ${reportsStatusFilter === 'ALL' ? 'active' : ''}`}
+                        onClick={() => setReportsStatusFilter('ALL')}
+                      >
+                        Todos ({reportsList.length})
+                      </button>
+                      <button
+                        type="button"
+                        className={`pill-btn pending ${reportsStatusFilter === 'PENDING' ? 'active' : ''}`}
+                        onClick={() => setReportsStatusFilter('PENDING')}
+                      >
+                        Pendientes ({pendingReportsCount})
+                      </button>
+                      <button
+                        type="button"
+                        className={`pill-btn approved ${reportsStatusFilter === 'RESOLVED' ? 'active' : ''}`}
+                        onClick={() => setReportsStatusFilter('RESOLVED')}
+                      >
+                        Resueltos ({reportsList.filter(r => r.status === 'RESOLVED').length})
+                      </button>
+                      <button
+                        type="button"
+                        className={`pill-btn rejected ${reportsStatusFilter === 'DISMISSED' ? 'active' : ''}`}
+                        onClick={() => setReportsStatusFilter('DISMISSED')}
+                      >
+                        Descartados ({reportsList.filter(r => r.status === 'DISMISSED').length})
+                      </button>
+                    </div>
+
+                    <div className="search-bar-inline">
+                      <i className="fa fa-search"></i>
+                      <input
+                        type="text"
+                        placeholder="Buscar por manga, scan group o usuario..."
+                        value={reportsSearch}
+                        onChange={(e) => setReportsSearch(e.target.value)}
+                      />
+                    </div>
                   </div>
                 </div>
 
