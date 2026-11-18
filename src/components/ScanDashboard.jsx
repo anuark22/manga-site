@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { 
   mangasApi, 
   chaptersApi, 
+  chapterReportsApi,
   genresApi, 
   mangaGenresApi, 
   scansApi, 
@@ -15,17 +16,27 @@ import { useTheme } from '../Context/ThemeContext';
 import imageHelper, { getMangaImage } from '../utils/imageHelper';
 import '../styles/ScanDashboard.scss';
 
+const AUDIT_REASON_LABELS = {
+  WRONG_CHAPTER: 'Capítulo incorrecto o desordenado',
+  BROKEN_IMAGES: 'Imágenes rotas o faltantes',
+  WRONG_MANGA: 'El capítulo pertenece a otro manga',
+  BAD_QUALITY: 'Mala calidad / traducción ilegible',
+  INAPPROPRIATE: 'Contenido inapropiado o spam',
+  OTHER: 'Otro motivo'
+};
+
 const ScanDashboard = () => {
   const { user, isAuthenticated } = useAuth();
   const { theme } = useTheme();
   const navigate = useNavigate();
 
-  // Pestaña activa: 'chapters' | 'mangas' | 'genres' | 'scans'
+  // Pestaña activa: 'chapters' | 'mangas' | 'genres' | 'scans' | 'audits'
   const [activeTab, setActiveTab] = useState('chapters');
 
   // Estado general
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
+  const [scanAudits, setScanAudits] = useState([]);
 
   // Datos globales
   const [mangas, setMangas] = useState([]);
@@ -137,13 +148,14 @@ const ScanDashboard = () => {
   const loadMasterData = async () => {
     setLoading(true);
     try {
-      const [mList, gList, dList, tList, sList, myApp] = await Promise.all([
+      const [mList, gList, dList, tList, sList, myApp, auditsList] = await Promise.all([
         mangasApi.getMangas().catch(() => []),
         filtersApi.getGenres().catch(() => []),
         filtersApi.getDemographics().catch(() => []),
         filtersApi.getMangasType().catch(() => []),
         scansApi.getScans().catch(() => []),
-        isAuthenticated ? scanApplicationsApi.getMyApplication().catch(() => null) : Promise.resolve(null)
+        isAuthenticated ? scanApplicationsApi.getMyApplication().catch(() => null) : Promise.resolve(null),
+        isAuthenticated ? chapterReportsApi.getMyScanReports().catch(() => []) : Promise.resolve([])
       ]);
 
       setMangas(mList);
@@ -152,6 +164,7 @@ const ScanDashboard = () => {
       setMangaTypes(tList);
       setScans(sList);
       setMyApplication(myApp);
+      setScanAudits(auditsList);
 
       if (mList.length > 0 && !selectedMangaId) {
         setSelectedMangaId(mList[0].mangaId);
@@ -1045,7 +1058,48 @@ const ScanDashboard = () => {
             >
               <i className="fa fa-users"></i> Grupos Scan
             </button>
+            <button
+              type="button"
+              className={`nav-tab-btn ${activeTab === 'audits' ? 'active' : ''}`}
+              onClick={() => setActiveTab('audits')}
+            >
+              <i className="fa fa-exclamation-triangle"></i> Auditorías ({scanAudits.length})
+            </button>
           </nav>
+
+          {/* Aviso destacado si el Scan Group tiene advertencias o capítulos sancionados */}
+          {scanAudits.some(a => a.actionTaken === 'SCAN_WARNED' || a.actionTaken === 'HIDE_CHAPTER' || a.actionTaken === 'CHAPTER_DELETED') && activeTab !== 'audits' && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '12px',
+                padding: '12px 18px',
+                marginBottom: '18px',
+                borderRadius: '10px',
+                background: 'rgba(245, 158, 11, 0.14)',
+                border: '1px solid rgba(245, 158, 11, 0.45)',
+                color: 'inherit'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13.5px' }}>
+                <i className="fa fa-exclamation-triangle" style={{ color: '#f59e0b', fontSize: '18px' }}></i>
+                <span>
+                  Tu Grupo Scan tiene <strong>{scanAudits.filter(a => a.actionTaken === 'SCAN_WARNED' || a.actionTaken === 'HIDE_CHAPTER' || a.actionTaken === 'CHAPTER_DELETED').length}</strong> notificación(es) o advertencia(s) de auditoría administrativa.
+                </span>
+              </div>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setActiveTab('audits')}
+                style={{ padding: '6px 14px', fontSize: '12.5px' }}
+              >
+                <i className="fa fa-eye"></i> Revisar Auditorías
+              </button>
+            </div>
+          )}
 
           {/* ========================================================= */}
           {/* TAB 1: SUBIDA DINÁMICA DE CAPÍTULOS                       */}
@@ -1777,6 +1831,110 @@ const ScanDashboard = () => {
                       ))}
                     </div>
                   </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================= */}
+          {/* TAB 5: AUDITORÍAS Y ADVERTENCIAS PARA EL SCAN GROUP       */}
+          {/* ========================================================= */}
+          {activeTab === 'audits' && (
+            <div className="tab-pane audits-tab">
+              <div className="panel-box">
+                <div className="box-header-row" style={{ marginBottom: '20px' }}>
+                  <div>
+                    <h2 className="box-title">
+                      <i className="fa fa-exclamation-triangle"></i> Auditorías y Advertencias de Capítulos ({scanAudits.length})
+                    </h2>
+                    <p className="box-subtitle" style={{ margin: '4px 0 0', opacity: 0.75, fontSize: '13.5px' }}>
+                      Revisa los reportes recibidos en capítulos subidos por tu Grupo Scan y las resoluciones o advertencias emitidas por Administración.
+                    </p>
+                  </div>
+                </div>
+
+                {scanAudits.length === 0 ? (
+                  <div className="empty-state" style={{ textAlign: 'center', padding: '40px 20px', opacity: 0.75 }}>
+                    <i className="fa fa-check-circle" style={{ fontSize: '38px', color: '#10b981', marginBottom: '12px' }}></i>
+                    <h3 style={{ margin: '0 0 6px' }}>¡Excelente trabajo!</h3>
+                    <p style={{ margin: 0 }}>Tu Grupo Scan no tiene advertencias ni reportes pendientes de auditoría.</p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    {scanAudits.map((audit) => {
+                      const isWarning = audit.actionTaken === 'SCAN_WARNED';
+                      const isDeleted = audit.actionTaken === 'CHAPTER_DELETED' || audit.actionTaken === 'DELETE_CHAPTER';
+                      const isHidden = audit.actionTaken === 'HIDE_CHAPTER';
+                      const badgeColor = isDeleted ? '#ef4444' : (isWarning || isHidden) ? '#f59e0b' : audit.status === 'RESOLVED' ? '#10b981' : '#38bdf8';
+
+                      return (
+                        <div
+                          key={audit.reportId}
+                          style={{
+                            padding: '16px 18px',
+                            borderRadius: '12px',
+                            border: `1px solid ${isWarning || isDeleted ? 'rgba(245, 158, 11, 0.4)' : 'rgba(148, 163, 184, 0.2)'}`,
+                            background: 'rgba(15, 23, 42, 0.35)'
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
+                            <div>
+                              <h3 style={{ margin: '0 0 4px', fontSize: '16px' }}>
+                                {audit.mangaTittle} &mdash; Capítulo {audit.chapterNumber}
+                                {audit.chapterTitle ? ` (${audit.chapterTitle})` : ''}
+                              </h3>
+                              <span style={{ fontSize: '12.5px', opacity: 0.75 }}>
+                                Grupo: <strong>{audit.scanName}</strong> &bull; Reportado el {new Date(audit.createdAt).toLocaleDateString()}
+                              </span>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                              <span style={{ padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, background: `${badgeColor}22`, color: badgeColor }}>
+                                {isWarning && '⚠ Advertencia al Scan Group'}
+                                {isDeleted && '🗑 Capítulo Eliminado'}
+                                {isHidden && '👁 Capítulo Ocultado'}
+                                {!isWarning && !isDeleted && !isHidden && (audit.status === 'PENDING' ? '⏳ En revisión por Admin' : '✓ Resuelto')}
+                              </span>
+                              {audit.chapterExists && audit.chapterId && (
+                                <Link
+                                  to={`/manga/${audit.mangaId}/chapter/${audit.chapterId}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="btn-secondary"
+                                  style={{ padding: '4px 10px', fontSize: '12px', textDecoration: 'none' }}
+                                >
+                                  <i className="fa fa-external-link"></i> Ver Capítulo
+                                </Link>
+                              )}
+                            </div>
+                          </div>
+
+                          <div style={{ fontSize: '13.5px', marginBottom: '8px' }}>
+                            <strong>Motivo reportado:</strong> {AUDIT_REASON_LABELS[audit.reason] || audit.reason}
+                            {audit.description && (
+                              <p style={{ margin: '4px 0 0', opacity: 0.85, fontStyle: 'italic' }}>"{audit.description}"</p>
+                            )}
+                          </div>
+
+                          {audit.adminNotes && (
+                            <div
+                              style={{
+                                marginTop: '10px',
+                                padding: '10px 12px',
+                                borderRadius: '8px',
+                                background: 'rgba(245, 158, 11, 0.12)',
+                                borderLeft: '3px solid #f59e0b',
+                                fontSize: '13px'
+                              }}
+                            >
+                              <strong>Observación de Administración{audit.reviewerUsername ? ` (${audit.reviewerUsername})` : ''}:</strong>
+                              <p style={{ margin: '4px 0 0' }}>{audit.adminNotes}</p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             </div>

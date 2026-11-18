@@ -743,6 +743,15 @@ export const chapterReportsApi = {
   },
 
   /**
+   * (Scan Group) Obtiene los reportes y advertencias de auditoría para el Scan Group del usuario
+   */
+  async getMyScanReports(scanId = null) {
+    const query = scanId ? `?scanId=${encodeURIComponent(scanId)}` : '';
+    const res = await request(`/ChapterReports/GetMyScanReports${query}`);
+    return res.items || [];
+  },
+
+  /**
    * Verifica si el usuario autenticado ya envió un reporte para un capítulo
    */
   async getMyReportForChapter(chapterId) {
