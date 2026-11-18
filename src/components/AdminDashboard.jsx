@@ -1405,91 +1405,98 @@ const AdminDashboard = () => {
                 {filteredReports.length === 0 ? (
                   <div className="empty-state">
                     <i className="fa fa-check-circle-o"></i>
-                    <h3>No hay reportes en esta categoría</h3>
-                    <p>No se encontraron reportes de capítulos con los filtros seleccionados.</p>
+                    <p>No hay reportes en esta categoría.</p>
+                    <span>No se encontraron reportes de capítulos con los filtros seleccionados.</span>
                   </div>
                 ) : (
-                  <div className="applications-grid">
-                    {filteredReports.map(rep => (
-                      <div key={rep.reportId} className={`application-card status-${(rep.status || 'PENDING').toLowerCase()}`}>
-                        <div className="app-card-top">
-                          <div className="app-identity" style={{ gap: '8px' }}>
-                            <div className="stat-icon" style={{ width: '44px', height: '44px', borderRadius: '10px', background: 'rgba(239,68,68,0.14)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
-                              <i className="fa fa-flag"></i>
+                  <div className="applications-list">
+                    {filteredReports.map(rep => {
+                      const statusClass = rep.status === 'RESOLVED' ? 'approved' : rep.status === 'DISMISSED' ? 'rejected' : 'pending';
+                      return (
+                        <div key={rep.reportId} className={`app-card status-${statusClass}`}>
+                          <div className="app-card-header">
+                            <div className="app-scan-info">
+                              <div className="app-logo-box" style={{ background: 'rgba(239, 68, 68, 0.14)', color: '#ef4444' }}>
+                                <i className="fa fa-flag"></i>
+                              </div>
+                              <div className="app-titles">
+                                <div className="title-row">
+                                  <h3 className="app-scan-name">
+                                    {rep.mangaTittle} &mdash; Cap. {rep.chapterNumber}
+                                  </h3>
+                                  <span className={`app-status-badge ${statusClass}`}>
+                                    {rep.status === 'PENDING' && <><i className="fa fa-clock-o"></i> Pendiente</>}
+                                    {rep.status === 'RESOLVED' && <><i className="fa fa-check"></i> Resuelto</>}
+                                    {rep.status === 'DISMISSED' && <><i className="fa fa-times"></i> Descartado</>}
+                                  </span>
+                                  {!rep.chapterExists && (
+                                    <span className="app-status-badge rejected">
+                                      <i className="fa fa-trash"></i> Capítulo eliminado
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="app-applicant-meta">
+                                  <span><i className="fa fa-users"></i> Scan Group: <strong>{rep.scanName}</strong></span>
+                                  <span><i className="fa fa-user"></i> Reportado por: <strong>{rep.reporterUsername}</strong> ({rep.reporterEmail})</span>
+                                  <span><i className="fa fa-calendar"></i> {new Date(rep.createdAt).toLocaleDateString()}</span>
+                                </div>
+                              </div>
                             </div>
-                            <div className="app-titles">
-                              <h3>
-                                {rep.mangaTittle} &mdash; Cap. {rep.chapterNumber}
-                              </h3>
-                              <span className="app-applicant">
-                                <i className="fa fa-users"></i> Scan Group: <strong>{rep.scanName}</strong>
-                              </span>
+
+                            <div className="app-actions">
+                              {rep.chapterExists && rep.chapterId && (
+                                <Link
+                                  to={`/manga/${rep.mangaId}/chapter/${rep.chapterId}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="btn-secondary"
+                                  style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                                >
+                                  <i className="fa fa-external-link"></i> Inspeccionar Capítulo
+                                </Link>
+                              )}
+                              <button
+                                type="button"
+                                className="btn-approve"
+                                onClick={() => handleOpenAuditReport(rep)}
+                              >
+                                <i className="fa fa-gavel"></i> {rep.status === 'PENDING' ? 'Auditar Reporte' : 'Ver / Editar Resolución'}
+                              </button>
                             </div>
                           </div>
 
-                          <span className={`status-badge badge-${(rep.status || 'PENDING').toLowerCase()}`}>
-                            {rep.status === 'PENDING' && 'Pendiente'}
-                            {rep.status === 'RESOLVED' && 'Resuelto'}
-                            {rep.status === 'DISMISSED' && 'Descartado'}
-                          </span>
-                        </div>
+                          <div className="app-card-body">
+                            <div className="app-desc-section">
+                              <h4>Motivo del Reporte:</h4>
+                              <p style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                <span className="app-link-pill" style={{ background: 'rgba(245, 158, 11, 0.16)', color: '#f59e0b', borderColor: 'rgba(245, 158, 11, 0.35)' }}>
+                                  <i className="fa fa-exclamation-circle"></i> {REPORT_REASON_LABELS[rep.reason] || rep.reason}
+                                </span>
+                                {rep.chapterTitle && <span style={{ opacity: 0.75 }}>({rep.chapterTitle})</span>}
+                              </p>
+                            </div>
 
-                        <div className="app-details">
-                          <div style={{ marginBottom: '8px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-                            <span style={{ padding: '4px 10px', borderRadius: '6px', background: 'rgba(245, 158, 11, 0.16)', color: '#f59e0b', fontSize: '12px', fontWeight: 700 }}>
-                              <i className="fa fa-exclamation-circle"></i> {REPORT_REASON_LABELS[rep.reason] || rep.reason}
-                            </span>
-                            {!rep.chapterExists && (
-                              <span style={{ padding: '4px 10px', borderRadius: '6px', background: 'rgba(148, 163, 184, 0.2)', color: '#94a3b8', fontSize: '12px', fontWeight: 600 }}>
-                                <i className="fa fa-trash"></i> Capítulo eliminado
-                              </span>
+                            {rep.description && (
+                              <div className="app-message-section">
+                                <h4>Detalle del Usuario:</h4>
+                                <blockquote>"{rep.description}"</blockquote>
+                              </div>
+                            )}
+
+                            {rep.reviewedBy && (
+                              <div className="app-review-history">
+                                <div className="review-meta">
+                                  <i className="fa fa-info-circle"></i> Auditado por <strong>{rep.reviewerUsername || 'Admin'}</strong> el {new Date(rep.reviewedAt).toLocaleString()} &bull; Acción: <strong>{rep.actionTaken || 'NONE'}</strong>
+                                </div>
+                                {rep.adminNotes && (
+                                  <p className="review-notes">Notas administrativas: <em>"{rep.adminNotes}"</em></p>
+                                )}
+                              </div>
                             )}
                           </div>
-
-                          {rep.description && (
-                            <p className="app-message">
-                              <i className="fa fa-quote-left"></i> {rep.description}
-                            </p>
-                          )}
-
-                          <div className="app-meta">
-                            <span>
-                              <i className="fa fa-user"></i> Reportado por: <strong>{rep.reporterUsername}</strong> ({rep.reporterEmail})
-                            </span>
-                            <span>
-                              <i className="fa fa-calendar"></i> {new Date(rep.createdAt).toLocaleDateString()}
-                            </span>
-                          </div>
-
-                          {rep.adminNotes && (
-                            <div className="app-admin-notes">
-                              <strong>Resolución ({rep.actionTaken || 'NONE'}):</strong> {rep.adminNotes}
-                            </div>
-                          )}
                         </div>
-
-                        <div className="app-card-actions">
-                          {rep.chapterExists && rep.chapterId && (
-                            <Link
-                              to={`/manga/${rep.mangaId}/chapter/${rep.chapterId}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="btn-action btn-view"
-                              style={{ background: 'rgba(56, 189, 248, 0.14)', color: '#38bdf8', textDecoration: 'none' }}
-                            >
-                              <i className="fa fa-external-link"></i> Inspeccionar Capítulo
-                            </Link>
-                          )}
-                          <button
-                            type="button"
-                            className="btn-action btn-approve"
-                            onClick={() => handleOpenAuditReport(rep)}
-                          >
-                            <i className="fa fa-gavel"></i> {rep.status === 'PENDING' ? 'Auditar Reporte' : 'Ver / Editar Resolución'}
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -1513,74 +1520,75 @@ const AdminDashboard = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSubmitAuditReport}>
-              <div className="admin-modal-body">
-                <p className="modal-summary">
-                  <strong>{auditingReport.mangaTittle}</strong> &mdash; Capítulo {auditingReport.chapterNumber}
-                  <br />
-                  <small>Scan Group responsable: <strong>{auditingReport.scanName}</strong> | Reportado por: <strong>{auditingReport.reporterUsername}</strong></small>
-                </p>
+            <form onSubmit={handleSubmitAuditReport} className="admin-modal-form">
+              <div className="review-summary-box">
+                <p><strong>Manga / Capítulo:</strong> {auditingReport.mangaTittle} &mdash; Capítulo {auditingReport.chapterNumber}</p>
+                <p><strong>Scan Group responsable:</strong> {auditingReport.scanName}</p>
+                <p><strong>Reportado por:</strong> {auditingReport.reporterUsername} ({auditingReport.reporterEmail})</p>
 
-                <div style={{ padding: '10px 12px', borderRadius: '8px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', marginBottom: '14px', fontSize: '13px' }}>
-                  <strong>Motivo:</strong> {REPORT_REASON_LABELS[auditingReport.reason] || auditingReport.reason}
+                <div className="alert-box warning" style={{ marginTop: '10px' }}>
+                  <i className="fa fa-exclamation-triangle"></i> <strong>Motivo:</strong> {REPORT_REASON_LABELS[auditingReport.reason] || auditingReport.reason}
                   {auditingReport.description && (
-                    <div style={{ marginTop: '4px', opacity: 0.9 }}>{auditingReport.description}</div>
+                    <div style={{ marginTop: '6px', opacity: 0.92 }}>"{auditingReport.description}"</div>
                   )}
                 </div>
+              </div>
 
+              <div className="form-group">
+                <label className="input-label">Acción a tomar sobre el Capítulo / Scan Group:</label>
+                <select
+                  className="form-select"
+                  value={auditForm.actionTaken}
+                  onChange={(e) => {
+                    const action = e.target.value;
+                    setAuditForm(prev => ({
+                      ...prev,
+                      actionTaken: action,
+                      status: action === 'NONE' ? prev.status : 'RESOLVED'
+                    }));
+                  }}
+                >
+                  <option value="NONE">Sin acción sobre el capítulo (solo actualizar estado)</option>
+                  <option value="SCAN_WARNED">Advertencia registrada al Scan Group</option>
+                  {auditingReport.chapterExists && (
+                    <>
+                      <option value="HIDE_CHAPTER">Ocultar Capítulo (desactivar visibilidad)</option>
+                      <option value="DELETE_CHAPTER">Eliminar Capítulo y sus páginas permanentemente</option>
+                    </>
+                  )}
+                </select>
+              </div>
+
+              {auditForm.actionTaken === 'NONE' && (
                 <div className="form-group">
-                  <label>Acción a tomar sobre el Capítulo / Scan Group:</label>
+                  <label className="input-label">Estado del reporte:</label>
                   <select
-                    value={auditForm.actionTaken}
-                    onChange={(e) => {
-                      const action = e.target.value;
-                      setAuditForm(prev => ({
-                        ...prev,
-                        actionTaken: action,
-                        status: action === 'NONE' ? prev.status : 'RESOLVED'
-                      }));
-                    }}
+                    className="form-select"
+                    value={auditForm.status}
+                    onChange={(e) => setAuditForm(prev => ({ ...prev, status: e.target.value }))}
                   >
-                    <option value="NONE">Sin acción sobre el capítulo (solo actualizar estado)</option>
-                    <option value="SCAN_WARNED">Advertencia registrada al Scan Group</option>
-                    {auditingReport.chapterExists && (
-                      <>
-                        <option value="HIDE_CHAPTER">Ocultar Capítulo (desactivar visibilidad)</option>
-                        <option value="DELETE_CHAPTER">Eliminar Capítulo y sus páginas permanentemente</option>
-                      </>
-                    )}
+                    <option value="RESOLVED">Resuelto</option>
+                    <option value="DISMISSED">Descartado (falso reporte / capítulo correcto)</option>
                   </select>
                 </div>
+              )}
 
-                {auditForm.actionTaken === 'NONE' && (
-                  <div className="form-group">
-                    <label>Estado del reporte:</label>
-                    <select
-                      value={auditForm.status}
-                      onChange={(e) => setAuditForm(prev => ({ ...prev, status: e.target.value }))}
-                    >
-                      <option value="RESOLVED">Resuelto</option>
-                      <option value="DISMISSED">Descartado (falso reporte / capítulo correcto)</option>
-                    </select>
-                  </div>
-                )}
-
-                <div className="form-group">
-                  <label>Notas de auditoría (opcional):</label>
-                  <textarea
-                    rows={3}
-                    maxLength={1000}
-                    value={auditForm.adminNotes}
-                    onChange={(e) => setAuditForm(prev => ({ ...prev, adminNotes: e.target.value }))}
-                    placeholder="Detalle de la revisión o advertencia para el historial..."
-                  />
-                </div>
+              <div className="form-group">
+                <label className="input-label">Notas de auditoría (opcional):</label>
+                <textarea
+                  className="form-textarea"
+                  rows={3}
+                  maxLength={1000}
+                  value={auditForm.adminNotes}
+                  onChange={(e) => setAuditForm(prev => ({ ...prev, adminNotes: e.target.value }))}
+                  placeholder="Detalle de la revisión o advertencia para el historial..."
+                />
               </div>
 
               <div className="admin-modal-footer">
                 <button
                   type="button"
-                  className="btn-modal-cancel"
+                  className="btn-secondary"
                   onClick={handleCloseAuditReport}
                   disabled={auditSubmitting}
                 >
@@ -1588,10 +1596,16 @@ const AdminDashboard = () => {
                 </button>
                 <button
                   type="submit"
-                  className={`btn-modal-confirm ${auditForm.actionTaken === 'DELETE_CHAPTER' ? 'reject' : 'approve'}`}
+                  className={`btn-primary ${auditForm.actionTaken === 'DELETE_CHAPTER' ? 'btn-danger' : 'btn-success'}`}
                   disabled={auditSubmitting}
                 >
-                  {auditSubmitting ? 'Procesando...' : auditForm.actionTaken === 'DELETE_CHAPTER' ? 'Eliminar Capítulo y Resolver' : 'Guardar Auditoría'}
+                  {auditSubmitting ? (
+                    <><i className="fa fa-spinner fa-spin"></i> Procesando...</>
+                  ) : auditForm.actionTaken === 'DELETE_CHAPTER' ? (
+                    <><i className="fa fa-trash"></i> Eliminar Capítulo y Resolver</>
+                  ) : (
+                    <><i className="fa fa-check"></i> Guardar Auditoría</>
+                  )}
                 </button>
               </div>
             </form>
