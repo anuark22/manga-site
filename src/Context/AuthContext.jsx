@@ -17,18 +17,18 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async ({ email, password }) => {
-    const loggedUser = await authApi.login({ email, password });
+  const login = async ({ email, password, honeypot = '' }) => {
+    const loggedUser = await authApi.login({ email, password, honeypot });
     setUser(loggedUser);
     setToken(loggedUser.token);
     return loggedUser;
   };
 
-  const register = async ({ username, email, password }) => {
-    const res = await authApi.register({ username, email, password, aceptTerms: true });
+  const register = async ({ username, email, password, honeypot = '' }) => {
+    const res = await authApi.register({ username, email, password, aceptTerms: true, honeypot });
     // Tras registrarse con éxito, intentamos inicio de sesión automático
     try {
-      const loggedUser = await authApi.login({ email, password });
+      const loggedUser = await authApi.login({ email, password, honeypot });
       setUser(loggedUser);
       setToken(loggedUser.token);
       return loggedUser;

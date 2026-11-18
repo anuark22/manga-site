@@ -37,6 +37,7 @@ const ForumPostDetail = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [commentText, setCommentText] = useState('');
+  const [honeypot, setHoneypot] = useState('');
   const [toast, setToast] = useState('');
   const [error, setError] = useState(null);
 
@@ -114,7 +115,8 @@ const ForumPostDetail = () => {
     try {
       const res = await forumApi.addComment({
         postId: Number(id),
-        content: commentText.trim()
+        content: commentText.trim(),
+        honeypot
       });
 
       // Crear nuevo comentario de forma optimista
@@ -130,6 +132,7 @@ const ForumPostDetail = () => {
 
       setComments(prev => [...prev, newCommentObj]);
       setCommentText('');
+      setHoneypot('');
       showToast('¡Comentario publicado con éxito!');
 
       // Recargar comentarios del servidor para sincronizar
@@ -143,7 +146,7 @@ const ForumPostDetail = () => {
       }
     } catch (err) {
       console.error('Error al agregar comentario:', err);
-      showToast('No se pudo publicar el comentario. Inténtalo de nuevo.');
+      showToast(err.message || 'No se pudo publicar el comentario. Inténtalo de nuevo.');
     } finally {
       setSubmitting(false);
     }
@@ -412,6 +415,17 @@ const ForumPostDetail = () => {
           <div className="reply-form-wrapper">
             {isAuthenticated ? (
               <form onSubmit={handleCommentSubmit} className="reply-box-form">
+                {/* Campo trampa Honeypot anti-spam */}
+                <div style={{ position: 'absolute', left: '-9999px', opacity: 0, height: 0, width: 0, pointerEvents: 'none', zIndex: -1 }} aria-hidden="true">
+                  <input
+                    type="text"
+                    name="reply_security_hp"
+                    tabIndex="-1"
+                    autoComplete="off"
+                    value={honeypot}
+                    onChange={(e) => setHoneypot(e.target.value)}
+                  />
+                </div>
                 <div className="reply-form-header">
                   <div className="current-user-avatar">
                     <Gravatar email={user?.email || ''} />

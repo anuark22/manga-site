@@ -12,6 +12,7 @@ const Register = () => {
         password: '',
         confirmPassword: ''
     });
+    const [honeypot, setHoneypot] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const { register } = useAuth();
@@ -37,7 +38,8 @@ const Register = () => {
             await register({
                 username: formData.username.trim(),
                 email: formData.email.trim(),
-                password: formData.password
+                password: formData.password,
+                honeypot
             });
             alert('¡Cuenta creada exitosamente!');
             navigate('/');
@@ -53,6 +55,18 @@ const Register = () => {
             <form onSubmit={handleSubmit}>
                 <div className="register-container">
                     <h2 className="auth-title">Crear Cuenta</h2>
+
+                    {/* Campo trampa Honeypot (invisible para humanos, rellenado por bots de spam) */}
+                    <div style={{ position: 'absolute', left: '-9999px', opacity: 0, height: 0, width: 0, pointerEvents: 'none', zIndex: -1 }} aria-hidden="true">
+                        <input 
+                            type="text" 
+                            name="contact_verification_token" 
+                            tabIndex="-1" 
+                            autoComplete="off" 
+                            value={honeypot} 
+                            onChange={(e) => setHoneypot(e.target.value)} 
+                        />
+                    </div>
 
                     {error && (
                         <div style={{

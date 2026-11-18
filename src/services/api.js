@@ -300,14 +300,15 @@ export const forumApi = {
   /**
    * Crea una nueva discusión en el foro (Requiere autenticación)
    */
-  async createPost({ title, content, topic, subTopic }) {
+  async createPost({ title, content, topic, subTopic, honeypot = '' }) {
     const res = await request('/Forum/CreatePost', {
       method: 'POST',
       body: JSON.stringify({
         title,
         content: content || 'Discusión de la comunidad',
         topic,
-        subTopic
+        subTopic,
+        honeypot
       })
     });
     return res;
@@ -344,10 +345,10 @@ export const forumApi = {
   /**
    * Agrega un comentario a un post (Requiere autenticación)
    */
-  async addComment({ postId, content }) {
+  async addComment({ postId, content, honeypot = '' }) {
     return await request('/Forum/AddComment', {
       method: 'POST',
-      body: JSON.stringify({ postId: Number(postId), content })
+      body: JSON.stringify({ postId: Number(postId), content, honeypot })
     });
   },
 
@@ -491,10 +492,10 @@ export const authApi = {
   /**
    * Inicia sesión con Email y Password
    */
-  async login({ email, password }) {
+  async login({ email, password, honeypot = '' }) {
     const res = await request('/Users/Login', {
       method: 'POST',
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ email, password, honeypot })
     });
     
     if (res.items && res.items.length > 0) {
@@ -508,14 +509,15 @@ export const authApi = {
   /**
    * Registra un nuevo usuario
    */
-  async register({ username, email, password, aceptTerms = true }) {
+  async register({ username, email, password, aceptTerms = true, honeypot = '' }) {
     const res = await request('/Users/Register', {
       method: 'POST',
       body: JSON.stringify({
         username,
         email,
         password,
-        aceptTerms
+        aceptTerms,
+        honeypot
       })
     });
     return res;

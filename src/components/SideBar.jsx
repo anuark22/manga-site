@@ -20,6 +20,7 @@ const SideBar = ({ onSelectTopic, onPostCreated }) => {
     const [newCategory, setNewCategory] = useState('OMS Community');
     const [newContent, setNewContent] = useState('');
     const [submitting, setSubmitting] = useState(false);
+    const [honeypot, setHoneypot] = useState('');
 
     const modalRef = useClickOutside(() => {
         if (isModalOpen) setIsModalOpen(false);
@@ -57,13 +58,15 @@ const SideBar = ({ onSelectTopic, onPostCreated }) => {
                 title: newTitle.trim(),
                 content: newContent.trim() || 'Discusión de la comunidad',
                 topic: newCategory,
-                subTopic: activeTopic !== 'All' ? activeTopic : 'General'
+                subTopic: activeTopic !== 'All' ? activeTopic : 'General',
+                honeypot
             });
 
             alert(`¡Discusión creada con éxito en "${newCategory}":\n"${newTitle}"!`);
             setIsModalOpen(false);
             setNewTitle('');
             setNewContent('');
+            setHoneypot('');
 
             if (onPostCreated) {
                 onPostCreated();
@@ -179,6 +182,17 @@ const SideBar = ({ onSelectTopic, onPostCreated }) => {
                         )}
 
                         <form onSubmit={handleCreateDiscussion}>
+                            {/* Campo trampa Honeypot anti-spam */}
+                            <div style={{ position: 'absolute', left: '-9999px', opacity: 0, height: 0, width: 0, pointerEvents: 'none', zIndex: -1 }} aria-hidden="true">
+                                <input
+                                    type="text"
+                                    name="topic_verification_hp"
+                                    tabIndex="-1"
+                                    autoComplete="off"
+                                    value={honeypot}
+                                    onChange={(e) => setHoneypot(e.target.value)}
+                                />
+                            </div>
                             <div className="form-group">
                                 <label>Categoría</label>
                                 <select 
