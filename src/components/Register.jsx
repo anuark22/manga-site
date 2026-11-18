@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../Context/AuthContext';
+import { executeRecaptcha } from '../services/recaptcha';
 import '../styles/Register.scss';
 
 const Register = () => {
@@ -35,11 +36,13 @@ const Register = () => {
         setLoading(true);
 
         try {
+            const recaptchaToken = await executeRecaptcha('register');
             await register({
                 username: formData.username.trim(),
                 email: formData.email.trim(),
                 password: formData.password,
-                honeypot
+                honeypot,
+                recaptchaToken
             });
             alert('¡Cuenta creada exitosamente!');
             navigate('/');

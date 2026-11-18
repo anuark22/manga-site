@@ -492,10 +492,10 @@ export const authApi = {
   /**
    * Inicia sesión con Email y Password
    */
-  async login({ email, password, honeypot = '' }) {
+  async login({ email, password, honeypot = '', recaptchaToken = '' }) {
     const res = await request('/Users/Login', {
       method: 'POST',
-      body: JSON.stringify({ email, password, honeypot })
+      body: JSON.stringify({ email, password, honeypot, recaptchaToken })
     });
     
     if (res.items && res.items.length > 0) {
@@ -509,7 +509,7 @@ export const authApi = {
   /**
    * Registra un nuevo usuario
    */
-  async register({ username, email, password, aceptTerms = true, honeypot = '' }) {
+  async register({ username, email, password, aceptTerms = true, honeypot = '', recaptchaToken = '' }) {
     const res = await request('/Users/Register', {
       method: 'POST',
       body: JSON.stringify({
@@ -517,7 +517,8 @@ export const authApi = {
         email,
         password,
         aceptTerms,
-        honeypot
+        honeypot,
+        recaptchaToken
       })
     });
     return res;

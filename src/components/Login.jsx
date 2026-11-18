@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../Context/AuthContext';
+import { executeRecaptcha } from '../services/recaptcha';
 import '../styles/Login.scss';
 
 const Login = () => {
@@ -36,10 +37,12 @@ const Login = () => {
         setLoading(true);
 
         try {
+            const recaptchaToken = await executeRecaptcha('login');
             await login({ 
                 email: formData.email.trim(), 
                 password: formData.password,
-                honeypot 
+                honeypot,
+                recaptchaToken
             });
             navigate('/');
         } catch (err) {
