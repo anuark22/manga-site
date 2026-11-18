@@ -828,7 +828,7 @@ const MangaReader = () => {
             </div>
 
             <div className="report-chapter-context">
-              <span><strong>{mangaTitle}</strong> &mdash; Capítulo {currentChapter?.chapterNumber}</span>
+              <span><strong>{mangaName}</strong> &mdash; Capítulo {currentChapter?.chapterNumber}</span>
               {currentChapter?.chapterTitle && <small>{currentChapter.chapterTitle}</small>}
             </div>
 
