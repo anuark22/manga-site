@@ -1,14 +1,25 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { mangasApi, chaptersApi, normalizePageUrl } from '../services/api';
+import { mangasApi, chaptersApi, chapterReportsApi, normalizePageUrl } from '../services/api';
 import mangasData, { canonicalMangas } from './mangasData';
 import { useTheme } from '../Context/ThemeContext';
+import { useAuth } from '../Context/AuthContext';
 import '../styles/MangaReader.scss';
+
+const REPORT_REASONS = [
+  { value: 'WRONG_CHAPTER', label: 'Capítulo incorrecto o páginas desordenadas' },
+  { value: 'BROKEN_IMAGES', label: 'Imágenes rotas, faltantes o que no cargan' },
+  { value: 'WRONG_MANGA', label: 'El capítulo pertenece a otro manga' },
+  { value: 'BAD_QUALITY', label: 'Mala calidad / traducción ilegible' },
+  { value: 'INAPPROPRIATE', label: 'Contenido inapropiado o spam' },
+  { value: 'OTHER', label: 'Otro motivo' }
+];
 
 const MangaReader = () => {
   const { id, chapterId } = useParams();
   const navigate = useNavigate();
   const { theme } = useTheme();
+  const { isAuthenticated } = useAuth();
 
   // Estados de datos
   const [manga, setManga] = useState(null);
@@ -54,6 +65,75 @@ const MangaReader = () => {
     const timer = setTimeout(() => setToastMessage(''), 3000);
     return () => clearTimeout(timer);
   }, [toastMessage]);
+
+  // Sistema de Reporte de Capítulo (1 reporte por usuario por capítulo)
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [existingReport, setExistingReport] = useState(null);
+  const [reportReason, setReportReason] = useState('WRONG_CHAPTER');
+  const [reportDescription, setReportDescription] = useState('');
+  const [reportHoneypot, setReportHoneypot] = useState('');
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [reportError, setReportError] = useState('');
+
+  useEffect(() => {
+    if (!isAuthenticated || !currentChapter?.chapterId) {
+      setExistingReport(null);
+      return;
+    }
+    let isMounted = true;
+    chapterReportsApi.getMyReportForChapter(currentChapter.chapterId)
+      .then((rep) => {
+        if (isMounted) setExistingReport(rep);
+      })
+      .catch(() => {
+        if (isMounted) setExistingReport(null);
+      });
+    return () => { isMounted = false; };
+  }, [isAuthenticated, currentChapter?.chapterId]);
+
+  const handleOpenReportModal = () => {
+    if (!isAuthenticated) {
+      setToastMessage('Debes iniciar sesión para poder reportar un capítulo.');
+      setTimeout(() => navigate('/login'), 1200);
+      return;
+    }
+    setReportError('');
+    setShowReportModal(true);
+  };
+
+  const handleSubmitReport = async (e) => {
+    e.preventDefault();
+    if (existingReport || !currentChapter?.chapterId) return;
+
+    setReportSubmitting(true);
+    setReportError('');
+    try {
+      await chapterReportsApi.createReport({
+        chapterId: currentChapter.chapterId,
+        reason: reportReason,
+        description: reportDescription.trim(),
+        honeypot: reportHoneypot
+      });
+      setExistingReport({
+        reason: reportReason,
+        description: reportDescription.trim(),
+        status: 'PENDING',
+        createdAt: new Date().toISOString()
+      });
+      setShowReportModal(false);
+      setReportDescription('');
+      setReportHoneypot('');
+      setToastMessage('¡Reporte enviado! El equipo de administración lo auditará.');
+    } catch (err) {
+      if (err.status === 409) {
+        const rep = await chapterReportsApi.getMyReportForChapter(currentChapter.chapterId).catch(() => null);
+        if (rep) setExistingReport(rep);
+      }
+      setReportError(err.message || 'No se pudo enviar el reporte. Inténtalo de nuevo.');
+    } finally {
+      setReportSubmitting(false);
+    }
+  };
 
   // Referencias para auto-scroll y observación
   const pageRefs = useRef({});
@@ -482,6 +562,17 @@ const MangaReader = () => {
             <span className="btn-label">Lupa</span>
           </button>
 
+          {/* Reportar capítulo */}
+          <button
+            type="button"
+            className={`control-btn report-chapter-btn ${existingReport ? 'reported' : ''}`}
+            onClick={handleOpenReportModal}
+            title={existingReport ? 'Ya reportaste este capítulo (clic para ver estado)' : 'Reportar capítulo incorrecto o con fallos'}
+          >
+            <i className={`fa ${existingReport ? 'fa-check-circle' : 'fa-flag'}`} aria-hidden="true"></i>
+            <span className="btn-label">{existingReport ? 'Reportado' : 'Reportar'}</span>
+          </button>
+
           {/* Pantalla completa */}
           <button
             type="button"
@@ -715,6 +806,157 @@ const MangaReader = () => {
         >
           <i className="fa fa-cog"></i>
         </button>
+      )}
+
+      {/* Modal de Reporte de Capítulo */}
+      {showReportModal && (
+        <div className="reader-report-overlay" onClick={() => setShowReportModal(false)}>
+          <div className="reader-report-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="report-modal-header">
+              <div className="report-title-group">
+                <i className={`fa ${existingReport ? 'fa-check-circle' : 'fa-flag'}`}></i>
+                <h3>{existingReport ? 'Estado de tu Reporte' : 'Reportar Capítulo'}</h3>
+              </div>
+              <button
+                type="button"
+                className="btn-close-report"
+                onClick={() => setShowReportModal(false)}
+                aria-label="Cerrar"
+              >
+                <i className="fa fa-times"></i>
+              </button>
+            </div>
+
+            <div className="report-chapter-context">
+              <span><strong>{mangaTitle}</strong> &mdash; Capítulo {currentChapter?.chapterNumber}</span>
+              {currentChapter?.chapterTitle && <small>{currentChapter.chapterTitle}</small>}
+            </div>
+
+            {existingReport ? (
+              <div className="report-already-exists">
+                <div className="info-banner warning">
+                  <i className="fa fa-info-circle"></i>
+                  <div>
+                    <strong>Ya has reportado este capítulo</strong>
+                    <p>Para prevenir el spam, solo se permite enviar 1 reporte por capítulo por persona. Nuestro equipo ya tiene tu aviso registrado.</p>
+                  </div>
+                </div>
+
+                <div className="existing-report-summary">
+                  <div className="summary-row">
+                    <span>Estado:</span>
+                    <span className={`status-pill status-${(existingReport.status || 'PENDING').toLowerCase()}`}>
+                      {existingReport.status === 'RESOLVED' ? 'Resuelto' : existingReport.status === 'DISMISSED' ? 'Descartado' : 'Pendiente de auditoría'}
+                    </span>
+                  </div>
+                  <div className="summary-row">
+                    <span>Motivo:</span>
+                    <strong>{REPORT_REASONS.find(r => r.value === existingReport.reason)?.label || existingReport.reason}</strong>
+                  </div>
+                  {existingReport.description && (
+                    <div className="summary-desc">
+                      <span>Detalle enviado:</span>
+                      <p>{existingReport.description}</p>
+                    </div>
+                  )}
+                  {existingReport.adminNotes && (
+                    <div className="summary-desc admin-note">
+                      <span>Respuesta de Administración:</span>
+                      <p>{existingReport.adminNotes}</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="report-modal-actions">
+                  <button type="button" className="btn-secondary" onClick={() => setShowReportModal(false)}>
+                    Entendido
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmitReport} className="report-modal-form">
+                {/* Honeypot invisible anti-spam */}
+                <div style={{ position: 'absolute', left: '-9999px', opacity: 0, height: 0, width: 0, pointerEvents: 'none' }} aria-hidden="true">
+                  <input
+                    type="text"
+                    name="report_hp_field"
+                    tabIndex="-1"
+                    autoComplete="off"
+                    value={reportHoneypot}
+                    onChange={(e) => setReportHoneypot(e.target.value)}
+                  />
+                </div>
+
+                <div className="info-banner">
+                  <i className="fa fa-shield"></i>
+                  <span>
+                    <strong>Aviso anti-spam:</strong> Solo puedes enviar <strong>1 reporte por capítulo</strong>. Úsalo si el capítulo está mal subido, incompleto o pertenece a otro manga para que administración audite al Scan Group.
+                  </span>
+                </div>
+
+                {reportError && (
+                  <div className="report-error-alert">
+                    <i className="fa fa-exclamation-triangle"></i>
+                    <span>{reportError}</span>
+                  </div>
+                )}
+
+                <div className="form-group">
+                  <label htmlFor="report-reason">Motivo del reporte *</label>
+                  <select
+                    id="report-reason"
+                    value={reportReason}
+                    onChange={(e) => setReportReason(e.target.value)}
+                    required
+                  >
+                    {REPORT_REASONS.map(r => (
+                      <option key={r.value} value={r.value}>{r.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="report-description">Detalles adicionales (opcional)</label>
+                  <textarea
+                    id="report-description"
+                    rows={3}
+                    maxLength={1000}
+                    placeholder="Ej. Las páginas 4 a 8 están repetidas o corresponden al capítulo anterior..."
+                    value={reportDescription}
+                    onChange={(e) => setReportDescription(e.target.value)}
+                  />
+                  <small className="char-count">{reportDescription.length}/1000</small>
+                </div>
+
+                <div className="report-modal-actions">
+                  <button
+                    type="button"
+                    className="btn-cancel"
+                    onClick={() => setShowReportModal(false)}
+                    disabled={reportSubmitting}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-submit-report"
+                    disabled={reportSubmitting}
+                  >
+                    {reportSubmitting ? (
+                      <>
+                        <i className="fa fa-spinner fa-spin"></i> Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <i className="fa fa-paper-plane"></i> Enviar Reporte
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

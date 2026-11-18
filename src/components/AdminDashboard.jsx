@@ -7,6 +7,7 @@ import {
   scansApi, 
   mangasApi,
   noticesApi,
+  chapterReportsApi,
   normalizePageUrl 
 } from '../services/api';
 import { getNoticeImage } from '../utils/imageHelper';
@@ -14,12 +15,21 @@ import { useAuth } from '../Context/AuthContext';
 import { useTheme } from '../Context/ThemeContext';
 import '../styles/AdminDashboard.scss';
 
+const REPORT_REASON_LABELS = {
+  WRONG_CHAPTER: 'Capítulo incorrecto / desordenado',
+  BROKEN_IMAGES: 'Imágenes rotas o faltantes',
+  WRONG_MANGA: 'Pertenece a otro manga',
+  BAD_QUALITY: 'Mala calidad / ilegible',
+  INAPPROPRIATE: 'Contenido inapropiado / spam',
+  OTHER: 'Otro motivo'
+};
+
 const AdminDashboard = () => {
   const { user, isAuthenticated } = useAuth();
   const { theme } = useTheme();
   const navigate = useNavigate();
 
-  // Pestañas: 'applications' | 'users' | 'roles' | 'notices'
+  // Pestañas: 'applications' | 'reports' | 'users' | 'roles' | 'notices'
   const [activeTab, setActiveTab] = useState('applications');
 
   // Estados generales
@@ -33,6 +43,14 @@ const AdminDashboard = () => {
   const [scansList, setScansList] = useState([]);
   const [mangasCount, setMangasCount] = useState(0);
   const [noticesList, setNoticesList] = useState([]);
+  const [reportsList, setReportsList] = useState([]);
+
+  // Filtros de reportes de capítulos
+  const [reportsSearch, setReportsSearch] = useState('');
+  const [reportsStatusFilter, setReportsStatusFilter] = useState('PENDING');
+  const [auditingReport, setAuditingReport] = useState(null);
+  const [auditForm, setAuditForm] = useState({ status: 'RESOLVED', actionTaken: 'NONE', adminNotes: '' });
+  const [auditSubmitting, setAuditSubmitting] = useState(false);
 
   // Filtros de noticias
   const [noticesSearch, setNoticesSearch] = useState('');
@@ -94,7 +112,7 @@ const AdminDashboard = () => {
   const loadAdminData = async () => {
     setLoading(true);
     try {
-      const [apps, users, roles, scans, mangas, notices] = await Promise.all([
+      const [apps, users, roles, scans, mangas, notices, reports] = await Promise.all([
         scanApplicationsApi.getApplications().catch(err => {
           console.warn('Error cargando solicitudes:', err);
           return [];
@@ -115,6 +133,10 @@ const AdminDashboard = () => {
         noticesApi.getNotices(null, true).catch(err => {
           console.warn('Error cargando noticias:', err);
           return [];
+        }),
+        chapterReportsApi.getReports('ALL').catch(err => {
+          console.warn('Error cargando reportes de capítulos:', err);
+          return [];
         })
       ]);
 
@@ -124,6 +146,7 @@ const AdminDashboard = () => {
       setScansList(scans);
       setMangasCount(mangas.length);
       setNoticesList(notices);
+      setReportsList(reports);
     } catch (err) {
       console.error('Error general cargando datos de administración:', err);
       showToast('Error al conectar con los servicios administrativos', 'error');
@@ -434,9 +457,70 @@ const AdminDashboard = () => {
   };
 
   // ==========================================
+  // AUDITORÍA DE REPORTES DE CAPÍTULOS
+  // ==========================================
+  const handleOpenAuditReport = (report) => {
+    setAuditingReport(report);
+    setAuditForm({
+      status: report.status === 'PENDING' ? 'RESOLVED' : report.status,
+      actionTaken: report.actionTaken || 'NONE',
+      adminNotes: report.adminNotes || ''
+    });
+  };
+
+  const handleCloseAuditReport = () => {
+    setAuditingReport(null);
+    setAuditForm({ status: 'RESOLVED', actionTaken: 'NONE', adminNotes: '' });
+  };
+
+  const handleSubmitAuditReport = async (e) => {
+    e.preventDefault();
+    if (!auditingReport) return;
+
+    if (auditForm.actionTaken === 'DELETE_CHAPTER' && !window.confirm(`¿Estás seguro de ELIMINAR FÍSICAMENTE el Capítulo ${auditingReport.chapterNumber} de "${auditingReport.mangaTittle}" (subido por ${auditingReport.scanName})? Esta acción borrará sus páginas y resolverá todos los reportes pendientes del capítulo.`)) {
+      return;
+    }
+
+    setAuditSubmitting(true);
+    try {
+      await chapterReportsApi.reviewReport({
+        reportId: auditingReport.reportId,
+        status: auditForm.actionTaken === 'DELETE_CHAPTER' || auditForm.actionTaken === 'HIDE_CHAPTER' ? 'RESOLVED' : auditForm.status,
+        actionTaken: auditForm.actionTaken,
+        adminNotes: auditForm.adminNotes.trim()
+      });
+
+      showToast(
+        auditForm.actionTaken === 'DELETE_CHAPTER'
+          ? 'Capítulo eliminado y reportes resueltos con éxito.'
+          : 'Auditoría de reporte guardada correctamente.',
+        'success'
+      );
+      handleCloseAuditReport();
+      await loadAdminData();
+    } catch (err) {
+      showToast(err.message || 'Error al procesar la auditoría del reporte', 'error');
+    } finally {
+      setAuditSubmitting(false);
+    }
+  };
+
+  // ==========================================
   // FILTRADO DE DATOS
   // ==========================================
   const pendingCount = applications.filter(a => a.status === 'PENDING').length;
+  const pendingReportsCount = reportsList.filter(r => r.status === 'PENDING').length;
+
+  const filteredReports = reportsList.filter(r => {
+    const matchesStatus = reportsStatusFilter === 'ALL' || r.status === reportsStatusFilter;
+    const q = reportsSearch.toLowerCase();
+    const matchesSearch = !q ||
+      (r.mangaTittle && r.mangaTittle.toLowerCase().includes(q)) ||
+      (r.scanName && r.scanName.toLowerCase().includes(q)) ||
+      (r.reporterUsername && r.reporterUsername.toLowerCase().includes(q)) ||
+      (r.description && r.description.toLowerCase().includes(q));
+    return matchesStatus && matchesSearch;
+  });
 
   const filteredApplications = applications.filter(app => {
     const matchesStatus = appStatusFilter === 'ALL' || app.status === appStatusFilter;
@@ -629,6 +713,16 @@ const AdminDashboard = () => {
               <i className="fa fa-inbox"></i> Solicitudes de Scan
               {pendingCount > 0 && (
                 <span className="tab-counter-badge">{pendingCount}</span>
+              )}
+            </button>
+            <button
+              type="button"
+              className={`nav-tab-btn ${activeTab === 'reports' ? 'active' : ''}`}
+              onClick={() => setActiveTab('reports')}
+            >
+              <i className="fa fa-flag"></i> Reportes de Capítulos
+              {pendingReportsCount > 0 && (
+                <span className="tab-counter-badge">{pendingReportsCount}</span>
               )}
             </button>
             <button
@@ -1247,6 +1341,250 @@ const AdminDashboard = () => {
               </div>
             </div>
           )}
+
+          {/* ========================================================= */}
+          {/* TAB 5: AUDITORÍA DE REPORTES DE CAPÍTULOS                 */}
+          {/* ========================================================= */}
+          {activeTab === 'reports' && (
+            <div className="tab-pane reports-tab">
+              <div className="panel-box">
+                <div className="panel-toolbar">
+                  <div className="search-input-box">
+                    <i className="fa fa-search"></i>
+                    <input
+                      type="text"
+                      placeholder="Buscar por manga, scan group, usuario o descripción..."
+                      value={reportsSearch}
+                      onChange={(e) => setReportsSearch(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="filter-pills">
+                    <button
+                      type="button"
+                      className={`pill-btn ${reportsStatusFilter === 'PENDING' ? 'active' : ''}`}
+                      onClick={() => setReportsStatusFilter('PENDING')}
+                    >
+                      Pendientes ({pendingReportsCount})
+                    </button>
+                    <button
+                      type="button"
+                      className={`pill-btn ${reportsStatusFilter === 'RESOLVED' ? 'active' : ''}`}
+                      onClick={() => setReportsStatusFilter('RESOLVED')}
+                    >
+                      Resueltos ({reportsList.filter(r => r.status === 'RESOLVED').length})
+                    </button>
+                    <button
+                      type="button"
+                      className={`pill-btn ${reportsStatusFilter === 'DISMISSED' ? 'active' : ''}`}
+                      onClick={() => setReportsStatusFilter('DISMISSED')}
+                    >
+                      Descartados ({reportsList.filter(r => r.status === 'DISMISSED').length})
+                    </button>
+                    <button
+                      type="button"
+                      className={`pill-btn ${reportsStatusFilter === 'ALL' ? 'active' : ''}`}
+                      onClick={() => setReportsStatusFilter('ALL')}
+                    >
+                      Todos ({reportsList.length})
+                    </button>
+                  </div>
+                </div>
+
+                {filteredReports.length === 0 ? (
+                  <div className="empty-state">
+                    <i className="fa fa-check-circle-o"></i>
+                    <h3>No hay reportes en esta categoría</h3>
+                    <p>No se encontraron reportes de capítulos con los filtros seleccionados.</p>
+                  </div>
+                ) : (
+                  <div className="applications-grid">
+                    {filteredReports.map(rep => (
+                      <div key={rep.reportId} className={`application-card status-${(rep.status || 'PENDING').toLowerCase()}`}>
+                        <div className="app-card-top">
+                          <div className="app-identity" style={{ gap: '8px' }}>
+                            <div className="stat-icon" style={{ width: '44px', height: '44px', borderRadius: '10px', background: 'rgba(239,68,68,0.14)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
+                              <i className="fa fa-flag"></i>
+                            </div>
+                            <div className="app-titles">
+                              <h3>
+                                {rep.mangaTittle} &mdash; Cap. {rep.chapterNumber}
+                              </h3>
+                              <span className="app-applicant">
+                                <i className="fa fa-users"></i> Scan Group: <strong>{rep.scanName}</strong>
+                              </span>
+                            </div>
+                          </div>
+
+                          <span className={`status-badge badge-${(rep.status || 'PENDING').toLowerCase()}`}>
+                            {rep.status === 'PENDING' && 'Pendiente'}
+                            {rep.status === 'RESOLVED' && 'Resuelto'}
+                            {rep.status === 'DISMISSED' && 'Descartado'}
+                          </span>
+                        </div>
+
+                        <div className="app-details">
+                          <div style={{ marginBottom: '8px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+                            <span style={{ padding: '4px 10px', borderRadius: '6px', background: 'rgba(245, 158, 11, 0.16)', color: '#f59e0b', fontSize: '12px', fontWeight: 700 }}>
+                              <i className="fa fa-exclamation-circle"></i> {REPORT_REASON_LABELS[rep.reason] || rep.reason}
+                            </span>
+                            {!rep.chapterExists && (
+                              <span style={{ padding: '4px 10px', borderRadius: '6px', background: 'rgba(148, 163, 184, 0.2)', color: '#94a3b8', fontSize: '12px', fontWeight: 600 }}>
+                                <i className="fa fa-trash"></i> Capítulo eliminado
+                              </span>
+                            )}
+                          </div>
+
+                          {rep.description && (
+                            <p className="app-message">
+                              <i className="fa fa-quote-left"></i> {rep.description}
+                            </p>
+                          )}
+
+                          <div className="app-meta">
+                            <span>
+                              <i className="fa fa-user"></i> Reportado por: <strong>{rep.reporterUsername}</strong> ({rep.reporterEmail})
+                            </span>
+                            <span>
+                              <i className="fa fa-calendar"></i> {new Date(rep.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+
+                          {rep.adminNotes && (
+                            <div className="app-admin-notes">
+                              <strong>Resolución ({rep.actionTaken || 'NONE'}):</strong> {rep.adminNotes}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="app-card-actions">
+                          {rep.chapterExists && rep.chapterId && (
+                            <Link
+                              to={`/manga/${rep.mangaId}/chapter/${rep.chapterId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn-action btn-view"
+                              style={{ background: 'rgba(56, 189, 248, 0.14)', color: '#38bdf8', textDecoration: 'none' }}
+                            >
+                              <i className="fa fa-external-link"></i> Inspeccionar Capítulo
+                            </Link>
+                          )}
+                          <button
+                            type="button"
+                            className="btn-action btn-approve"
+                            onClick={() => handleOpenAuditReport(rep)}
+                          >
+                            <i className="fa fa-gavel"></i> {rep.status === 'PENDING' ? 'Auditar Reporte' : 'Ver / Editar Resolución'}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL: AUDITAR REPORTE DE CAPÍTULO                        */}
+      {/* ========================================================= */}
+      {auditingReport && (
+        <div className="admin-modal-backdrop" onClick={handleCloseAuditReport}>
+          <div className="admin-modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-modal-header">
+              <h3>
+                <i className="fa fa-gavel"></i> Auditar Reporte #{auditingReport.reportId}
+              </h3>
+              <button type="button" className="btn-close" onClick={handleCloseAuditReport}>
+                <i className="fa fa-times"></i>
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitAuditReport}>
+              <div className="admin-modal-body">
+                <p className="modal-summary">
+                  <strong>{auditingReport.mangaTittle}</strong> &mdash; Capítulo {auditingReport.chapterNumber}
+                  <br />
+                  <small>Scan Group responsable: <strong>{auditingReport.scanName}</strong> | Reportado por: <strong>{auditingReport.reporterUsername}</strong></small>
+                </p>
+
+                <div style={{ padding: '10px 12px', borderRadius: '8px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', marginBottom: '14px', fontSize: '13px' }}>
+                  <strong>Motivo:</strong> {REPORT_REASON_LABELS[auditingReport.reason] || auditingReport.reason}
+                  {auditingReport.description && (
+                    <div style={{ marginTop: '4px', opacity: 0.9 }}>{auditingReport.description}</div>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label>Acción a tomar sobre el Capítulo / Scan Group:</label>
+                  <select
+                    value={auditForm.actionTaken}
+                    onChange={(e) => {
+                      const action = e.target.value;
+                      setAuditForm(prev => ({
+                        ...prev,
+                        actionTaken: action,
+                        status: action === 'NONE' ? prev.status : 'RESOLVED'
+                      }));
+                    }}
+                  >
+                    <option value="NONE">Sin acción sobre el capítulo (solo actualizar estado)</option>
+                    <option value="SCAN_WARNED">Advertencia registrada al Scan Group</option>
+                    {auditingReport.chapterExists && (
+                      <>
+                        <option value="HIDE_CHAPTER">Ocultar Capítulo (desactivar visibilidad)</option>
+                        <option value="DELETE_CHAPTER">Eliminar Capítulo y sus páginas permanentemente</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+
+                {auditForm.actionTaken === 'NONE' && (
+                  <div className="form-group">
+                    <label>Estado del reporte:</label>
+                    <select
+                      value={auditForm.status}
+                      onChange={(e) => setAuditForm(prev => ({ ...prev, status: e.target.value }))}
+                    >
+                      <option value="RESOLVED">Resuelto</option>
+                      <option value="DISMISSED">Descartado (falso reporte / capítulo correcto)</option>
+                    </select>
+                  </div>
+                )}
+
+                <div className="form-group">
+                  <label>Notas de auditoría (opcional):</label>
+                  <textarea
+                    rows={3}
+                    maxLength={1000}
+                    value={auditForm.adminNotes}
+                    onChange={(e) => setAuditForm(prev => ({ ...prev, adminNotes: e.target.value }))}
+                    placeholder="Detalle de la revisión o advertencia para el historial..."
+                  />
+                </div>
+              </div>
+
+              <div className="admin-modal-footer">
+                <button
+                  type="button"
+                  className="btn-modal-cancel"
+                  onClick={handleCloseAuditReport}
+                  disabled={auditSubmitting}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className={`btn-modal-confirm ${auditForm.actionTaken === 'DELETE_CHAPTER' ? 'reject' : 'approve'}`}
+                  disabled={auditSubmitting}
+                >
+                  {auditSubmitting ? 'Procesando...' : auditForm.actionTaken === 'DELETE_CHAPTER' ? 'Eliminar Capítulo y Resolver' : 'Guardar Auditoría'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 

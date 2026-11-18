@@ -729,9 +729,62 @@ export const adminUsersApi = {
   }
 };
 
+// ==========================================
+// REPORTES DE CAPÍTULOS API
+// ==========================================
+export const chapterReportsApi = {
+  /**
+   * (Admin) Obtiene todos los reportes de capítulos con filtro opcional por estado
+   */
+  async getReports(status = 'ALL') {
+    const query = status && status !== 'ALL' ? `?status=${encodeURIComponent(status)}` : '';
+    const res = await request(`/ChapterReports/GetReports${query}`);
+    return res.items || [];
+  },
+
+  /**
+   * Verifica si el usuario autenticado ya envió un reporte para un capítulo
+   */
+  async getMyReportForChapter(chapterId) {
+    const res = await request(`/ChapterReports/GetMyReportForChapter?chapterId=${chapterId}`);
+    return (res.items && res.items[0]) || null;
+  },
+
+  /**
+   * Envía un nuevo reporte de capítulo (máximo 1 por usuario por capítulo)
+   */
+  async createReport({ chapterId, reason, description = '', honeypot = '' }) {
+    return await request('/ChapterReports/CreateReport', {
+      method: 'POST',
+      body: JSON.stringify({
+        chapterId: Number(chapterId),
+        reason,
+        description,
+        honeypot
+      })
+    });
+  },
+
+  /**
+   * (Admin) Audita un reporte y ejecuta acciones (resolver, descartar, ocultar o eliminar capítulo)
+   */
+  async reviewReport({ reportId, status, actionTaken = 'NONE', adminNotes = '' }) {
+    return await request('/ChapterReports/ReviewReport', {
+      method: 'POST',
+      body: JSON.stringify({
+        reportId: Number(reportId),
+        status,
+        actionTaken,
+        adminNotes
+      })
+    });
+  }
+};
+
 export default {
   mangas: mangasApi,
   chapters: chaptersApi,
+  chapterReports: chapterReportsApi,
   genres: genresApi,
   mangaGenres: mangaGenresApi,
   scans: scansApi,
