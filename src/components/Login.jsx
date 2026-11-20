@@ -251,7 +251,8 @@ const Login = () => {
                     <div className="log-inputs">
                         <input 
                             type="text" 
-                            placeholder="Email (ej. testuser@mangasite.com)" 
+                            placeholder={language === 'en' ? 'Email or Username' : 'Email o Username'} 
+                            autoComplete="username"
                             className="username-input"
                             value={formData.email}
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
