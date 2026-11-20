@@ -5,10 +5,25 @@ import RecentChapters from './RecentChapters';
 import '../styles/Main.scss';
 import NoticeCard from './NoticeCard';
 import { noticesApi } from '../services/api';
+import SEO from './SEO';
 
 const Main = () => {
     const [notices, setNotices] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const websiteSchema = {
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: 'OurMangaSite',
+        url: origin,
+        description: 'Lee tus mangas, manhwas y manhuas favoritos en línea en español.',
+        potentialAction: {
+            '@type': 'SearchAction',
+            target: `${origin}/manga-section?q={search_term_string}`,
+            'query-input': 'required name=search_term_string'
+        }
+    };
 
     useEffect(() => {
         let isMounted = true;
@@ -31,6 +46,12 @@ const Main = () => {
 
     return (
         <div className="main-container">
+            <SEO
+                title="OurMangaSite - Lee Manga, Manhwa y Manhua Online"
+                description="Explora nuestro catálogo de mangas, manhwas y manhuas en español, lee los últimos capítulos subidos y entérate de las últimas noticias."
+                canonicalPath="/"
+                schema={websiteSchema}
+            />
             <div className="main-content">
                 <Lastest />
                 <RecentChapters />

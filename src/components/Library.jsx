@@ -8,6 +8,7 @@ import mangasData from './mangasData';
 import { mangasApi, userListApi, filtersApi } from '../services/api';
 import { useAuth } from '../Context/AuthContext';
 import { useSearchTerm } from '../Context/SearchBarContext';
+import SEO from './SEO';
 
 const Library = ({ isMyList = false }) => {    
     const [mangas, setMangas] = useState([]);
@@ -202,6 +203,14 @@ const Library = ({ isMyList = false }) => {
 
     return ( 
         <div className="card-section">
+            <SEO
+                title={isMyList ? 'Mi Lista de Mangas' : 'Biblioteca de Mangas, Manhwas y Manhuas'}
+                description={isMyList
+                    ? 'Tu lista personal de mangas guardados en OurMangaSite.'
+                    : 'Explora nuestro catálogo completo de mangas, manhwas y manhuas filtrando por género, demografía y estado.'}
+                canonicalPath={isMyList ? '/my-list' : '/manga-section'}
+                noindex={isMyList}
+            />
             {!isMyList ? (
                 <div className="filter">
                     <Filters 

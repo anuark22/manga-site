@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../Context/AuthContext';
 import { executeRecaptcha } from '../services/recaptcha';
+import SEO from './SEO';
 import '../styles/Login.scss';
 
 const Login = () => {
@@ -60,6 +61,7 @@ const Login = () => {
 
     return ( 
         <div className="log-section">
+            <SEO title="Iniciar Sesión" noindex={true} canonicalPath="/login" />
             <form onSubmit={handleSubmit}>
                 <div className="log-container">
                     <h2 className="auth-title">Iniciar Sesión</h2>

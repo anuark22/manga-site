@@ -5,6 +5,7 @@ import '../styles/Forum.scss';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { forumApi } from '../services/api';
 import postData from './postData';
+import SEO from './SEO';
 
 const Forum = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -71,6 +72,11 @@ const Forum = () => {
 
     return ( 
         <div className="forum-section">
+            <SEO
+                title={filterCategory ? `Foro: ${filterCategory}` : 'Foro de la Comunidad Manga'}
+                description="Participa en discusiones sobre tus mangas favoritos, recomienda series, comparte reseñas y conversa con la comunidad de OurMangaSite."
+                canonicalPath="/forum"
+            />
             <div className="forum-content">
                 <SideBar 
                     className="sidebar-comp" 

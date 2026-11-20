@@ -4,6 +4,8 @@ import { mangasApi, chaptersApi, chapterReportsApi, normalizePageUrl } from '../
 import mangasData, { canonicalMangas } from './mangasData';
 import { useTheme } from '../Context/ThemeContext';
 import { useAuth } from '../Context/AuthContext';
+import { getMangaImage } from '../utils/imageHelper';
+import SEO from './SEO';
 import '../styles/MangaReader.scss';
 
 const REPORT_REASONS = [
@@ -445,6 +447,8 @@ const MangaReader = () => {
   }
 
   const mangaName = manga.mangaName || manga.mangaTittle || 'Manga';
+  const chNum = currentChapter?.chapterNumber || chapterId;
+  const coverImg = getMangaImage(manga);
 
   return (
     <div
@@ -452,6 +456,13 @@ const MangaReader = () => {
       className={`manga-reader-page theme-${theme} width-${widthMode} mode-${readingMode} ${showControls ? 'controls-visible' : 'controls-hidden'}`}
       onClick={handleReaderClick}
     >
+      <SEO
+        title={`Leer ${mangaName} Capítulo ${chNum} Online`}
+        description={`Lee ${mangaName} Capítulo ${chNum}${currentChapter?.chapterTitle ? ` (${currentChapter.chapterTitle})` : ''} gratis y en español en OurMangaSite.`}
+        image={coverImg}
+        type="article"
+        canonicalPath={`/manga/${manga.mangaId || id}/chapter/${currentChapter?.chapterId || chapterId}`}
+      />
       {/* ========================================================= */}
       {/* BARRA SUPERIOR DE CONTROL (Estilo MangaPlus / MangaDex) */}
       {/* ========================================================= */}

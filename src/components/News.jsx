@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { noticesApi } from '../services/api';
 import { useAuth } from '../Context/AuthContext';
 import { getNoticeImage, getNoticeCompanionImages } from '../utils/imageHelper';
+import SEO from './SEO';
 import '../styles/News.scss';
 
 // Contenido extendido y citas para las noticias de muestra/canónicas
@@ -201,8 +202,36 @@ const News = () => {
   const heroNotice = !id && filteredNotices.length > 0 ? filteredNotices[0] : null;
   const gridNotices = !id && filteredNotices.length > 0 ? filteredNotices.slice(1) : [];
 
+  const activeSeoTitle = selectedNotice
+    ? (selectedNotice.title || selectedNotice.noticeTittle)
+    : 'Noticias y Novedades de Manga y Anime';
+  const activeSeoDesc = selectedNotice
+    ? (selectedNotice.subtitle || selectedNotice.content || selectedNotice.noticeContent)
+    : 'Entérate de las últimas noticias, anuncios, estrenos de anime, pausas de manga y actualizaciones de OurMangaSite.';
+  const activeSeoImage = selectedNotice ? getNoticeImage(selectedNotice) : undefined;
+  const newsSchema = selectedNotice ? {
+    '@context': 'https://schema.org',
+    '@type': 'NewsArticle',
+    headline: activeSeoTitle,
+    description: activeSeoDesc,
+    image: activeSeoImage ? [activeSeoImage] : undefined,
+    datePublished: selectedNotice.createdAt,
+    author: {
+      '@type': 'Person',
+      name: selectedNotice.authorName || 'OurMangaSite'
+    }
+  } : null;
+
   return (
     <div className="news-page-container">
+      <SEO
+        title={activeSeoTitle}
+        description={activeSeoDesc}
+        image={activeSeoImage}
+        type={selectedNotice ? 'article' : 'website'}
+        canonicalPath={selectedNotice ? `/news/${selectedNotice.noticeId || selectedNotice.id}` : '/news'}
+        schema={newsSchema}
+      />
       {/* Toast Feedback */}
       {toast && (
         <div className="news-toast-alert">

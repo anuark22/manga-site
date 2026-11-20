@@ -1,3 +1,19 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Allow: /
+Allow: /manga-section
+Allow: /manga/
+Allow: /forum
+Allow: /news
+
+# Evitar indexación de paneles privados, autenticación y listas personales
+Disallow: /admin-dashboard
+Disallow: /admin-panel
+Disallow: /scan-dashboard
+Disallow: /scan-panel
+Disallow: /profile
+Disallow: /my-list
+Disallow: /login
+Disallow: /register
+
+Sitemap: /sitemap.xml

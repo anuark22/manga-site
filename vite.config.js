@@ -26,6 +26,11 @@ export default defineConfig({
         target: 'https://localhost:44311',
         changeOrigin: true,
         secure: false
+      },
+      '/sitemap.xml': {
+        target: 'https://localhost:44311',
+        changeOrigin: true,
+        secure: false
       }
     }
   }

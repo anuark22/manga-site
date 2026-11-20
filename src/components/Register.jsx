@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../Context/AuthContext';
 import { executeRecaptcha } from '../services/recaptcha';
+import SEO from './SEO';
 import '../styles/Register.scss';
 
 const Register = () => {
@@ -55,6 +56,7 @@ const Register = () => {
 
     return (  
         <div className="register-section">
+            <SEO title="Crear Cuenta" noindex={true} canonicalPath="/register" />
             <form onSubmit={handleSubmit}>
                 <div className="register-container">
                     <h2 className="auth-title">Crear Cuenta</h2>

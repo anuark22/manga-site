@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { forumApi } from '../services/api';
 import { useAuth } from '../Context/AuthContext';
+import SEO from './SEO';
 import Gravatar from './Gravatar';
 import postData from './postData';
 import '../styles/ForumPostDetail.scss';
@@ -221,9 +222,32 @@ const ForumPostDetail = () => {
   const postSubTopic = post.subTopic || 'Comunidad';
   const postViews = post.viewsCount ?? post.postViews ?? 0;
   const isPinned = post.isPinned;
+  const forumSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'DiscussionForumPosting',
+    headline: postTitle,
+    text: postContent,
+    author: {
+      '@type': 'Person',
+      name: postAuthor
+    },
+    datePublished: post.createdAt,
+    interactionStatistic: {
+      '@type': 'InteractionCounter',
+      interactionType: 'https://schema.org/CommentAction',
+      userInteractionCount: comments.length
+    }
+  };
 
   return (
     <div className="forum-detail-page">
+      <SEO
+        title={`${postTitle} - Foro`}
+        description={postContent}
+        type="article"
+        canonicalPath={`/forum/post/${post.postId || id}`}
+        schema={forumSchema}
+      />
       {/* Toast Feedback */}
       {toast && (
         <div className="forum-toast-message">

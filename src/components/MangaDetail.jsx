@@ -4,6 +4,7 @@ import mangasData, { canonicalMangas } from './mangasData';
 import { mangasApi, chaptersApi, userListApi } from '../services/api';
 import { useAuth } from '../Context/AuthContext';
 import { getMangaImage } from '../utils/imageHelper';
+import SEO from './SEO';
 import '../styles/MangaDetail.scss';
 
 const MangaDetail = () => {
@@ -156,9 +157,36 @@ const MangaDetail = () => {
   const mangaType = manga.mangaType || manga.mangaTypeName || 'Manga';
   const mangaDemography = manga.mangaDemography || manga.demographyName || 'Shounen';
   const mangaImage = getMangaImage(manga);
+  const mangaSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'ComicSeries',
+    name: mangaName,
+    description: synopsis,
+    image: mangaImage,
+    author: {
+      '@type': 'Person',
+      name: author
+    },
+    genre: [mangaType, mangaDemography].filter(Boolean),
+    aggregateRating: rating ? {
+      '@type': 'AggregateRating',
+      ratingValue: Number(rating) || 4.8,
+      bestRating: 5,
+      worstRating: 1,
+      ratingCount: 100
+    } : undefined
+  };
 
   return (
     <div className="manga-detail-wrapper">
+      <SEO
+        title={`Leer ${mangaName} (${mangaType}) Online`}
+        description={synopsis || `Lee todos los capítulos de ${mangaName} gratis y en español en OurMangaSite.`}
+        image={mangaImage}
+        type="book"
+        canonicalPath={`/manga/${manga.mangaId || id}`}
+        schema={mangaSchema}
+      />
       <div className="manga-detail-container">
         <Link to="/manga-section" className="back-btn">
           <i className="fa fa-arrow-left" aria-hidden="true"></i> Volver a la Biblioteca
