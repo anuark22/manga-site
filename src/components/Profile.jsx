@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../Context/AuthContext';
-import { profileApi, userListApi } from '../services/api';
+import { useLanguage } from '../Context/LanguageContext';
+import { profileApi, userListApi, scanApplicationsApi } from '../services/api';
 import { getMangaImage } from '../utils/imageHelper';
 import '../styles/Profile.scss';
 
 const Profile = () => {
   const { user, token, isAuthenticated, updateUser, logout } = useAuth();
+  const { language } = useLanguage();
   const navigate = useNavigate();
 
   const [profileData, setProfileData] = useState(null);
   const [userMangas, setUserMangas] = useState([]);
+  const [myScanApp, setMyScanApp] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('info'); // 'info' | 'password' | 'mylist'
 
@@ -47,12 +50,14 @@ const Profile = () => {
     const fetchUserData = async () => {
       setLoading(true);
       try {
-        const [profile, myList] = await Promise.all([
+        const [profile, myList, scanApp] = await Promise.all([
           profileApi.getMyProfile().catch(() => null),
-          userListApi.getMyList().catch(() => [])
+          userListApi.getMyList().catch(() => []),
+          scanApplicationsApi.getMyApplication().catch(() => null)
         ]);
 
         if (isMounted) {
+          if (scanApp) setMyScanApp(scanApp);
           if (profile) {
             setProfileData(profile);
             setEditForm({
@@ -267,6 +272,90 @@ const Profile = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Acceso directo para que un usuario normal solicite ser Scan Group */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '14px',
+            padding: '16px 20px',
+            marginBottom: '22px',
+            borderRadius: '14px',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-color)',
+            boxShadow: '0 6px 18px var(--shadow-color)'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div
+              style={{
+                width: '44px',
+                height: '44px',
+                borderRadius: '10px',
+                background: 'rgba(56, 189, 248, 0.14)',
+                color: '#38bdf8',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '20px',
+                flexShrink: 0
+              }}
+            >
+              <i className="fa fa-cloud-upload" aria-hidden="true"></i>
+            </div>
+            <div>
+              <h3 style={{ margin: '0 0 4px', fontSize: '15.5px', fontWeight: 700 }}>
+                {user?.roleId === 2 || user?.roleId === 3
+                  ? (language === 'en' ? 'Scanlation & Management Panel' : 'Panel de Scanlation y Gestión')
+                  : (language === 'en' ? 'Want to become a Scan Group?' : '¿Quieres ser un Grupo Scan?')}
+              </h3>
+              <p style={{ margin: 0, fontSize: '13px', opacity: 0.78 }}>
+                {myScanApp?.status === 'PENDING'
+                  ? (language === 'en'
+                    ? `Your application for "${myScanApp.scanName}" is pending admin review.`
+                    : `Tu solicitud para "${myScanApp.scanName}" está pendiente de revisión por un administrador.`)
+                  : myScanApp?.status === 'REJECTED'
+                  ? (language === 'en'
+                    ? `Your previous application was rejected. Click to review feedback or reapply.`
+                    : `Tu solicitud anterior fue rechazada. Haz clic para ver las observaciones.`)
+                  : user?.roleId === 2 || user?.roleId === 3
+                  ? (language === 'en' ? 'Upload chapters, manage mangas, and check audit notices.' : 'Sube capítulos, gestiona mangas y revisa tus auditorías.')
+                  : (language === 'en'
+                    ? 'Apply to found your translation group and upload chapters to OurMangaSite.'
+                    : 'Envía una solicitud para fundar tu grupo de traducción y subir capítulos a la plataforma.')}
+              </p>
+            </div>
+          </div>
+
+          <Link
+            to="/scan-dashboard"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '9px 18px',
+              borderRadius: '8px',
+              background: '#2563eb',
+              color: '#ffffff',
+              textDecoration: 'none',
+              fontSize: '13.5px',
+              fontWeight: 700,
+              whiteSpace: 'nowrap'
+            }}
+          >
+            <i className={`fa ${user?.roleId === 2 || user?.roleId === 3 ? 'fa-arrow-right' : 'fa-paper-plane'}`}></i>
+            <span>
+              {user?.roleId === 2 || user?.roleId === 3
+                ? (language === 'en' ? 'Go to Scan Panel' : 'Ir al Panel Scan')
+                : myScanApp?.status === 'PENDING'
+                ? (language === 'en' ? 'View Application Status' : 'Ver Estado de Solicitud')
+                : (language === 'en' ? 'Apply as Scan Group' : 'Solicitar ser Scan')}
+            </span>
+          </Link>
         </div>
 
         {/* Pestañas de Navegación del Perfil */}
