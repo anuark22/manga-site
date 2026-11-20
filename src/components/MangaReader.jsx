@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { mangasApi, chaptersApi, chapterReportsApi, normalizePageUrl } from '../services/api';
+import { mangasApi, chaptersApi, chapterReportsApi, userListApi, normalizePageUrl } from '../services/api';
 import mangasData, { canonicalMangas } from './mangasData';
 import { useTheme } from '../Context/ThemeContext';
 import { useAuth } from '../Context/AuthContext';
@@ -188,6 +188,7 @@ const MangaReader = () => {
                 chapterId: c.chapterId,
                 chapterNumber: c.chapterNumber,
                 chapterTitle: c.chapterTitle || `Capítulo ${c.chapterNumber}`,
+                scanName: c.scanName || '',
                 uploadedAt: c.uploadedAt
               }));
             }
@@ -244,6 +245,11 @@ const MangaReader = () => {
         // Intentar obtener páginas desde el endpoint de la API
         const targetChapterId = currentChapter.chapterId;
         const apiPages = await chaptersApi.getPages(targetChapterId);
+
+        // Si está autenticado y sigue el manga, marcar capítulo como visto automáticamente
+        if (isAuthenticated && manga?.mangaId && targetChapterId) {
+          userListApi.markChapterRead(manga.mangaId, targetChapterId).catch(() => {});
+        }
 
         if (isMounted) {
           if (apiPages && apiPages.length > 0) {
@@ -483,7 +489,9 @@ const MangaReader = () => {
               {mangaName}
             </h1>
             <span className="chapter-subtitle">
-              {currentChapter ? `Cap. ${currentChapter.chapterNumber}: ${currentChapter.chapterTitle}` : 'Leyendo capítulo'}
+              {currentChapter
+                ? `Cap. ${currentChapter.chapterNumber}: ${currentChapter.chapterTitle}${currentChapter.scanName ? ` • [${currentChapter.scanName}]` : ''}`
+                : 'Leyendo capítulo'}
             </span>
           </div>
         </div>
@@ -504,7 +512,7 @@ const MangaReader = () => {
               >
                 {chapters.map(c => (
                   <option key={c.chapterId} value={c.chapterId}>
-                    Cap. {c.chapterNumber} - {c.chapterTitle}
+                    Cap. {c.chapterNumber} - {c.chapterTitle}{c.scanName ? ` [${c.scanName}]` : ''}
                   </option>
                 ))}
               </select>

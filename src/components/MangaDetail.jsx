@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import mangasData, { canonicalMangas } from './mangasData';
 import { mangasApi, chaptersApi, userListApi } from '../services/api';
 import { useAuth } from '../Context/AuthContext';
+import { useLanguage } from '../Context/LanguageContext';
 import { getMangaImage } from '../utils/imageHelper';
 import SEO from './SEO';
 import '../styles/MangaDetail.scss';
@@ -14,8 +15,11 @@ const MangaDetail = () => {
   const [chapters, setChapters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isInList, setIsInList] = useState(false);
+  const [readingStatus, setReadingStatus] = useState('Reading');
+  const [readChapterIds, setReadChapterIds] = useState(new Set());
   const [listLoading, setListLoading] = useState(false);
   const { isAuthenticated } = useAuth();
+  const { language } = useLanguage();
 
   useEffect(() => {
     let isMounted = true;
@@ -57,8 +61,11 @@ const MangaDetail = () => {
             const apiChapters = await chaptersApi.getByManga(mangaId);
             if (isMounted && apiChapters && apiChapters.length > 0) {
               setChapters(apiChapters.map(c => ({
+                chapterId: c.chapterId,
                 number: c.chapterNumber,
                 title: c.chapterTitle || `Capítulo ${c.chapterNumber}`,
+                scanId: c.scanId,
+                scanName: c.scanName || 'Scan Group',
                 releaseDate: c.uploadedAt ? c.uploadedAt.substring(0, 10) : '2026-11'
               })));
             } else if (found.chapters) {
@@ -73,11 +80,22 @@ const MangaDetail = () => {
             if (found.chapters) setChapters(found.chapters);
           }
 
-          // Verificar si está en la lista del usuario
+          // Verificar si está en la lista del usuario y cargar capítulos leídos
           if (isAuthenticated && found.mangaId) {
             try {
               const inList = await userListApi.check(found.mangaId);
-              if (isMounted) setIsInList(Boolean(inList));
+              if (isMounted) {
+                setIsInList(Boolean(inList));
+                if (inList?.readingStatus) setReadingStatus(inList.readingStatus);
+              }
+              if (inList) {
+                const readList = await userListApi.getReadChapters(found.mangaId);
+                if (isMounted) {
+                  setReadChapterIds(new Set(readList.map(r => r.chapterId)));
+                }
+              } else if (isMounted) {
+                setReadChapterIds(new Set());
+              }
             } catch {
               // Silencioso
             }
@@ -101,7 +119,7 @@ const MangaDetail = () => {
 
   const handleToggleList = async () => {
     if (!isAuthenticated) {
-      alert('Debes iniciar sesión para guardar mangas en tu lista.');
+      navigate('/login');
       return;
     }
     if (!manga?.mangaId) return;
@@ -111,16 +129,50 @@ const MangaDetail = () => {
       if (isInList) {
         await userListApi.remove(manga.mangaId);
         setIsInList(false);
-        alert(`¡${manga.mangaName || manga.mangaTittle} ha sido removido de tu lista!`);
+        setReadChapterIds(new Set());
       } else {
         await userListApi.addOrUpdate({ mangaId: manga.mangaId, readingStatus: 'Reading' });
         setIsInList(true);
-        alert(`¡${manga.mangaName || manga.mangaTittle} añadido a tu lista con éxito!`);
+        setReadingStatus('Reading');
+        const readList = await userListApi.getReadChapters(manga.mangaId).catch(() => []);
+        setReadChapterIds(new Set(readList.map(r => r.chapterId)));
       }
     } catch (err) {
-      alert(`Error al actualizar la lista: ${err.message}`);
+      console.error('Error al actualizar la lista:', err);
     } finally {
       setListLoading(false);
+    }
+  };
+
+  const handleStatusChange = async (newStatus) => {
+    if (!isAuthenticated || !manga?.mangaId) return;
+    setReadingStatus(newStatus);
+    try {
+      await userListApi.addOrUpdate({ mangaId: manga.mangaId, readingStatus: newStatus });
+    } catch (err) {
+      console.error('Error actualizando estado:', err);
+    }
+  };
+
+  const handleToggleChapterRead = async (e, chapter) => {
+    e.stopPropagation();
+    if (!isAuthenticated || !isInList || !manga?.mangaId || !chapter.chapterId) return;
+
+    const alreadyRead = readChapterIds.has(chapter.chapterId);
+    try {
+      if (alreadyRead) {
+        await userListApi.unmarkChapterRead(chapter.chapterId);
+        setReadChapterIds(prev => {
+          const next = new Set(prev);
+          next.delete(chapter.chapterId);
+          return next;
+        });
+      } else {
+        await userListApi.markChapterRead(manga.mangaId, chapter.chapterId);
+        setReadChapterIds(prev => new Set(prev).add(chapter.chapterId));
+      }
+    } catch (err) {
+      console.error('Error actualizando progreso:', err);
     }
   };
 
@@ -239,29 +291,130 @@ const MangaDetail = () => {
                 }}
               >
                 <i className={`fa ${isInList ? 'fa-check' : 'fa-bookmark'}`} aria-hidden="true"></i>{' '}
-                {listLoading ? 'Actualizando...' : isInList ? 'En tu lista' : 'Añadir a mi lista'}
+                {listLoading
+                  ? (language === 'en' ? 'Updating...' : 'Actualizando...')
+                  : isInList
+                  ? (language === 'en' ? 'Following' : 'Siguiendo')
+                  : (language === 'en' ? 'Follow Manga' : 'Seguir Manga')}
               </button>
+
+              {isInList && (
+                <select
+                  value={readingStatus}
+                  onChange={(e) => handleStatusChange(e.target.value)}
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: '10px',
+                    border: '1px solid var(--border-color)',
+                    background: 'var(--bg-card)',
+                    color: 'var(--text-primary)',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                  title={language === 'en' ? 'Reading status' : 'Estado de lectura'}
+                >
+                  <option value="Reading">{language === 'en' ? 'Reading' : 'Leyendo'}</option>
+                  <option value="Completed">{language === 'en' ? 'Completed' : 'Completado'}</option>
+                  <option value="PlanToRead">{language === 'en' ? 'Plan to Read' : 'Por Leer'}</option>
+                  <option value="OnHold">{language === 'en' ? 'On Hold' : 'En Pausa'}</option>
+                  <option value="Dropped">{language === 'en' ? 'Dropped' : 'Abandonado'}</option>
+                </select>
+              )}
             </div>
           </div>
         </section>
 
         <section className="chapters-section">
-          <h2>Capítulos ({chapters.length})</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '14px' }}>
+            <h2 style={{ margin: 0 }}>{language === 'en' ? 'Chapters' : 'Capítulos'} ({chapters.length})</h2>
+            {isInList && chapters.length > 0 && (() => {
+              const uniqueChapterNums = new Set(chapters.map(c => c.number));
+              const readUniqueNums = new Set(chapters.filter(c => readChapterIds.has(c.chapterId)).map(c => c.number));
+              const total = uniqueChapterNums.size || 1;
+              const done = readUniqueNums.size;
+              const pct = Math.min(100, Math.round((done / total) * 100));
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: '220px', flex: '0 1 320px' }}>
+                  <div style={{ flex: 1, height: '8px', borderRadius: '999px', background: 'rgba(148, 163, 184, 0.2)', overflow: 'hidden' }}>
+                    <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, #10b981, #38bdf8)', transition: 'width 0.3s ease' }}></div>
+                  </div>
+                  <span style={{ fontSize: '12.5px', fontWeight: 700, whiteSpace: 'nowrap', color: '#10b981' }}>
+                    {done}/{total} {language === 'en' ? 'read' : 'vistos'} ({pct}%)
+                  </span>
+                </div>
+              );
+            })()}
+          </div>
+
           <div className="chapters-list">
-            {chapters.map(chapter => (
-              <div 
-                key={chapter.chapterId || chapter.number} 
-                className="chapter-item" 
-                onClick={() => navigate(`/manga/${manga?.mangaId || id}/chapter/${chapter.chapterId || chapter.number}`)}
-                role="button"
-                tabIndex={0}
-                title={`Leer ${chapter.title}`}
-              >
-                <span className="chapter-number">#{chapter.number}</span>
-                <span className="chapter-title">{chapter.title}</span>
-                <span className="chapter-date">{chapter.releaseDate}</span>
-              </div>
-            ))}
+            {chapters.map(chapter => {
+              const isRead = chapter.chapterId && readChapterIds.has(chapter.chapterId);
+              return (
+                <div 
+                  key={chapter.chapterId || `${chapter.number}-${chapter.scanId}`} 
+                  className="chapter-item" 
+                  onClick={() => navigate(`/manga/${manga?.mangaId || id}/chapter/${chapter.chapterId || chapter.number}`)}
+                  role="button"
+                  tabIndex={0}
+                  title={`Leer ${chapter.title}`}
+                  style={isRead ? { opacity: 0.78, borderLeft: '3px solid #10b981' } : undefined}
+                >
+                  <span className="chapter-number">#{chapter.number}</span>
+                  <span className="chapter-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span>{chapter.title}</span>
+                    {chapter.scanName && (
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          padding: '2px 9px',
+                          borderRadius: '999px',
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                          background: 'rgba(56, 189, 248, 0.14)',
+                          color: '#38bdf8',
+                          border: '1px solid rgba(56, 189, 248, 0.3)'
+                        }}
+                      >
+                        <i className="fa fa-users" aria-hidden="true"></i>
+                        {chapter.scanName}
+                      </span>
+                    )}
+                  </span>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: 'auto' }}>
+                    {isInList && chapter.chapterId && (
+                      <button
+                        type="button"
+                        onClick={(e) => handleToggleChapterRead(e, chapter)}
+                        title={isRead
+                          ? (language === 'en' ? 'Marked as read (click to unmark)' : 'Marcado como visto (clic para desmarcar)')
+                          : (language === 'en' ? 'Mark as read' : 'Marcar como visto')}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          padding: '4px 10px',
+                          borderRadius: '999px',
+                          border: `1px solid ${isRead ? 'rgba(16, 185, 129, 0.5)' : 'rgba(148, 163, 184, 0.3)'}`,
+                          background: isRead ? 'rgba(16, 185, 129, 0.18)' : 'transparent',
+                          color: isRead ? '#10b981' : 'inherit',
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <i className={`fa ${isRead ? 'fa-check-circle' : 'fa-eye'}`} aria-hidden="true"></i>
+                        <span>{isRead ? (language === 'en' ? 'Read' : 'Visto') : (language === 'en' ? 'Unread' : 'No visto')}</span>
+                      </button>
+                    )}
+                    <span className="chapter-date">{chapter.releaseDate}</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
       </div>

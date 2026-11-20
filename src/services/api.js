@@ -587,6 +587,41 @@ export const userListApi = {
     } catch {
       return null;
     }
+  },
+
+  async getReadChapters(mangaId) {
+    try {
+      const res = await request(`/UserMangaLists/GetReadChapters?mangaId=${mangaId}`);
+      return res.items || [];
+    } catch {
+      return [];
+    }
+  },
+
+  async markChapterRead(mangaId, chapterId) {
+    try {
+      const res = await request(`/UserMangaLists/MarkChapterRead?mangaId=${mangaId}&chapterId=${chapterId}`, {
+        method: 'POST'
+      });
+      return (res.items && res.items[0]) || null;
+    } catch {
+      return null;
+    }
+  },
+
+  async unmarkChapterRead(chapterId) {
+    return await request(`/UserMangaLists/UnmarkChapterRead?chapterId=${chapterId}`, {
+      method: 'DELETE'
+    });
+  },
+
+  async getReadingProgress() {
+    try {
+      const res = await request('/UserMangaLists/GetMyReadingProgress');
+      return res.items || [];
+    } catch {
+      return [];
+    }
   }
 };
 

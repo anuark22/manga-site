@@ -12,6 +12,7 @@ import SEO from './SEO';
 
 const Library = ({ isMyList = false }) => {    
     const [mangas, setMangas] = useState([]);
+    const [progressMap, setProgressMap] = useState({});
     const [loading, setLoading] = useState(true);
     const [filterValues, setFilterValues] = useState({});
     const [selectedGenres, setSelectedGenres] = useState([]);
@@ -44,10 +45,21 @@ const Library = ({ isMyList = false }) => {
             if (isMyList) {
                 if (!isAuthenticated) {
                     setMangas([]);
+                    setProgressMap({});
                     setLoading(false);
                     return;
                 }
-                const data = await userListApi.getMyList();
+                const [data, progressData] = await Promise.all([
+                    userListApi.getMyList(),
+                    userListApi.getReadingProgress().catch(() => [])
+                ]);
+                const pMap = {};
+                (progressData || []).forEach(p => {
+                    if (p && p.mangaId) {
+                        pMap[p.mangaId] = p;
+                    }
+                });
+                setProgressMap(pMap);
                 setMangas(data || []);
             } else {
                 const params = {
@@ -309,7 +321,7 @@ const Library = ({ isMyList = false }) => {
                 </div>
             ) : (
                 <div className="cards-container">
-                    <Card mangas={mangas}/>
+                    <Card mangas={mangas} progressMap={isMyList ? progressMap : null}/>
                 </div>
             )}
         </div>
