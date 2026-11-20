@@ -856,11 +856,25 @@ export const chapterCommentsApi = {
   }
 };
 
+export const auditLogsApi = {
+  async getAuditLogs({ entityType = '', action = '', search = '', top = 150 } = {}) {
+    const query = new URLSearchParams();
+    if (entityType) query.append('entityType', entityType);
+    if (action) query.append('action', action);
+    if (search) query.append('search', search);
+    if (top) query.append('top', top);
+    const qs = query.toString();
+    const res = await request(`/AuditLogs/GetAuditLogs${qs ? `?${qs}` : ''}`);
+    return res.items || [];
+  }
+};
+
 export default {
   mangas: mangasApi,
   chapters: chaptersApi,
   chapterReports: chapterReportsApi,
   chapterComments: chapterCommentsApi,
+  auditLogs: auditLogsApi,
   genres: genresApi,
   mangaGenres: mangaGenresApi,
   scans: scansApi,

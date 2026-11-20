@@ -8,6 +8,7 @@ import {
   mangasApi,
   noticesApi,
   chapterReportsApi,
+  auditLogsApi,
   normalizePageUrl 
 } from '../services/api';
 import { getNoticeImage } from '../utils/imageHelper';
@@ -44,6 +45,11 @@ const AdminDashboard = () => {
   const [mangasCount, setMangasCount] = useState(0);
   const [noticesList, setNoticesList] = useState([]);
   const [reportsList, setReportsList] = useState([]);
+  const [auditLogsList, setAuditLogsList] = useState([]);
+  const [auditEntityFilter, setAuditEntityFilter] = useState('ALL');
+  const [auditActionFilter, setAuditActionFilter] = useState('ALL');
+  const [auditSearch, setAuditSearch] = useState('');
+  const [auditLoading, setAuditLoading] = useState(false);
 
   // Filtros de reportes de capítulos
   const [reportsSearch, setReportsSearch] = useState('');
@@ -112,7 +118,7 @@ const AdminDashboard = () => {
   const loadAdminData = async () => {
     setLoading(true);
     try {
-      const [apps, users, roles, scans, mangas, notices, reports] = await Promise.all([
+      const [apps, users, roles, scans, mangas, notices, reports, auditLogs] = await Promise.all([
         scanApplicationsApi.getApplications().catch(err => {
           console.warn('Error cargando solicitudes:', err);
           return [];
@@ -137,6 +143,10 @@ const AdminDashboard = () => {
         chapterReportsApi.getReports('ALL').catch(err => {
           console.warn('Error cargando reportes de capítulos:', err);
           return [];
+        }),
+        auditLogsApi.getAuditLogs({ top: 200 }).catch(err => {
+          console.warn('Error cargando auditoría:', err);
+          return [];
         })
       ]);
 
@@ -147,6 +157,7 @@ const AdminDashboard = () => {
       setMangasCount(mangas.length);
       setNoticesList(notices);
       setReportsList(reports);
+      setAuditLogsList(auditLogs);
     } catch (err) {
       console.error('Error general cargando datos de administración:', err);
       showToast('Error al conectar con los servicios administrativos', 'error');
@@ -745,6 +756,13 @@ const AdminDashboard = () => {
               onClick={() => setActiveTab('notices')}
             >
               <i className="fa fa-newspaper-o"></i> Gestión de Noticias ({noticesList.length})
+            </button>
+            <button
+              type="button"
+              className={`nav-tab-btn ${activeTab === 'auditLog' ? 'active' : ''}`}
+              onClick={() => setActiveTab('auditLog')}
+            >
+              <i className="fa fa-history"></i> Auditoría ({auditLogsList.length})
             </button>
             <Link to="/scan-dashboard" className="nav-tab-btn link-external">
               <i className="fa fa-cloud-upload"></i> Ir a Panel Scan <i className="fa fa-external-link"></i>
@@ -1502,6 +1520,179 @@ const AdminDashboard = () => {
               </div>
             </div>
           )}
+
+          {/* ========================================================= */}
+          {/* TAB 6: AUDITORÍA DEL SISTEMA                              */}
+          {/* ========================================================= */}
+          {activeTab === 'auditLog' && (() => {
+            const filteredLogs = auditLogsList.filter(log => {
+              if (auditEntityFilter !== 'ALL' && log.entityType !== auditEntityFilter) return false;
+              if (auditActionFilter !== 'ALL' && log.action !== auditActionFilter) return false;
+              if (auditSearch.trim()) {
+                const q = auditSearch.toLowerCase();
+                const match =
+                  (log.username || '').toLowerCase().includes(q) ||
+                  (log.scanName || '').toLowerCase().includes(q) ||
+                  (log.entityName || '').toLowerCase().includes(q) ||
+                  (log.details || '').toLowerCase().includes(q) ||
+                  (log.entityType || '').toLowerCase().includes(q);
+                if (!match) return false;
+              }
+              return true;
+            });
+
+            const actionColors = {
+              CREATE: { bg: 'rgba(16, 185, 129, 0.16)', color: '#10b981', border: 'rgba(16, 185, 129, 0.35)' },
+              UPDATE: { bg: 'rgba(56, 189, 248, 0.16)', color: '#38bdf8', border: 'rgba(56, 189, 248, 0.35)' },
+              DELETE: { bg: 'rgba(239, 68, 68, 0.16)', color: '#ef4444', border: 'rgba(239, 68, 68, 0.35)' },
+              APPROVE: { bg: 'rgba(16, 185, 129, 0.16)', color: '#10b981', border: 'rgba(16, 185, 129, 0.35)' },
+              REJECT: { bg: 'rgba(245, 158, 11, 0.16)', color: '#f59e0b', border: 'rgba(245, 158, 11, 0.35)' },
+              RESOLVE: { bg: 'rgba(168, 85, 247, 0.16)', color: '#c084fc', border: 'rgba(168, 85, 247, 0.35)' }
+            };
+
+            const handleRefreshLogs = async () => {
+              setAuditLoading(true);
+              try {
+                const logs = await auditLogsApi.getAuditLogs({ top: 200 });
+                setAuditLogsList(logs);
+              } finally {
+                setAuditLoading(false);
+              }
+            };
+
+            return (
+              <div className="tab-pane audit-log-tab">
+                <div className="panel-box">
+                  <div className="box-header-row" style={{ flexWrap: 'wrap', gap: '12px' }}>
+                    <div>
+                      <h2 className="box-title">
+                        <i className="fa fa-history"></i> Registro de Auditoría ({filteredLogs.length})
+                      </h2>
+                      <p className="box-subtitle">
+                        Historial de creaciones, actualizaciones, eliminaciones y moderación realizadas por Scans y Administradores.
+                      </p>
+                    </div>
+
+                    <div className="header-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+                      <div className="search-bar-inline">
+                        <i className="fa fa-search"></i>
+                        <input
+                          type="text"
+                          placeholder="Buscar usuario, scan, manga, detalle..."
+                          value={auditSearch}
+                          onChange={(e) => setAuditSearch(e.target.value)}
+                        />
+                      </div>
+
+                      <select
+                        className="form-select"
+                        style={{ width: 'auto', minWidth: '150px' }}
+                        value={auditEntityFilter}
+                        onChange={(e) => setAuditEntityFilter(e.target.value)}
+                      >
+                        <option value="ALL">Todas las entidades</option>
+                        <option value="Manga">Mangas</option>
+                        <option value="Chapter">Capítulos</option>
+                        <option value="ScanGroup">Grupos Scan</option>
+                        <option value="Genre">Géneros</option>
+                        <option value="Notice">Noticias</option>
+                        <option value="ScanApplication">Solicitudes Scan</option>
+                        <option value="ChapterReport">Reportes</option>
+                      </select>
+
+                      <select
+                        className="form-select"
+                        style={{ width: 'auto', minWidth: '140px' }}
+                        value={auditActionFilter}
+                        onChange={(e) => setAuditActionFilter(e.target.value)}
+                      >
+                        <option value="ALL">Todas las acciones</option>
+                        <option value="CREATE">CREATE</option>
+                        <option value="UPDATE">UPDATE</option>
+                        <option value="DELETE">DELETE</option>
+                        <option value="APPROVE">APPROVE</option>
+                        <option value="REJECT">REJECT</option>
+                        <option value="RESOLVE">RESOLVE</option>
+                      </select>
+
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={handleRefreshLogs}
+                        disabled={auditLoading}
+                        style={{ padding: '8px 14px' }}
+                      >
+                        <i className={`fa ${auditLoading ? 'fa-spinner fa-spin' : 'fa-refresh'}`}></i> Actualizar
+                      </button>
+                    </div>
+                  </div>
+
+                  {filteredLogs.length === 0 ? (
+                    <div className="empty-state">
+                      <i className="fa fa-history"></i>
+                      <p>No hay registros de auditoría que coincidan con los filtros actuales.</p>
+                    </div>
+                  ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid var(--border-color)', textAlign: 'left', opacity: 0.8 }}>
+                            <th style={{ padding: '10px 12px' }}>Fecha</th>
+                            <th style={{ padding: '10px 12px' }}>Usuario / Scan</th>
+                            <th style={{ padding: '10px 12px' }}>Acción</th>
+                            <th style={{ padding: '10px 12px' }}>Entidad</th>
+                            <th style={{ padding: '10px 12px' }}>Detalles del Cambio</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredLogs.map(log => {
+                            const badgeStyle = actionColors[log.action] || { bg: 'rgba(148, 163, 184, 0.15)', color: '#cbd5e1', border: 'rgba(148, 163, 184, 0.35)' };
+                            return (
+                              <tr key={log.auditId} style={{ borderBottom: '1px solid rgba(148, 163, 184, 0.12)' }}>
+                                <td style={{ padding: '10px 12px', whiteSpace: 'nowrap', fontSize: '12px', opacity: 0.85 }}>
+                                  {log.createdAt ? new Date(log.createdAt).toLocaleString() : '-'}
+                                </td>
+                                <td style={{ padding: '10px 12px' }}>
+                                  <div style={{ fontWeight: 700 }}>{log.username || `User #${log.userId || '?'}`}</div>
+                                  <div style={{ fontSize: '11.5px', opacity: 0.75, display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '2px' }}>
+                                    {log.userRole && <span>{log.userRole}</span>}
+                                    {log.scanName && <span style={{ color: '#38bdf8' }}>&bull; {log.scanName}</span>}
+                                  </div>
+                                </td>
+                                <td style={{ padding: '10px 12px' }}>
+                                  <span style={{
+                                    display: 'inline-block',
+                                    padding: '2px 9px',
+                                    borderRadius: '999px',
+                                    fontSize: '11px',
+                                    fontWeight: 800,
+                                    background: badgeStyle.bg,
+                                    color: badgeStyle.color,
+                                    border: `1px solid ${badgeStyle.border}`
+                                  }}>
+                                    {log.action}
+                                  </span>
+                                </td>
+                                <td style={{ padding: '10px 12px' }}>
+                                  <div style={{ fontWeight: 600 }}>{log.entityType}</div>
+                                  <div style={{ fontSize: '12px', opacity: 0.8 }}>
+                                    {log.entityName || (log.entityId ? `#${log.entityId}` : '-')}
+                                  </div>
+                                </td>
+                                <td style={{ padding: '10px 12px', maxWidth: '420px', wordBreak: 'break-word', fontSize: '12.5px', opacity: 0.92 }}>
+                                  {log.details || '-'}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 
