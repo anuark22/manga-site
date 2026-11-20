@@ -524,6 +524,36 @@ export const authApi = {
   },
 
   /**
+   * Solicita correo/código de recuperación de contraseña
+   */
+  async forgotPassword({ email, honeypot = '', recaptchaToken = '' }) {
+    return await request('/Users/ForgotPassword', {
+      method: 'POST',
+      body: JSON.stringify({ email, honeypot, recaptchaToken })
+    });
+  },
+
+  /**
+   * Valida si el token de recuperación es válido y vigente
+   */
+  async validateRecoveryToken({ email, token }) {
+    return await request('/Users/ValidateRecoveryToken', {
+      method: 'POST',
+      body: JSON.stringify({ email, token })
+    });
+  },
+
+  /**
+   * Restablece la contraseña usando el token de recuperación
+   */
+  async resetPassword({ email, token, newPassword, confirmPassword }) {
+    return await request('/Users/ResetPassword', {
+      method: 'POST',
+      body: JSON.stringify({ email, token, newPassword, confirmPassword })
+    });
+  },
+
+  /**
    * Registra un nuevo usuario
    */
   async register({ username, email, password, aceptTerms = true, honeypot = '', recaptchaToken = '' }) {

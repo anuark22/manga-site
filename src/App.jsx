@@ -5,6 +5,7 @@ import Layout from './components/Layout';
 import Library from './components/Library';
 import Login from './components/Login';
 import Register from './components/Register';
+import ResetPassword from './components/ResetPassword';
 import Forum from './components/Forum';
 import ForumPostDetail from './components/ForumPostDetail';
 import News from './components/News';
@@ -32,6 +33,7 @@ function App() {
           <Route path="/reader/:chapterId" element={<MangaReader />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/forum" element={<Forum />} />
           <Route path="/forum/post/:id" element={<ForumPostDetail />} />
           <Route path="/forum/:id" element={<ForumPostDetail />} />
