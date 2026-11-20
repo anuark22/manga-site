@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="55%" stop-color="#1e3a8a" />
+      <stop offset="100%" stop-color="#2563eb" />
+    </linearGradient>
+    <linearGradient id="cyanGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#60a5fa" />
+    </linearGradient>
+  </defs>
+
+  <!-- Fondo redondeado estilo insignia -->
+  <rect x="2" y="2" width="60" height="60" rx="15" fill="url(#bgGrad)" stroke="#38bdf8" stroke-width="2.5" />
+
+  <!-- Silueta estilizada de páginas abiertas de manga arriba -->
+  <path d="M16 22 C22 18, 28 19, 32 23 C36 19, 42 18, 48 22 L48 26 C42 22.5, 36 23.5, 32 27 C28 23.5, 22 22.5, 16 26 Z" fill="url(#cyanGrad)" opacity="0.95" />
+
+  <!-- Monograma OMS con tipografía redondeada bold -->
+  <text x="32" y="47" text-anchor="middle" font-family="'Original Surfer', 'Trebuchet MS', 'Arial Rounded MT Bold', sans-serif" font-weight="900" font-size="21" letter-spacing="-0.5" fill="#ffffff">
+    O<tspan fill="#38bdf8">M</tspan>S
+  </text>
+</svg>
