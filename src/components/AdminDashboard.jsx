@@ -1563,8 +1563,8 @@ const AdminDashboard = () => {
             return (
               <div className="tab-pane audit-log-tab">
                 <div className="panel-box">
-                  <div className="box-header-row" style={{ flexWrap: 'wrap', gap: '12px' }}>
-                    <div>
+                  <div className="box-header-row">
+                    <div className="box-title-group">
                       <h2 className="box-title">
                         <i className="fa fa-history"></i> Registro de Auditoría ({filteredLogs.length})
                       </h2>
@@ -1573,7 +1573,7 @@ const AdminDashboard = () => {
                       </p>
                     </div>
 
-                    <div className="header-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+                    <div className="header-filters-row">
                       <div className="search-bar-inline">
                         <i className="fa fa-search"></i>
                         <input
@@ -1585,8 +1585,7 @@ const AdminDashboard = () => {
                       </div>
 
                       <select
-                        className="form-select"
-                        style={{ width: 'auto', minWidth: '150px' }}
+                        className="form-select role-filter-select"
                         value={auditEntityFilter}
                         onChange={(e) => setAuditEntityFilter(e.target.value)}
                       >
@@ -1601,8 +1600,7 @@ const AdminDashboard = () => {
                       </select>
 
                       <select
-                        className="form-select"
-                        style={{ width: 'auto', minWidth: '140px' }}
+                        className="form-select role-filter-select"
                         value={auditActionFilter}
                         onChange={(e) => setAuditActionFilter(e.target.value)}
                       >
@@ -1617,10 +1615,9 @@ const AdminDashboard = () => {
 
                       <button
                         type="button"
-                        className="btn-secondary"
+                        className="btn-primary"
                         onClick={handleRefreshLogs}
                         disabled={auditLoading}
-                        style={{ padding: '8px 14px' }}
                       >
                         <i className={`fa ${auditLoading ? 'fa-spinner fa-spin' : 'fa-refresh'}`}></i> Actualizar
                       </button>
