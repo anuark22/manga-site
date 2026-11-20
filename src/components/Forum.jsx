@@ -92,7 +92,7 @@ const Forum = () => {
                                 <div className="forum-post-select" ref={dropdownRef}>
                                     <button type="button" onClick={toggleDropdown} id="postHam"> 
                                         <i className="fa fa-filter" aria-hidden="true"></i>
-                                        <p>{selectedSort}</p>
+                                        <p>{t(`forum.sortOptions.${selectedSort}`, selectedSort)}</p>
                                         <i className={`fa ${isOpen ? 'fa-angle-up' : 'fa-angle-down'}`} aria-hidden="true"></i>
                                     </button>
                                     <ul className="forum-post-ul" style={{ display: isOpen ? 'flex' : 'none' }}>
@@ -102,7 +102,7 @@ const Forum = () => {
                                                 className={selectedSort === option ? 'active-sort' : ''}
                                                 onClick={() => handleSelectSort(option)}
                                             >
-                                                <span>{option}</span>
+                                                <span>{t(`forum.sortOptions.${option}`, option)}</span>
                                                 {selectedSort === option && (
                                                     <i className="fa fa-check" aria-hidden="true"></i>
                                                 )}
@@ -113,7 +113,10 @@ const Forum = () => {
 
                                 {(filterCategory || filterSubTopic) && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-                                        <span>{t('forum.activeFilter')}: <b>{filterCategory}</b> {filterSubTopic && `> ${filterSubTopic}`}</span>
+                                        <span>
+                                            {t('forum.activeFilter')}: <b>{t(`forum.categories.${filterCategory}`, filterCategory)}</b>
+                                            {filterSubTopic && ` > ${t(`forum.subTopics.${filterSubTopic}`, filterSubTopic)}`}
+                                        </span>
                                         <button 
                                             type="button" 
                                             onClick={handleResetFilters}

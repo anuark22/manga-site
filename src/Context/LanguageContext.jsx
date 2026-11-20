@@ -105,7 +105,42 @@ const translations = {
       publishReply: 'Publicar Respuesta',
       loginToComment: 'Inicia sesión para participar en esta discusión',
       deletePost: 'Eliminar discusión',
-      chars: 'caracteres'
+      chars: 'caracteres',
+      sortOptions: {
+        Latest: 'Recientes',
+        Newer: 'Más nuevos',
+        Older: 'Más antiguos',
+        Popular: 'Populares',
+        Trending: 'Tendencias',
+        Discussions: 'Más comentados'
+      },
+      categories: {
+        'OMS Community': 'Comunidad OMS',
+        'Library & Mangas': 'Biblioteca y Mangas',
+        'Video & Anime': 'Video y Anime',
+        'Scanlation Groups': 'Grupos Scanlation'
+      },
+      subTopics: {
+        All: 'Todos',
+        General: 'General',
+        Release: 'Lanzamientos',
+        Announcements: 'Anuncios',
+        Suggestions: 'Sugerencias',
+        Help: 'Ayuda',
+        'Shounen & Action': 'Shounen y Acción',
+        'Seinen & Mystery': 'Seinen y Misterio',
+        'Romance & Shoujo': 'Romance y Shoujo',
+        Recommendations: 'Recomendaciones',
+        Reviews: 'Reseñas',
+        'Episodes & Stream': 'Episodios y Stream',
+        'Movie Adaptations': 'Películas',
+        'Trailers & Teasers': 'Tráilers y Avances',
+        'Soundtracks & OST': 'Bandas Sonoras / OST',
+        Recruitment: 'Reclutamiento',
+        'Releases Showcase': 'Nuevos Capítulos',
+        'Translators & Editors': 'Traductores y Editores',
+        Partnerships: 'Alianzas'
+      }
     },
     news: {
       title: 'Noticias y Novedades',
@@ -231,7 +266,42 @@ const translations = {
       publishReply: 'Post Reply',
       loginToComment: 'Log in to join this discussion',
       deletePost: 'Delete discussion',
-      chars: 'characters'
+      chars: 'characters',
+      sortOptions: {
+        Latest: 'Latest',
+        Newer: 'Newer',
+        Older: 'Older',
+        Popular: 'Popular',
+        Trending: 'Trending',
+        Discussions: 'Discussions'
+      },
+      categories: {
+        'OMS Community': 'OMS Community',
+        'Library & Mangas': 'Library & Mangas',
+        'Video & Anime': 'Video & Anime',
+        'Scanlation Groups': 'Scanlation Groups'
+      },
+      subTopics: {
+        All: 'All',
+        General: 'General',
+        Release: 'Release',
+        Announcements: 'Announcements',
+        Suggestions: 'Suggestions',
+        Help: 'Help',
+        'Shounen & Action': 'Shounen & Action',
+        'Seinen & Mystery': 'Seinen & Mystery',
+        'Romance & Shoujo': 'Romance & Shoujo',
+        Recommendations: 'Recommendations',
+        Reviews: 'Reviews',
+        'Episodes & Stream': 'Episodes & Stream',
+        'Movie Adaptations': 'Movie Adaptations',
+        'Trailers & Teasers': 'Trailers & Teasers',
+        'Soundtracks & OST': 'Soundtracks & OST',
+        Recruitment: 'Recruitment',
+        'Releases Showcase': 'Releases Showcase',
+        'Translators & Editors': 'Translators & Editors',
+        Partnerships: 'Partnerships'
+      }
     },
     news: {
       title: 'News & Updates',

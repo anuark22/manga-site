@@ -125,7 +125,7 @@ const SideBar = ({ onSelectTopic, onPostCreated }) => {
                             >
                                 <div className="topic-head-left">
                                     <i className={iconClass} aria-hidden="true"></i>
-                                    <p>{title}</p>
+                                    <p>{t(`forum.categories.${title}`, title)}</p>
                                 </div>
                                 <i 
                                     className={`fa ${isOpen ? 'fa-angle-up' : 'fa-angle-down'} chevron-icon`}
@@ -144,7 +144,7 @@ const SideBar = ({ onSelectTopic, onPostCreated }) => {
                                             className={activeTopic === topic ? 'active-topic' : ''}
                                             onClick={() => handleTopicClick(title, topic)}
                                         >
-                                            {topic}
+                                            {t(`forum.subTopics.${topic}`, topic)}
                                         </li>
                                     ))}
                                 </ul>
@@ -201,10 +201,10 @@ const SideBar = ({ onSelectTopic, onPostCreated }) => {
                                     value={newCategory} 
                                     onChange={(e) => setNewCategory(e.target.value)}
                                 >
-                                    <option value="OMS Community">OMS Community</option>
-                                    <option value="Library & Mangas">Library & Mangas</option>
-                                    <option value="Video & Anime">Video & Anime</option>
-                                    <option value="Scanlation Groups">Scanlation Groups</option>
+                                    <option value="OMS Community">{t('forum.categories.OMS Community', 'OMS Community')}</option>
+                                    <option value="Library & Mangas">{t('forum.categories.Library & Mangas', 'Library & Mangas')}</option>
+                                    <option value="Video & Anime">{t('forum.categories.Video & Anime', 'Video & Anime')}</option>
+                                    <option value="Scanlation Groups">{t('forum.categories.Scanlation Groups', 'Scanlation Groups')}</option>
                                 </select>
                             </div>
 

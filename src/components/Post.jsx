@@ -43,11 +43,11 @@ const Post = ({ posts = [], loading = false }) => {
                                     <p className="user-name"><b>{userName}</b></p>
                                     <p className="post-date">{dateStr}</p>
                                     <span className="OMSComunnity" style={{ textTransform: 'capitalize' }}>
-                                        {topic}
+                                        {t(`forum.categories.${topic}`, topic)}
                                     </span> 
                                     {subTopic && (
                                         <span className="Groups" style={{ textTransform: 'capitalize' }}>
-                                            {subTopic}
+                                            {t(`forum.subTopics.${subTopic}`, subTopic)}
                                         </span>
                                     )}
                                 </div>

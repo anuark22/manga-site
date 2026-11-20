@@ -267,11 +267,11 @@ const ForumPostDetail = () => {
 
           <div className="topic-badges-group">
             <span className="pill-topic">
-              <i className="fa fa-folder-open"></i> {postTopic}
+              <i className="fa fa-folder-open"></i> {t(`forum.categories.${postTopic}`, postTopic)}
             </span>
             {postSubTopic && (
               <span className="pill-subtopic">
-                <i className="fa fa-tag"></i> {postSubTopic}
+                <i className="fa fa-tag"></i> {t(`forum.subTopics.${postSubTopic}`, postSubTopic)}
               </span>
             )}
             {isPinned && (
