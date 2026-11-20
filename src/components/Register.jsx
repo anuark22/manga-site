@@ -38,15 +38,18 @@ const Register = () => {
 
         try {
             const recaptchaToken = await executeRecaptcha('register');
-            await register({
+            const result = await register({
                 username: formData.username.trim(),
                 email: formData.email.trim(),
                 password: formData.password,
                 honeypot,
                 recaptchaToken
             });
-            alert('¡Cuenta creada exitosamente!');
-            navigate('/');
+            if (result && result.token) {
+                navigate('/');
+            } else {
+                navigate('/login', { state: { registeredSuccess: true, email: formData.email.trim() } });
+            }
         } catch (err) {
             setError(err.message || 'Error al crear la cuenta. Por favor intenta nuevamente.');
         } finally {

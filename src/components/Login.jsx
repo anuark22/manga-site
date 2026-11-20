@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../Context/AuthContext';
 import { executeRecaptcha } from '../services/recaptcha';
 import SEO from './SEO';
 import '../styles/Login.scss';
 
 const Login = () => {
+    const location = useLocation();
     const [showPassword, setShowPassword] = useState(false);
-    const [formData, setFormData] = useState({ email: '', password: '' });
+    const [formData, setFormData] = useState({ email: location.state?.email || '', password: '' });
     const [honeypot, setHoneypot] = useState('');
     const [error, setError] = useState('');
+    const [successBanner] = useState(Boolean(location.state?.registeredSuccess));
     const [loading, setLoading] = useState(false);
     const [lockoutSeconds, setLockoutSeconds] = useState(0);
     const { login } = useAuth();
@@ -78,6 +80,25 @@ const Login = () => {
                         />
                     </div>
                     
+                    {successBanner && !error && (
+                        <div style={{
+                            width: '100%',
+                            padding: '10px 14px',
+                            borderRadius: '8px',
+                            background: 'rgba(16, 185, 129, 0.18)',
+                            border: '1px solid #10b981',
+                            color: '#fff',
+                            fontSize: '13px',
+                            boxSizing: 'border-box',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                        }}>
+                            <i className="fa fa-check-circle" style={{ color: '#34d399' }}></i>
+                            <span>¡Cuenta creada con éxito! Inicia sesión para continuar.</span>
+                        </div>
+                    )}
+
                     {error && (
                         <div style={{
                             width: '100%',
