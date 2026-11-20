@@ -790,10 +790,42 @@ export const chapterReportsApi = {
   }
 };
 
+// ==========================================
+// COMENTARIOS EN CASCADA POR CAPÍTULO API
+// ==========================================
+export const chapterCommentsApi = {
+  async getComments(chapterId) {
+    const res = await request(`/ChapterComments/GetComments?chapterId=${chapterId}`);
+    return res.items || [];
+  },
+
+  async addComment({ chapterId, parentCommentId = null, content = '', mediaUrl = '', mediaFile = null, honeypot = '' }) {
+    const formData = new FormData();
+    formData.append('ChapterId', Number(chapterId));
+    if (parentCommentId) formData.append('ParentCommentId', Number(parentCommentId));
+    if (content) formData.append('Content', content);
+    if (mediaUrl) formData.append('MediaUrl', mediaUrl);
+    if (mediaFile) formData.append('MediaFile', mediaFile);
+    if (honeypot) formData.append('Honeypot', honeypot);
+
+    return await request('/ChapterComments/AddComment', {
+      method: 'POST',
+      body: formData
+    });
+  },
+
+  async deleteComment(commentId) {
+    return await request(`/ChapterComments/DeleteComment?commentId=${commentId}`, {
+      method: 'DELETE'
+    });
+  }
+};
+
 export default {
   mangas: mangasApi,
   chapters: chaptersApi,
   chapterReports: chapterReportsApi,
+  chapterComments: chapterCommentsApi,
   genres: genresApi,
   mangaGenres: mangaGenresApi,
   scans: scansApi,

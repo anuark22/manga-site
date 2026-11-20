@@ -162,6 +162,36 @@ const translations = {
       registerHere: 'Regístrate aquí',
       hasAccount: '¿Ya tienes una cuenta?',
       loginHere: 'Inicia sesión'
+    },
+    chat: {
+      title: 'Chat en Vivo',
+      online: 'en línea',
+      connecting: 'Conectando...',
+      empty: 'Sé el primero en saludar a la comunidad en tiempo real.',
+      placeholder: 'Escribe un mensaje...',
+      mediaUrlPlaceholder: 'Pega URL de imagen o GIF (https://...)',
+      addMediaTitle: 'Adjuntar imagen o GIF por URL',
+      send: 'Enviar',
+      loginPrompt: 'Inicia sesión para chatear en vivo',
+      loginBtn: 'Entrar'
+    },
+    chapterComments: {
+      title: 'Comentarios del Capítulo',
+      subtitle: 'Comparte tu opinión sobre este capítulo o responde a otros lectores',
+      placeholder: '¿Qué te pareció este capítulo? Escribe tu comentario...',
+      replyPlaceholder: 'Escribe tu respuesta...',
+      uploadMedia: 'Subir Imagen / GIF',
+      pasteGifUrl: 'URL de GIF / Imagen',
+      pasteUrlPlaceholder: 'https://media.giphy.com/...',
+      publish: 'Comentar',
+      reply: 'Responder',
+      sending: 'Enviando...',
+      delete: 'Eliminar',
+      deleteConfirm: '¿Seguro que deseas eliminar este comentario?',
+      empty: 'Aún no hay comentarios en este capítulo. ¡Sé el primero en opinar!',
+      loginPrompt: 'Inicia sesión para comentar o responder con imágenes/GIFs',
+      collapseThread: 'Ocultar hilo',
+      expandThread: 'Mostrar hilo'
     }
   },
   en: {
@@ -323,6 +353,36 @@ const translations = {
       registerHere: 'Register here',
       hasAccount: 'Already have an account?',
       loginHere: 'Sign in'
+    },
+    chat: {
+      title: 'Live Chat',
+      online: 'online',
+      connecting: 'Connecting...',
+      empty: 'Be the first to say hello to the community in real time.',
+      placeholder: 'Write a message...',
+      mediaUrlPlaceholder: 'Paste image or GIF URL (https://...)',
+      addMediaTitle: 'Attach image or GIF by URL',
+      send: 'Send',
+      loginPrompt: 'Log in to join the live chat',
+      loginBtn: 'Sign in'
+    },
+    chapterComments: {
+      title: 'Chapter Comments',
+      subtitle: 'Share your thoughts on this chapter or reply to other readers',
+      placeholder: 'What did you think of this chapter? Leave a comment...',
+      replyPlaceholder: 'Write your reply...',
+      uploadMedia: 'Upload Image / GIF',
+      pasteGifUrl: 'GIF / Image URL',
+      pasteUrlPlaceholder: 'https://media.giphy.com/...',
+      publish: 'Post Comment',
+      reply: 'Reply',
+      sending: 'Posting...',
+      delete: 'Delete',
+      deleteConfirm: 'Are you sure you want to delete this comment?',
+      empty: 'No comments on this chapter yet. Be the first to share your thoughts!',
+      loginPrompt: 'Log in to comment or reply with images/GIFs',
+      collapseThread: 'Collapse thread',
+      expandThread: 'Expand thread'
     }
   }
 };

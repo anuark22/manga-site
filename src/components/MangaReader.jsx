@@ -6,6 +6,7 @@ import { useTheme } from '../Context/ThemeContext';
 import { useAuth } from '../Context/AuthContext';
 import { getMangaImage } from '../utils/imageHelper';
 import SEO from './SEO';
+import ChapterComments from './ChapterComments';
 import '../styles/MangaReader.scss';
 
 const REPORT_REASONS = [
@@ -739,6 +740,11 @@ const MangaReader = () => {
           </div>
         )}
       </main>
+
+      {/* ========================================================= */}
+      {/* COMENTARIOS EN CASCADA DEL CAPÍTULO (ESTILO REDDIT)       */}
+      {/* ========================================================= */}
+      <ChapterComments chapterId={currentChapter?.chapterId} />
 
       {/* ========================================================= */}
       {/* BARRA INFERIOR FLOTANTE DE NAVEGACIÓN                     */}
