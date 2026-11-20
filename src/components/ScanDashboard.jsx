@@ -528,6 +528,11 @@ const ScanDashboard = () => {
 
   // Eliminar Capítulo
   const handleDeleteChapter = async (chap) => {
+    if (!isAdmin && (!myScan || Number(chap.scanId) !== Number(myScan.scanId))) {
+      showToast('Solo puedes eliminar capítulos subidos por tu propio Grupo Scan.', 'error');
+      return;
+    }
+
     if (!window.confirm(`¿Estás seguro de eliminar el Capítulo ${chap.chapterNumber} ("${chap.chapterTitle}")? Se eliminarán también todas sus páginas.`)) {
       return;
     }
@@ -680,6 +685,11 @@ const ScanDashboard = () => {
   };
 
   const handleDeleteManga = async (m) => {
+    if (!isAdmin) {
+      showToast('Solo los administradores pueden eliminar mangas.', 'error');
+      return;
+    }
+
     if (!window.confirm(`¿Estás seguro de eliminar el manga "${m.mangaTittle || m.mangaName}"? Esta acción borrará también sus capítulos.`)) {
       return;
     }
@@ -1542,44 +1552,56 @@ const ScanDashboard = () => {
                             </tr>
                           </thead>
                           <tbody>
-                            {mangaChapters.map(chap => (
-                              <tr key={chap.chapterId}>
-                                <td className="chapter-col-number">
-                                  <strong>Cap. {chap.chapterNumber}</strong>
-                                </td>
-                                <td className="chapter-col-title">
-                                  {chap.chapterTitle || 'Sin título'}
-                                </td>
-                                <td className="chapter-col-date">
-                                  {chap.uploadedAt ? chap.uploadedAt.substring(0, 10) : 'Reciente'}
-                                </td>
-                                <td className="chapter-col-actions">
-                                  <Link
-                                    to={`/manga/${selectedMangaId}/chapter/${chap.chapterId}`}
-                                    className="btn-action-read"
-                                    title="Leer en el visor"
-                                  >
-                                    <i className="fa fa-eye"></i>
-                                  </Link>
-                                  <button
-                                    type="button"
-                                    className="btn-action-edit"
-                                    onClick={() => setEditingChapter({ ...chap })}
-                                    title="Editar datos"
-                                  >
-                                    <i className="fa fa-pencil"></i>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="btn-action-delete"
-                                    onClick={() => handleDeleteChapter(chap)}
-                                    title="Eliminar capítulo y páginas"
-                                  >
-                                    <i className="fa fa-trash"></i>
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
+                            {mangaChapters.map(chap => {
+                              const canModifyChapter = isAdmin || (myScan && Number(chap.scanId) === Number(myScan.scanId));
+                              return (
+                                <tr key={chap.chapterId}>
+                                  <td className="chapter-col-number">
+                                    <strong>Cap. {chap.chapterNumber}</strong>
+                                  </td>
+                                  <td className="chapter-col-title">
+                                    <span>{chap.chapterTitle || 'Sin título'}</span>
+                                    {chap.scanName && (
+                                      <span style={{ marginLeft: '8px', fontSize: '11px', opacity: 0.75 }}>
+                                        ({chap.scanName})
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="chapter-col-date">
+                                    {chap.uploadedAt ? chap.uploadedAt.substring(0, 10) : 'Reciente'}
+                                  </td>
+                                  <td className="chapter-col-actions">
+                                    <Link
+                                      to={`/manga/${selectedMangaId}/chapter/${chap.chapterId}`}
+                                      className="btn-action-read"
+                                      title="Leer en el visor"
+                                    >
+                                      <i className="fa fa-eye"></i>
+                                    </Link>
+                                    {canModifyChapter && (
+                                      <>
+                                        <button
+                                          type="button"
+                                          className="btn-action-edit"
+                                          onClick={() => setEditingChapter({ ...chap })}
+                                          title="Editar datos"
+                                        >
+                                          <i className="fa fa-pencil"></i>
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="btn-action-delete"
+                                          onClick={() => handleDeleteChapter(chap)}
+                                          title="Eliminar capítulo y páginas"
+                                        >
+                                          <i className="fa fa-trash"></i>
+                                        </button>
+                                      </>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>
@@ -1673,14 +1695,16 @@ const ScanDashboard = () => {
                           >
                             <i className="fa fa-pencil"></i>
                           </button>
-                          <button
-                            type="button"
-                            className="btn-card-action delete"
-                            onClick={() => handleDeleteManga(m)}
-                            title="Eliminar manga"
-                          >
-                            <i className="fa fa-trash"></i>
-                          </button>
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              className="btn-card-action delete"
+                              onClick={() => handleDeleteManga(m)}
+                              title="Eliminar manga"
+                            >
+                              <i className="fa fa-trash"></i>
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
