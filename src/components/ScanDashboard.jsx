@@ -14,6 +14,7 @@ import {
 import { useAuth } from '../Context/AuthContext';
 import { useTheme } from '../Context/ThemeContext';
 import imageHelper, { getMangaImage } from '../utils/imageHelper';
+import ConfirmModal from './ConfirmModal';
 import '../styles/ScanDashboard.scss';
 
 const AUDIT_REASON_LABELS = {
@@ -28,6 +29,7 @@ const AUDIT_REASON_LABELS = {
 const ScanDashboard = () => {
   const { user, isAuthenticated } = useAuth();
   const { theme } = useTheme();
+  const [confirmState, setConfirmState] = useState({ isOpen: false, title: '', message: '', confirmText: 'Eliminar', variant: 'danger', loading: false, onConfirm: null });
   const navigate = useNavigate();
 
   // Pestaña activa: 'chapters' | 'mangas' | 'genres' | 'scans' | 'audits'
@@ -370,11 +372,20 @@ const ScanDashboard = () => {
 
   const clearAllPages = () => {
     if (chapterPages.length === 0) return;
-    if (window.confirm('¿Deseas quitar todas las páginas seleccionadas?')) {
-      chapterPages.forEach(p => URL.revokeObjectURL(p.previewUrl));
-      setChapterPages([]);
-      setSequenceWarnings([]);
-    }
+    setConfirmState({
+      isOpen: true,
+      title: 'Quitar páginas seleccionadas',
+      message: '¿Deseas quitar todas las páginas seleccionadas de la cola de subida?',
+      confirmText: 'Sí, quitar todas',
+      variant: 'warning',
+      loading: false,
+      onConfirm: () => {
+        chapterPages.forEach(p => URL.revokeObjectURL(p.previewUrl));
+        setChapterPages([]);
+        setSequenceWarnings([]);
+        setConfirmState(prev => ({ ...prev, isOpen: false }));
+      }
+    });
   };
 
   const reversePagesOrder = () => {
@@ -527,23 +538,32 @@ const ScanDashboard = () => {
   };
 
   // Eliminar Capítulo
-  const handleDeleteChapter = async (chap) => {
+  const handleDeleteChapter = (chap) => {
     if (!isAdmin && (!myScan || Number(chap.scanId) !== Number(myScan.scanId))) {
       showToast('Solo puedes eliminar capítulos subidos por tu propio Grupo Scan.', 'error');
       return;
     }
 
-    if (!window.confirm(`¿Estás seguro de eliminar el Capítulo ${chap.chapterNumber} ("${chap.chapterTitle}")? Se eliminarán también todas sus páginas.`)) {
-      return;
-    }
-
-    try {
-      await chaptersApi.deleteChapter(chap.chapterId);
-      showToast(`Capítulo ${chap.chapterNumber} eliminado`);
-      setMangaChapters(prev => prev.filter(c => c.chapterId !== chap.chapterId));
-    } catch (err) {
-      showToast(err.message || 'Error al eliminar el capítulo', 'error');
-    }
+    setConfirmState({
+      isOpen: true,
+      title: `Eliminar Capítulo ${chap.chapterNumber}`,
+      message: `¿Estás seguro de eliminar el Capítulo ${chap.chapterNumber} ("${chap.chapterTitle || 'Sin título'}")? Se eliminarán también todas sus páginas.`,
+      confirmText: 'Eliminar Capítulo',
+      variant: 'danger',
+      loading: false,
+      onConfirm: async () => {
+        setConfirmState(prev => ({ ...prev, loading: true }));
+        try {
+          await chaptersApi.deleteChapter(chap.chapterId);
+          showToast(`Capítulo ${chap.chapterNumber} eliminado`);
+          setMangaChapters(prev => prev.filter(c => c.chapterId !== chap.chapterId));
+          setConfirmState(prev => ({ ...prev, isOpen: false, loading: false }));
+        } catch (err) {
+          showToast(err.message || 'Error al eliminar el capítulo', 'error');
+          setConfirmState(prev => ({ ...prev, loading: false }));
+        }
+      }
+    });
   };
 
   // Guardar edición de capítulo
@@ -684,26 +704,35 @@ const ScanDashboard = () => {
     }
   };
 
-  const handleDeleteManga = async (m) => {
+  const handleDeleteManga = (m) => {
     if (!isAdmin) {
       showToast('Solo los administradores pueden eliminar mangas.', 'error');
       return;
     }
 
-    if (!window.confirm(`¿Estás seguro de eliminar el manga "${m.mangaTittle || m.mangaName}"? Esta acción borrará también sus capítulos.`)) {
-      return;
-    }
-
-    try {
-      await mangasApi.deleteManga(m.mangaId);
-      showToast(`Manga "${m.mangaTittle || m.mangaName}" eliminado`);
-      setMangas(prev => prev.filter(item => item.mangaId !== m.mangaId));
-      if (selectedMangaId === m.mangaId) {
-        setSelectedMangaId('');
+    setConfirmState({
+      isOpen: true,
+      title: 'Eliminar Manga',
+      message: `¿Estás seguro de eliminar el manga "${m.mangaTittle || m.mangaName}"? Esta acción borrará también todos sus capítulos.`,
+      confirmText: 'Eliminar Manga',
+      variant: 'danger',
+      loading: false,
+      onConfirm: async () => {
+        setConfirmState(prev => ({ ...prev, loading: true }));
+        try {
+          await mangasApi.deleteManga(m.mangaId);
+          showToast(`Manga "${m.mangaTittle || m.mangaName}" eliminado`);
+          setMangas(prev => prev.filter(item => item.mangaId !== m.mangaId));
+          if (selectedMangaId === m.mangaId) {
+            setSelectedMangaId('');
+          }
+          setConfirmState(prev => ({ ...prev, isOpen: false, loading: false }));
+        } catch (err) {
+          showToast(err.message || 'Error al eliminar el manga', 'error');
+          setConfirmState(prev => ({ ...prev, loading: false }));
+        }
       }
-    } catch (err) {
-      showToast(err.message || 'Error al eliminar el manga', 'error');
-    }
+    });
   };
 
   // ==========================================
@@ -764,16 +793,27 @@ const ScanDashboard = () => {
     }
   };
 
-  const handleDeleteGenre = async (g) => {
-    if (!window.confirm(`¿Estás seguro de eliminar el género "${g.genreName}"?`)) return;
-
-    try {
-      await genresApi.deleteGenre(g.genreId);
-      showToast(`Género "${g.genreName}" eliminado`);
-      setGenres(prev => prev.filter(item => item.genreId !== g.genreId));
-    } catch (err) {
-      showToast(err.message || 'Error al eliminar género', 'error');
-    }
+  const handleDeleteGenre = (g) => {
+    setConfirmState({
+      isOpen: true,
+      title: 'Eliminar Género',
+      message: `¿Estás seguro de eliminar el género "${g.genreName}"?`,
+      confirmText: 'Eliminar Género',
+      variant: 'danger',
+      loading: false,
+      onConfirm: async () => {
+        setConfirmState(prev => ({ ...prev, loading: true }));
+        try {
+          await genresApi.deleteGenre(g.genreId);
+          showToast(`Género "${g.genreName}" eliminado`);
+          setGenres(prev => prev.filter(item => item.genreId !== g.genreId));
+          setConfirmState(prev => ({ ...prev, isOpen: false, loading: false }));
+        } catch (err) {
+          showToast(err.message || 'Error al eliminar género', 'error');
+          setConfirmState(prev => ({ ...prev, loading: false }));
+        }
+      }
+    });
   };
 
   // ==========================================
@@ -2549,6 +2589,17 @@ const ScanDashboard = () => {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        variant={confirmState.variant}
+        loading={confirmState.loading}
+        onConfirm={confirmState.onConfirm}
+        onCancel={() => setConfirmState(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

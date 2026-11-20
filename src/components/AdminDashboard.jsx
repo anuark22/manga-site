@@ -14,6 +14,7 @@ import {
 import { getNoticeImage } from '../utils/imageHelper';
 import { useAuth } from '../Context/AuthContext';
 import { useTheme } from '../Context/ThemeContext';
+import ConfirmModal from './ConfirmModal';
 import '../styles/AdminDashboard.scss';
 
 const REPORT_REASON_LABELS = {
@@ -36,6 +37,7 @@ const AdminDashboard = () => {
   // Estados generales
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
+  const [confirmState, setConfirmState] = useState({ isOpen: false, title: '', message: '', confirmText: 'Eliminar', variant: 'danger', loading: false, onConfirm: null });
 
   // Datos maestros
   const [applications, setApplications] = useState([]);
@@ -407,17 +409,28 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleDeleteNotice = async (noticeId) => {
-    if (!window.confirm('¿Estás seguro de eliminar esta noticia? Esta acción no se puede deshacer.')) return;
-
-    try {
-      await noticesApi.deleteNotice(noticeId);
-      setNoticesList(prev => prev.filter(n => (n.noticeId || n.id) !== noticeId));
-      showToast('Noticia eliminada correctamente');
-    } catch (err) {
-      console.error('Error al eliminar noticia:', err);
-      showToast('No se pudo eliminar la noticia', 'error');
-    }
+  const handleDeleteNotice = (noticeId) => {
+    setConfirmState({
+      isOpen: true,
+      title: 'Eliminar Noticia',
+      message: '¿Estás seguro de eliminar esta noticia? Esta acción no se puede deshacer.',
+      confirmText: 'Eliminar Noticia',
+      variant: 'danger',
+      loading: false,
+      onConfirm: async () => {
+        setConfirmState(prev => ({ ...prev, loading: true }));
+        try {
+          await noticesApi.deleteNotice(noticeId);
+          setNoticesList(prev => prev.filter(n => (n.noticeId || n.id) !== noticeId));
+          showToast('Noticia eliminada correctamente');
+          setConfirmState(prev => ({ ...prev, isOpen: false, loading: false }));
+        } catch (err) {
+          console.error('Error al eliminar noticia:', err);
+          showToast('No se pudo eliminar la noticia', 'error');
+          setConfirmState(prev => ({ ...prev, loading: false }));
+        }
+      }
+    });
   };
 
   const handleSubmitNotice = async (e) => {
@@ -484,13 +497,8 @@ const AdminDashboard = () => {
     setAuditForm({ status: 'RESOLVED', actionTaken: 'NONE', adminNotes: '' });
   };
 
-  const handleSubmitAuditReport = async (e) => {
-    e.preventDefault();
+  const executeAuditReport = async () => {
     if (!auditingReport) return;
-
-    if (auditForm.actionTaken === 'DELETE_CHAPTER' && !window.confirm(`¿Estás seguro de ELIMINAR FÍSICAMENTE el Capítulo ${auditingReport.chapterNumber} de "${auditingReport.mangaTittle}" (subido por ${auditingReport.scanName})? Esta acción borrará sus páginas y resolverá todos los reportes pendientes del capítulo.`)) {
-      return;
-    }
 
     setAuditSubmitting(true);
     try {
@@ -514,6 +522,30 @@ const AdminDashboard = () => {
     } finally {
       setAuditSubmitting(false);
     }
+  };
+
+  const handleSubmitAuditReport = async (e) => {
+    e.preventDefault();
+    if (!auditingReport) return;
+
+    if (auditForm.actionTaken === 'DELETE_CHAPTER') {
+      setConfirmState({
+        isOpen: true,
+        title: `Eliminar Capítulo ${auditingReport.chapterNumber}`,
+        message: `¿Estás seguro de ELIMINAR FÍSICAMENTE el Capítulo ${auditingReport.chapterNumber} de "${auditingReport.mangaTittle}" (subido por ${auditingReport.scanName})? Esta acción borrará sus páginas y resolverá todos los reportes pendientes.`,
+        confirmText: 'Eliminar Capítulo',
+        variant: 'danger',
+        loading: false,
+        onConfirm: async () => {
+          setConfirmState(prev => ({ ...prev, loading: true }));
+          await executeAuditReport();
+          setConfirmState(prev => ({ ...prev, isOpen: false, loading: false }));
+        }
+      });
+      return;
+    }
+
+    await executeAuditReport();
   };
 
   // ==========================================
@@ -2219,6 +2251,17 @@ const AdminDashboard = () => {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        variant={confirmState.variant}
+        loading={confirmState.loading}
+        onConfirm={confirmState.onConfirm}
+        onCancel={() => setConfirmState(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };
