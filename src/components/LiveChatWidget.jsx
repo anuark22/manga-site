@@ -9,7 +9,7 @@ import Gravatar from './Gravatar';
 import '../styles/LiveChatWidget.scss';
 
 const LiveChatWidget = ({ embedded = false }) => {
-  const { isAuthenticated, token } = useAuth();
+  const { isAuthenticated, token, user } = useAuth();
   const { t } = useLanguage();
   const { theme } = useTheme();
   const location = useLocation();
@@ -165,7 +165,10 @@ const LiveChatWidget = ({ embedded = false }) => {
               messages.map((m) => (
                 <div key={m.id} className="chat-msg-item">
                   <div className="chat-msg-avatar">
-                    <Gravatar email={m.email || `${m.username}@mangasite.com`} />
+                    <Gravatar
+                      email={m.email || `${m.username}@mangasite.com`}
+                      avatarUrl={m.userId && user?.userId && m.userId === user.userId && user?.avatarUrl ? user.avatarUrl : m.avatarUrl}
+                    />
                   </div>
                   <div className="chat-msg-body">
                     <div className="chat-msg-meta">
