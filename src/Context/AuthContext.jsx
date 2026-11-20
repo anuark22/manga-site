@@ -24,6 +24,13 @@ export const AuthProvider = ({ children }) => {
     return loggedUser;
   };
 
+  const googleLogin = async ({ idToken, honeypot = '' }) => {
+    const loggedUser = await authApi.googleAuth({ idToken, honeypot });
+    setUser(loggedUser);
+    setToken(loggedUser.token);
+    return loggedUser;
+  };
+
   const register = async ({ username, email, password, honeypot = '', recaptchaToken = '' }) => {
     const res = await authApi.register({ username, email, password, aceptTerms: true, honeypot, recaptchaToken });
     // Tras registrarse con éxito, intentamos inicio de sesión automático
@@ -59,6 +66,7 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated: Boolean(token),
         loading,
         login,
+        googleLogin,
         register,
         logout,
         updateUser

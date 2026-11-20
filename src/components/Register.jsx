@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../Context/AuthContext';
 import { executeRecaptcha } from '../services/recaptcha';
+import GoogleSignInButton from './GoogleSignInButton';
 import SEO from './SEO';
 import '../styles/Register.scss';
 
@@ -17,8 +18,21 @@ const Register = () => {
     const [honeypot, setHoneypot] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const { register } = useAuth();
+    const { register, googleLogin } = useAuth();
     const navigate = useNavigate();
+
+    const handleGoogleCredential = async (idToken) => {
+        setError('');
+        setLoading(true);
+        try {
+            await googleLogin({ idToken, honeypot });
+            navigate('/');
+        } catch (err) {
+            setError(err.message || 'No se pudo registrar con Google.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -153,6 +167,15 @@ const Register = () => {
                     <button type="submit" className="btn-register" disabled={loading}>
                         {loading ? 'Creando cuenta...' : 'Register'}
                     </button>
+
+                    <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', margin: '10px 0 6px', opacity: 0.75 }}>
+                        <span style={{ flex: 1, height: '1px', background: 'rgba(148, 163, 184, 0.35)' }}></span>
+                        <span style={{ fontSize: '12px', color: '#cbd5e1' }}>o</span>
+                        <span style={{ flex: 1, height: '1px', background: 'rgba(148, 163, 184, 0.35)' }}></span>
+                    </div>
+
+                    <GoogleSignInButton onCredential={handleGoogleCredential} disabled={loading} />
+
                     <p className="auth-switch">
                         ¿Ya tienes una cuenta? <Link to="/login">Inicia sesión</Link>
                     </p>

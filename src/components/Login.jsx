@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../Context/AuthContext';
 import { executeRecaptcha } from '../services/recaptcha';
+import GoogleSignInButton from './GoogleSignInButton';
 import SEO from './SEO';
 import '../styles/Login.scss';
 
@@ -14,8 +15,22 @@ const Login = () => {
     const [successBanner] = useState(Boolean(location.state?.registeredSuccess));
     const [loading, setLoading] = useState(false);
     const [lockoutSeconds, setLockoutSeconds] = useState(0);
-    const { login } = useAuth();
+    const { login, googleLogin } = useAuth();
     const navigate = useNavigate();
+
+    const handleGoogleCredential = async (idToken) => {
+        if (lockoutSeconds > 0) return;
+        setError('');
+        setLoading(true);
+        try {
+            await googleLogin({ idToken, honeypot });
+            navigate('/');
+        } catch (err) {
+            setError(err.message || 'No se pudo iniciar sesión con Google.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Cuenta regresiva en vivo si se activa un bloqueo temporal
     useEffect(() => {
@@ -162,6 +177,15 @@ const Login = () => {
                     <button type="submit" className="btn-login" disabled={loading || lockoutSeconds > 0}>
                         {loading ? 'Iniciando...' : lockoutSeconds > 0 ? `Bloqueado (${lockoutSeconds}s)` : 'Login'}
                     </button>
+
+                    <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', margin: '10px 0 6px', opacity: 0.75 }}>
+                        <span style={{ flex: 1, height: '1px', background: 'rgba(148, 163, 184, 0.35)' }}></span>
+                        <span style={{ fontSize: '12px', color: '#cbd5e1' }}>o</span>
+                        <span style={{ flex: 1, height: '1px', background: 'rgba(148, 163, 184, 0.35)' }}></span>
+                    </div>
+
+                    <GoogleSignInButton onCredential={handleGoogleCredential} disabled={loading || lockoutSeconds > 0} />
+
                     <p className="auth-switch">
                         ¿No tienes cuenta? <Link to="/register">Regístrate aquí</Link>
                     </p>

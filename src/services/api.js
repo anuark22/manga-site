@@ -507,6 +507,23 @@ export const authApi = {
   },
 
   /**
+   * Inicia sesión o registra automáticamente con cuenta de Google/Gmail
+   */
+  async googleAuth({ idToken, honeypot = '' }) {
+    const res = await request('/Users/GoogleAuth', {
+      method: 'POST',
+      body: JSON.stringify({ idToken, honeypot })
+    });
+
+    if (res.items && res.items.length > 0) {
+      const user = res.items[0];
+      setAuthData(user.token, user);
+      return user;
+    }
+    throw new Error(res.errorDescription || 'No se pudo autenticar con Google');
+  },
+
+  /**
    * Registra un nuevo usuario
    */
   async register({ username, email, password, aceptTerms = true, honeypot = '', recaptchaToken = '' }) {
