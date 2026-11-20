@@ -602,6 +602,19 @@ export const profileApi = {
       method: 'POST',
       body: JSON.stringify({ currentPassword, newPassword, confirmPassword })
     });
+  },
+
+  /**
+   * Sube o actualiza la foto de perfil del usuario autenticado
+   */
+  async uploadAvatar(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await request('/Users/UploadAvatar', {
+      method: 'POST',
+      body: formData
+    });
+    return (res.items && res.items[0]) || res;
   }
 };
 

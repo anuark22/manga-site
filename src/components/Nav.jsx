@@ -6,6 +6,7 @@ import { useTheme } from '../Context/ThemeContext';
 import { useAuth } from '../Context/AuthContext';
 import { useLanguage } from '../Context/LanguageContext';
 import { useClickOutside } from '../hooks/useClickOutside';
+import { normalizePageUrl } from '../services/api';
 import SearchBox from './SearchBox';
 
 const FlagES = () => (
@@ -134,7 +135,21 @@ const Nav = () => {
                     {isAuthenticated ? (
                         <div className="nav-user-profile">
                             <Link to="/profile" className="user-badge" title="Ver y editar mi perfil">
-                                <i className="fa fa-user-circle" aria-hidden="true"></i>
+                                {user?.avatarUrl ? (
+                                    <img
+                                        src={normalizePageUrl(user.avatarUrl)}
+                                        alt={user?.username || 'Avatar'}
+                                        style={{
+                                            width: '24px',
+                                            height: '24px',
+                                            borderRadius: '50%',
+                                            objectFit: 'cover',
+                                            border: '1.5px solid rgba(96, 165, 250, 0.7)'
+                                        }}
+                                    />
+                                ) : (
+                                    <i className="fa fa-user-circle" aria-hidden="true"></i>
+                                )}
                                 <b>{user?.username || 'Usuario'}</b>
                             </Link>
                             <button 

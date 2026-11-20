@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../Context/AuthContext';
 import { useLanguage } from '../Context/LanguageContext';
-import { profileApi, userListApi, scanApplicationsApi } from '../services/api';
+import { profileApi, userListApi, scanApplicationsApi, normalizePageUrl } from '../services/api';
 import { getMangaImage } from '../utils/imageHelper';
 import '../styles/Profile.scss';
 
@@ -23,7 +23,52 @@ const Profile = () => {
     email: ''
   });
   const [profileUpdating, setProfileUpdating] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
   const [profileFeedback, setProfileFeedback] = useState(null); // { type: 'success' | 'error', text: '' }
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setProfileFeedback(null);
+
+    if (!file.type.startsWith('image/')) {
+      setProfileFeedback({
+        type: 'error',
+        text: language === 'en' ? 'Please select a valid image file.' : 'Por favor selecciona un archivo de imagen válido.'
+      });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setProfileFeedback({
+        type: 'error',
+        text: language === 'en' ? 'Image cannot exceed 5 MB.' : 'La imagen no puede superar los 5 MB.'
+      });
+      return;
+    }
+
+    setAvatarUploading(true);
+    try {
+      const result = await profileApi.uploadAvatar(file);
+      const newAvatarUrl = result?.avatarUrl || result?.AvatarUrl;
+      if (newAvatarUrl) {
+        updateUser({ avatarUrl: newAvatarUrl });
+        setProfileData(prev => prev ? ({ ...prev, avatarUrl: newAvatarUrl }) : prev);
+        setProfileFeedback({
+          type: 'success',
+          text: language === 'en' ? 'Profile photo updated!' : '¡Foto de perfil actualizada con éxito!'
+        });
+      }
+    } catch (err) {
+      setProfileFeedback({
+        type: 'error',
+        text: err.message || (language === 'en' ? 'Error uploading photo.' : 'Error al subir la foto de perfil.')
+      });
+    } finally {
+      setAvatarUploading(false);
+      e.target.value = '';
+    }
+  };
 
   // Estado del formulario de cambio de contraseña
   const [passwordForm, setPasswordForm] = useState({
@@ -214,6 +259,7 @@ const Profile = () => {
   const currentUsername = profileData?.username || user?.username || 'Usuario';
   const currentEmail = profileData?.email || user?.email || '';
   const currentRole = profileData?.roleName || user?.roleName || 'CLIENTE';
+  const currentAvatarUrl = profileData?.avatarUrl || user?.avatarUrl || '';
   const registerDate = formatDate(profileData?.createdAt);
 
   return (
@@ -223,8 +269,49 @@ const Profile = () => {
         {/* Banner Superior de Perfil */}
         <div className="profile-header-card">
           <div className="profile-header-content">
-            <div className="profile-avatar-circle">
-              <span>{currentUsername.charAt(0).toUpperCase()}</span>
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <div className="profile-avatar-circle" style={{ overflow: 'hidden', position: 'relative' }}>
+                {currentAvatarUrl ? (
+                  <img
+                    src={normalizePageUrl(currentAvatarUrl)}
+                    alt={currentUsername}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  />
+                ) : (
+                  <span>{currentUsername.charAt(0).toUpperCase()}</span>
+                )}
+              </div>
+              <label
+                htmlFor="profile-avatar-input"
+                title={language === 'en' ? 'Change profile photo' : 'Cambiar foto de perfil'}
+                style={{
+                  position: 'absolute',
+                  bottom: '-2px',
+                  right: '-2px',
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: '50%',
+                  background: '#2563eb',
+                  color: '#ffffff',
+                  border: '2px solid #0e1528',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: avatarUploading ? 'wait' : 'pointer',
+                  fontSize: '13px',
+                  boxShadow: '0 4px 10px rgba(0,0,0,0.45)'
+                }}
+              >
+                <i className={`fa ${avatarUploading ? 'fa-spinner fa-spin' : 'fa-camera'}`} aria-hidden="true"></i>
+                <input
+                  id="profile-avatar-input"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  disabled={avatarUploading}
+                  style={{ display: 'none' }}
+                />
+              </label>
             </div>
             <div className="profile-main-meta">
               <div className="profile-title-row">
@@ -273,6 +360,13 @@ const Profile = () => {
             </div>
           </div>
         </div>
+
+        {profileFeedback && (
+          <div className={`alert-banner ${profileFeedback.type}`} style={{ marginBottom: '18px' }}>
+            <i className={`fa ${profileFeedback.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'}`} aria-hidden="true"></i>
+            <span>{profileFeedback.text}</span>
+          </div>
+        )}
 
         {/* Acceso directo para que un usuario normal solicite ser Scan Group */}
         <div
