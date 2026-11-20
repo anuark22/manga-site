@@ -389,57 +389,50 @@ const Profile = () => {
         {/* Contenido de la pestaña activa */}
         <div className="profile-tab-content">
 
-          {/* TAB 1: DATOS PERSONALES / ACTUALIZAR PERFIL */}
+          {/* TAB 1: DATOS PERSONALES (SOLO LECTURA) */}
           {activeTab === 'info' && (
             <div className="profile-card-section">
               <div className="section-title">
-                <h2><i className="fa fa-edit" aria-hidden="true"></i> Actualizar Información Personal</h2>
-                <p>Edita tu nombre de usuario y correo electrónico asociados a tu cuenta.</p>
+                <h2><i className="fa fa-id-card-o" aria-hidden="true"></i> {language === 'en' ? 'Account Information' : 'Información de la Cuenta'}</h2>
+                <p>{language === 'en' ? 'Your username and email address are permanently linked to your account and cannot be changed.' : 'Tu nombre de usuario y correo electrónico están vinculados permanentemente a tu cuenta y no pueden modificarse.'}</p>
               </div>
 
-              {profileFeedback && (
-                <div className={`alert-banner ${profileFeedback.type}`}>
-                  <i className={`fa ${profileFeedback.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'}`} aria-hidden="true"></i>
-                  <span>{profileFeedback.text}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleUpdateProfile} className="profile-form">
-                <div className="form-group">
+              <div className="profile-form">
+                <div className="form-group readonly-group">
                   <label htmlFor="profile-username">
-                    <i className="fa fa-user" aria-hidden="true"></i> Nombre de Usuario
+                    <i className="fa fa-user" aria-hidden="true"></i> {language === 'en' ? 'Username' : 'Nombre de Usuario'} <i className="fa fa-lock" aria-hidden="true" style={{ marginLeft: '6px', opacity: 0.7 }}></i>
                   </label>
                   <input 
                     type="text" 
                     id="profile-username" 
                     name="username"
                     value={editForm.username}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, username: e.target.value }))}
-                    placeholder="Mínimo 3 caracteres"
-                    required
+                    disabled
+                    readOnly
+                    className="input-disabled"
                   />
-                  <small>Visible en tus publicaciones y comentarios del foro.</small>
+                  <small>{language === 'en' ? 'Visible on your posts and comments. Cannot be modified.' : 'Visible en tus publicaciones y comentarios. No puede modificarse.'}</small>
                 </div>
 
-                <div className="form-group">
+                <div className="form-group readonly-group">
                   <label htmlFor="profile-email">
-                    <i className="fa fa-envelope" aria-hidden="true"></i> Correo Electrónico
+                    <i className="fa fa-envelope" aria-hidden="true"></i> {language === 'en' ? 'Email Address' : 'Correo Electrónico'} <i className="fa fa-lock" aria-hidden="true" style={{ marginLeft: '6px', opacity: 0.7 }}></i>
                   </label>
                   <input 
                     type="email" 
                     id="profile-email" 
                     name="email"
                     value={editForm.email}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="ejemplo@correo.com"
-                    required
+                    disabled
+                    readOnly
+                    className="input-disabled"
                   />
-                  <small>Utilizado para inicio de sesión y recuperación de contraseña.</small>
+                  <small>{language === 'en' ? 'Used for login and account recovery. Cannot be modified.' : 'Utilizado para inicio de sesión y recuperación. No puede modificarse.'}</small>
                 </div>
 
                 <div className="form-group readonly-group">
                   <label>
-                    <i className="fa fa-shield" aria-hidden="true"></i> Nivel de Acceso / Rol
+                    <i className="fa fa-shield" aria-hidden="true"></i> {language === 'en' ? 'Access Level / Role' : 'Nivel de Acceso / Rol'}
                   </label>
                   <input 
                     type="text" 
@@ -447,29 +440,9 @@ const Profile = () => {
                     disabled 
                     className="input-disabled"
                   />
-                  <small>Asignado por la administración del sistema.</small>
+                  <small>{language === 'en' ? 'Assigned by system administration.' : 'Asignado por la administración del sistema.'}</small>
                 </div>
-
-                <div className="form-actions">
-                  <button 
-                    type="submit" 
-                    className="btn-submit"
-                    disabled={profileUpdating}
-                  >
-                    {profileUpdating ? (
-                      <>
-                        <i className="fa fa-spinner fa-spin" aria-hidden="true"></i>
-                        <span>Guardando cambios...</span>
-                      </>
-                    ) : (
-                      <>
-                        <i className="fa fa-save" aria-hidden="true"></i>
-                        <span>Guardar Cambios</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
+              </div>
             </div>
           )}
 
