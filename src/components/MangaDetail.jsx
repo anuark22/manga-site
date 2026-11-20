@@ -17,6 +17,7 @@ const MangaDetail = () => {
   const [isInList, setIsInList] = useState(false);
   const [readingStatus, setReadingStatus] = useState('Reading');
   const [readChapterIds, setReadChapterIds] = useState(new Set());
+  const [expandedChapters, setExpandedChapters] = useState({});
   const [listLoading, setListLoading] = useState(false);
   const { isAuthenticated } = useAuth();
   const { language } = useLanguage();
@@ -326,96 +327,187 @@ const MangaDetail = () => {
         </section>
 
         <section className="chapters-section">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '14px' }}>
-            <h2 style={{ margin: 0 }}>{language === 'en' ? 'Chapters' : 'Capítulos'} ({chapters.length})</h2>
-            {isInList && chapters.length > 0 && (() => {
-              const uniqueChapterNums = new Set(chapters.map(c => c.number));
-              const readUniqueNums = new Set(chapters.filter(c => readChapterIds.has(c.chapterId)).map(c => c.number));
-              const total = uniqueChapterNums.size || 1;
-              const done = readUniqueNums.size;
-              const pct = Math.min(100, Math.round((done / total) * 100));
-              return (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: '220px', flex: '0 1 320px' }}>
-                  <div style={{ flex: 1, height: '8px', borderRadius: '999px', background: 'rgba(148, 163, 184, 0.2)', overflow: 'hidden' }}>
-                    <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, #10b981, #38bdf8)', transition: 'width 0.3s ease' }}></div>
-                  </div>
-                  <span style={{ fontSize: '12.5px', fontWeight: 700, whiteSpace: 'nowrap', color: '#10b981' }}>
-                    {done}/{total} {language === 'en' ? 'read' : 'vistos'} ({pct}%)
-                  </span>
-                </div>
-              );
-            })()}
-          </div>
+          {(() => {
+            const groupedChapters = [];
+            const groupMap = new Map();
+            chapters.forEach((ch) => {
+              const key = String(ch.number);
+              if (!groupMap.has(key)) {
+                const grp = { number: ch.number, items: [] };
+                groupMap.set(key, grp);
+                groupedChapters.push(grp);
+              }
+              groupMap.get(key).items.push(ch);
+            });
 
-          <div className="chapters-list">
-            {chapters.map(chapter => {
-              const isRead = chapter.chapterId && readChapterIds.has(chapter.chapterId);
+            const toggleChapterGroup = (num) => {
+              const key = String(num);
+              setExpandedChapters((prev) => ({ ...prev, [key]: !prev[key] }));
+            };
+
+            const renderReadButton = (chapter, isRead) => {
+              if (!isInList || !chapter.chapterId) return null;
               return (
-                <div 
-                  key={chapter.chapterId || `${chapter.number}-${chapter.scanId}`} 
-                  className="chapter-item" 
-                  onClick={() => navigate(`/manga/${manga?.mangaId || id}/chapter/${chapter.chapterId || chapter.number}`)}
-                  role="button"
-                  tabIndex={0}
-                  title={`Leer ${chapter.title}`}
-                  style={isRead ? { opacity: 0.78, borderLeft: '3px solid #10b981' } : undefined}
+                <button
+                  type="button"
+                  onClick={(e) => handleToggleChapterRead(e, chapter)}
+                  title={isRead
+                    ? (language === 'en' ? 'Marked as read (click to unmark)' : 'Marcado como visto (clic para desmarcar)')
+                    : (language === 'en' ? 'Mark as read' : 'Marcar como visto')}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    padding: '4px 10px',
+                    borderRadius: '999px',
+                    border: `1px solid ${isRead ? 'rgba(16, 185, 129, 0.5)' : 'rgba(148, 163, 184, 0.3)'}`,
+                    background: isRead ? 'rgba(16, 185, 129, 0.18)' : 'transparent',
+                    color: isRead ? '#10b981' : 'inherit',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
                 >
-                  <span className="chapter-number">#{chapter.number}</span>
-                  <span className="chapter-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    <span>{chapter.title}</span>
-                    {chapter.scanName && (
-                      <span
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '5px',
-                          padding: '2px 9px',
-                          borderRadius: '999px',
-                          fontSize: '11.5px',
-                          fontWeight: 700,
-                          background: 'rgba(56, 189, 248, 0.14)',
-                          color: '#38bdf8',
-                          border: '1px solid rgba(56, 189, 248, 0.3)'
-                        }}
-                      >
-                        <i className="fa fa-users" aria-hidden="true"></i>
-                        {chapter.scanName}
-                      </span>
-                    )}
-                  </span>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: 'auto' }}>
-                    {isInList && chapter.chapterId && (
-                      <button
-                        type="button"
-                        onClick={(e) => handleToggleChapterRead(e, chapter)}
-                        title={isRead
-                          ? (language === 'en' ? 'Marked as read (click to unmark)' : 'Marcado como visto (clic para desmarcar)')
-                          : (language === 'en' ? 'Mark as read' : 'Marcar como visto')}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '5px',
-                          padding: '4px 10px',
-                          borderRadius: '999px',
-                          border: `1px solid ${isRead ? 'rgba(16, 185, 129, 0.5)' : 'rgba(148, 163, 184, 0.3)'}`,
-                          background: isRead ? 'rgba(16, 185, 129, 0.18)' : 'transparent',
-                          color: isRead ? '#10b981' : 'inherit',
-                          fontSize: '11.5px',
-                          fontWeight: 700,
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <i className={`fa ${isRead ? 'fa-check-circle' : 'fa-eye'}`} aria-hidden="true"></i>
-                        <span>{isRead ? (language === 'en' ? 'Read' : 'Visto') : (language === 'en' ? 'Unread' : 'No visto')}</span>
-                      </button>
-                    )}
-                    <span className="chapter-date">{chapter.releaseDate}</span>
-                  </div>
-                </div>
+                  <i className={`fa ${isRead ? 'fa-check-circle' : 'fa-eye'}`} aria-hidden="true"></i>
+                  <span>{isRead ? (language === 'en' ? 'Read' : 'Visto') : (language === 'en' ? 'Unread' : 'No visto')}</span>
+                </button>
               );
-            })}
-          </div>
+            };
+
+            return (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '14px' }}>
+                  <h2 style={{ margin: 0 }}>{language === 'en' ? 'Chapters' : 'Capítulos'} ({groupedChapters.length})</h2>
+                  {isInList && chapters.length > 0 && (() => {
+                    const uniqueChapterNums = new Set(chapters.map(c => c.number));
+                    const readUniqueNums = new Set(chapters.filter(c => readChapterIds.has(c.chapterId)).map(c => c.number));
+                    const total = uniqueChapterNums.size || 1;
+                    const done = readUniqueNums.size;
+                    const pct = Math.min(100, Math.round((done / total) * 100));
+                    return (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: '220px', flex: '0 1 320px' }}>
+                        <div style={{ flex: 1, height: '8px', borderRadius: '999px', background: 'rgba(148, 163, 184, 0.2)', overflow: 'hidden' }}>
+                          <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, #10b981, #38bdf8)', transition: 'width 0.3s ease' }}></div>
+                        </div>
+                        <span style={{ fontSize: '12.5px', fontWeight: 700, whiteSpace: 'nowrap', color: '#10b981' }}>
+                          {done}/{total} {language === 'en' ? 'read' : 'vistos'} ({pct}%)
+                        </span>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                <div className="chapters-list">
+                  {groupedChapters.map((group) => {
+                    if (group.items.length === 1) {
+                      const chapter = group.items[0];
+                      const isRead = chapter.chapterId && readChapterIds.has(chapter.chapterId);
+                      return (
+                        <div
+                          key={chapter.chapterId || `${chapter.number}-${chapter.scanId}`}
+                          className="chapter-item"
+                          onClick={() => navigate(`/manga/${manga?.mangaId || id}/chapter/${chapter.chapterId || chapter.number}`)}
+                          role="button"
+                          tabIndex={0}
+                          title={`Leer ${chapter.title}`}
+                          style={isRead ? { opacity: 0.78, borderLeft: '3px solid #10b981' } : undefined}
+                        >
+                          <span className="chapter-number">#{chapter.number}</span>
+                          <span className="chapter-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <span>{chapter.title}</span>
+                            {chapter.scanName && (
+                              <span className="scan-pill-badge">
+                                <i className="fa fa-users" aria-hidden="true"></i>
+                                {chapter.scanName}
+                              </span>
+                            )}
+                          </span>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: 'auto' }}>
+                            {renderReadButton(chapter, isRead)}
+                            <span className="chapter-date">{chapter.releaseDate}</span>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    const isExpanded = !!expandedChapters[String(group.number)];
+                    const anyRead = group.items.some(ch => ch.chapterId && readChapterIds.has(ch.chapterId));
+                    const defaultTitle = group.items[0]?.title || `${language === 'en' ? 'Chapter' : 'Capítulo'} ${group.number}`;
+
+                    return (
+                      <div key={`group-${group.number}`} className="chapter-group-wrapper">
+                        <div
+                          className={`chapter-item chapter-group-header ${isExpanded ? 'expanded' : ''}`}
+                          onClick={() => toggleChapterGroup(group.number)}
+                          role="button"
+                          tabIndex={0}
+                          aria-expanded={isExpanded}
+                          style={anyRead ? { borderLeft: '3px solid #10b981' } : undefined}
+                        >
+                          <span className="chapter-number">#{group.number}</span>
+                          <span className="chapter-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <span>{defaultTitle}</span>
+                            <span className="versions-count-badge">
+                              <i className="fa fa-clone" aria-hidden="true"></i>
+                              {group.items.length} {language === 'en' ? 'versions' : 'versiones'}
+                            </span>
+                            {isInList && anyRead && (
+                              <span className="group-read-badge">
+                                <i className="fa fa-check-circle" aria-hidden="true"></i>
+                                {language === 'en' ? 'Read' : 'Visto'}
+                              </span>
+                            )}
+                          </span>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: 'auto' }}>
+                            <span className="chapter-expand-hint">
+                              {isExpanded
+                                ? (language === 'en' ? 'Hide scans' : 'Ocultar opciones')
+                                : (language === 'en' ? 'Choose scan' : 'Elegir scan')}
+                            </span>
+                            <i className={`fa ${isExpanded ? 'fa-chevron-up' : 'fa-chevron-down'}`} aria-hidden="true"></i>
+                          </div>
+                        </div>
+
+                        {isExpanded && (
+                          <div className="chapter-versions-sublist">
+                            {group.items.map((chapter) => {
+                              const isRead = chapter.chapterId && readChapterIds.has(chapter.chapterId);
+                              return (
+                                <div
+                                  key={chapter.chapterId || `${chapter.number}-${chapter.scanId}`}
+                                  className="chapter-version-item"
+                                  onClick={() => navigate(`/manga/${manga?.mangaId || id}/chapter/${chapter.chapterId || chapter.number}`)}
+                                  role="button"
+                                  tabIndex={0}
+                                  title={`${chapter.scanName || 'Scan'} - ${chapter.title}`}
+                                  style={isRead ? { opacity: 0.8, borderLeft: '3px solid #10b981' } : undefined}
+                                >
+                                  <div className="version-left">
+                                    <span className="scan-pill-badge">
+                                      <i className="fa fa-users" aria-hidden="true"></i>
+                                      {chapter.scanName || 'Scan Group'}
+                                    </span>
+                                    <span className="version-title">{chapter.title}</span>
+                                  </div>
+                                  <div className="version-right">
+                                    {renderReadButton(chapter, isRead)}
+                                    <span className="chapter-date">{chapter.releaseDate}</span>
+                                    <i className="fa fa-play-circle version-play-icon" aria-hidden="true"></i>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            );
+          })()}
         </section>
       </div>
     </div>
