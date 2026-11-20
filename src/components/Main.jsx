@@ -13,6 +13,18 @@ const Main = () => {
     const { t } = useLanguage();
     const [notices, setNotices] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isMobile, setIsMobile] = useState(() =>
+        typeof window !== 'undefined' ? window.matchMedia('(max-width: 960px)').matches : false
+    );
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const mq = window.matchMedia('(max-width: 960px)');
+        const onChange = (e) => setIsMobile(e.matches);
+        setIsMobile(mq.matches);
+        mq.addEventListener('change', onChange);
+        return () => mq.removeEventListener('change', onChange);
+    }, []);
 
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
     const websiteSchema = {
@@ -82,8 +94,8 @@ const Main = () => {
                     )}
                 </div>
 
-                {/* Chat en vivo siempre visible debajo de las noticias con las mismas dimensiones */}
-                <LiveChatWidget embedded={true} />
+                {/* Chat en vivo siempre visible debajo de las noticias en escritorio; en mobile se usa el botón flotante */}
+                {!isMobile && <LiveChatWidget embedded={true} />}
             </aside>
         </div>
     );
