@@ -7,6 +7,7 @@ import NoticeCard from './NoticeCard';
 import { noticesApi } from '../services/api';
 import { useLanguage } from '../Context/LanguageContext';
 import SEO from './SEO';
+import LiveChatWidget from './LiveChatWidget';
 
 const Main = () => {
     const { t } = useLanguage();
@@ -58,27 +59,32 @@ const Main = () => {
                 <Lastest />
                 <RecentChapters />
             </div>
-            <div className="main-sidebar">
-                <Link to="/news" className="notices-bar" title={t('home.viewAllNews')}>
-                    <span>{t('home.noticesTitle')}</span>
-                    <i className="fa fa-arrow-right" style={{ fontSize: '13px', marginLeft: 'auto' }}></i>
-                </Link>
-                {loading && notices.length === 0 ? (
-                    <div style={{ padding: '16px', color: 'var(--text-secondary)', textAlign: 'center' }}>
-                        Cargando noticias...
-                    </div>
-                ) : notices.length > 0 ? (
-                    notices.map((notice, index) => (
-                        <NoticeCard key={notice.noticeId || notice.id || index} notice={notice} />
-                    ))
-                ) : (
-                    // Fallback inicial por si no hay noticias en base de datos
-                    <>
-                        <NoticeCard />
-                        <NoticeCard />
-                    </>
-                )}
-            </div>
+            <aside className="main-right-column">
+                <div className="main-sidebar">
+                    <Link to="/news" className="notices-bar" title={t('home.viewAllNews')}>
+                        <span>{t('home.noticesTitle')}</span>
+                        <i className="fa fa-arrow-right" style={{ fontSize: '13px', marginLeft: 'auto' }}></i>
+                    </Link>
+                    {loading && notices.length === 0 ? (
+                        <div style={{ padding: '16px', color: 'var(--text-secondary)', textAlign: 'center' }}>
+                            Cargando noticias...
+                        </div>
+                    ) : notices.length > 0 ? (
+                        notices.map((notice, index) => (
+                            <NoticeCard key={notice.noticeId || notice.id || index} notice={notice} />
+                        ))
+                    ) : (
+                        // Fallback inicial por si no hay noticias en base de datos
+                        <>
+                            <NoticeCard />
+                            <NoticeCard />
+                        </>
+                    )}
+                </div>
+
+                {/* Chat en vivo siempre visible debajo de las noticias con las mismas dimensiones */}
+                <LiveChatWidget embedded={true} />
+            </aside>
         </div>
     );
 };

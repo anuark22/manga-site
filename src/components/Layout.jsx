@@ -6,12 +6,13 @@ import LiveChatWidget from './LiveChatWidget.jsx';
 const Layout = ({ children }) => {
   const location = useLocation();
   const isReader = location.pathname.includes('/chapter/') || location.pathname.startsWith('/reader/');
+  const isHome = location.pathname === '/';
 
   return (
     <>
       {!isReader && <Nav />}
       {children}
-      <LiveChatWidget />
+      {!isHome && <LiveChatWidget />}
     </>
   );
 };

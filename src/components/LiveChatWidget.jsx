@@ -8,13 +8,13 @@ import { useTheme } from '../Context/ThemeContext';
 import Gravatar from './Gravatar';
 import '../styles/LiveChatWidget.scss';
 
-const LiveChatWidget = () => {
+const LiveChatWidget = ({ embedded = false }) => {
   const { isAuthenticated, token } = useAuth();
   const { t } = useLanguage();
   const { theme } = useTheme();
   const location = useLocation();
 
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(embedded);
   const [messages, setMessages] = useState([]);
   const [onlineCount, setOnlineCount] = useState(0);
   const [connected, setConnected] = useState(false);
@@ -60,11 +60,11 @@ const LiveChatWidget = () => {
 
     conn.on('ReceiveMessage', (msg) => {
       setMessages((prev) => [...prev.slice(-79), msg]);
-      if (!isOpenRef.current) {
+      if (!embedded && !isOpenRef.current) {
         setUnreadCount((c) => Math.min(99, c + 1));
       } else {
         setTimeout(() => {
-          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }, 50);
       }
     });
@@ -114,11 +114,11 @@ const LiveChatWidget = () => {
     }
   };
 
-  if (isReaderRoute) return null;
+  if (!embedded && isReaderRoute) return null;
 
   return (
-    <div className={`live-chat-widget theme-${theme}`}>
-      {!isOpen ? (
+    <div className={`${embedded ? 'live-chat-embedded' : 'live-chat-widget'} theme-${theme}`}>
+      {!embedded && !isOpen ? (
         <button
           type="button"
           className="live-chat-fab"
@@ -143,14 +143,16 @@ const LiveChatWidget = () => {
                 </small>
               </div>
             </div>
-            <button
-              type="button"
-              className="chat-close-btn"
-              onClick={() => setIsOpen(false)}
-              aria-label="Cerrar chat"
-            >
-              <i className="fa fa-times"></i>
-            </button>
+            {!embedded && (
+              <button
+                type="button"
+                className="chat-close-btn"
+                onClick={() => setIsOpen(false)}
+                aria-label="Cerrar chat"
+              >
+                <i className="fa fa-times"></i>
+              </button>
+            )}
           </div>
 
           <div className="chat-messages-area">
