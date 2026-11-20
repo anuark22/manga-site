@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { chaptersApi, mangasApi, scansApi } from '../services/api';
 import { getMangaImage } from '../utils/imageHelper';
 import { canonicalMangas } from './mangasData';
+import { useLanguage } from '../Context/LanguageContext';
 import '../styles/RecentChapters.scss';
 
 // Función auxiliar para formatear tiempo transcurrido
@@ -119,6 +120,7 @@ const fallbackRecentChapters = [
 ];
 
 const RecentChapters = () => {
+  const { t } = useLanguage();
   const [chapters, setChapters] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -214,12 +216,12 @@ const RecentChapters = () => {
       <div className="recent-section-header">
         <div className="title-row">
           <span className="section-pill">
-            <i className="fa fa-bolt"></i> NOVEDADES
+            <i className="fa fa-bolt"></i> {t('home.readNow')}
           </span>
-          <h2 className="section-title">Últimos Capítulos Subidos</h2>
+          <h2 className="section-title">{t('home.recentChaptersTitle')}</h2>
         </div>
         <p className="section-subtitle">
-          Entérate al instante de los nuevos episodios añadidos a la plataforma y continúa tu lectura al hacer clic.
+          {t('home.recentChaptersSub')}
         </p>
       </div>
 

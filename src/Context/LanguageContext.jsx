@@ -1,0 +1,283 @@
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+
+const STORAGE_KEY = 'mangasite_lang';
+
+const translations = {
+  es: {
+    nav: {
+      library: 'BIBLIOTECA',
+      yourList: 'TU LISTA',
+      forum: 'FORO',
+      news: 'NOTICIAS',
+      panelScan: 'PANEL SCAN',
+      panelAdmin: 'PANEL ADMIN',
+      login: 'INICIAR SESIÓN',
+      register: 'REGISTRARSE',
+      logout: 'SALIR',
+      searchPlaceholder: 'Buscar mangas...',
+      themePastel: 'Pastel',
+      themeDark: 'Oscuro',
+      langTooltip: 'Cambiar idioma a Inglés (EN)'
+    },
+    home: {
+      popularTitle: 'MANGAS POPULARES',
+      recentChaptersTitle: 'ÚLTIMOS CAPÍTULOS SUBIDOS',
+      recentChaptersSub: 'Mantente al día con los estrenos más recientes de la comunidad',
+      noticesTitle: 'NOTICIAS / AVISOS',
+      viewAllNews: 'Ver todas las noticias',
+      chapterLabel: 'Capítulo',
+      readNow: 'Leer ahora',
+      noChapters: 'No hay capítulos recientes aún.'
+    },
+    library: {
+      title: 'Biblioteca de Mangas',
+      myListTitle: 'Mi Lista Personal',
+      applyFilters: 'Aplicar Filtros',
+      clearFilters: 'Limpiar Filtros',
+      activeFilters: 'filtro activo',
+      activeFiltersPlural: 'filtros activos',
+      found: 'manga encontrado',
+      foundPlural: 'mangas encontrados',
+      loading: 'Cargando catálogo...',
+      emptyTitle: 'No se encontraron mangas',
+      emptyDesc: 'Prueba ajustando o limpiando tus filtros de búsqueda.',
+      myListEmptyTitle: 'Tu lista está vacía',
+      myListEmptyDesc: 'Explora la biblioteca y guarda tus mangas favoritos para seguir tu lectura.'
+    },
+    mangaDetail: {
+      backToLibrary: 'Volver a la Biblioteca',
+      author: 'Autor',
+      status: 'Estado',
+      type: 'Tipo',
+      demography: 'Demografía',
+      synopsis: 'Sinopsis',
+      addToList: 'Añadir a Mi Lista',
+      inList: 'En Mi Lista',
+      chaptersTitle: 'Capítulos Disponibles',
+      chapter: 'Capítulo',
+      noChapters: 'Aún no hay capítulos publicados para este manga.',
+      loading: 'Cargando información del manga...'
+    },
+    reader: {
+      details: 'Detalles',
+      zoom: 'Lupa',
+      report: 'Reportar',
+      reported: 'Reportado',
+      prevPage: 'Pág. Anterior',
+      nextPage: 'Pág. Siguiente',
+      prevChapter: 'Cap. Anterior',
+      nextChapter: 'Cap. Siguiente',
+      loadingPages: 'Descargando páginas del capítulo...',
+      reportTitle: 'Reportar Capítulo',
+      reportStatusTitle: 'Estado de tu Reporte',
+      reportAntiSpam: 'Solo puedes enviar 1 reporte por capítulo. Úsalo si el capítulo está mal subido, incompleto o pertenece a otro manga.',
+      reportReason: 'Motivo del reporte *',
+      reportDetails: 'Detalles adicionales (opcional)',
+      cancel: 'Cancelar',
+      sendReport: 'Enviar Reporte'
+    },
+    forum: {
+      createDiscussion: 'Crear discusión',
+      sortBy: 'Ordenar por',
+      comments: 'Comentarios',
+      views: 'Vistas',
+      backToForum: 'Volver a Discusiones',
+      replyPlaceholder: 'Escribe tu comentario o respuesta aquí... Sé constructivo y amable.',
+      publishReply: 'Publicar Respuesta',
+      loginToComment: 'Inicia sesión para participar en esta discusión'
+    },
+    news: {
+      title: 'Noticias y Novedades',
+      subtitle: 'Entérate de los últimos estrenos, anuncios de anime, pausas de manga y novedades de la comunidad.',
+      all: 'Todas',
+      readMore: 'Leer artículo completo',
+      backToNews: 'Volver al portal de noticias'
+    },
+    auth: {
+      loginTitle: 'Iniciar Sesión',
+      registerTitle: 'Crear Cuenta',
+      emailPlaceholder: 'Correo electrónico',
+      usernamePlaceholder: 'Nombre de usuario',
+      passwordPlaceholder: 'Contraseña',
+      confirmPasswordPlaceholder: 'Confirmar contraseña',
+      loginBtn: 'Entrar',
+      registerBtn: 'Registrarse',
+      noAccount: '¿No tienes cuenta?',
+      registerHere: 'Regístrate aquí',
+      hasAccount: '¿Ya tienes una cuenta?',
+      loginHere: 'Inicia sesión'
+    }
+  },
+  en: {
+    nav: {
+      library: 'LIBRARY',
+      yourList: 'YOUR LIST',
+      forum: 'FORUM',
+      news: 'NEWS',
+      panelScan: 'SCAN PANEL',
+      panelAdmin: 'ADMIN PANEL',
+      login: 'LOGIN',
+      register: 'REGISTER',
+      logout: 'LOGOUT',
+      searchPlaceholder: 'Search mangas...',
+      themePastel: 'Pastel',
+      themeDark: 'Dark',
+      langTooltip: 'Switch language to Spanish (ES)'
+    },
+    home: {
+      popularTitle: 'POPULAR MANGA TIER',
+      recentChaptersTitle: 'LATEST CHAPTERS UPLOADED',
+      recentChaptersSub: 'Stay up to date with the newest community releases',
+      noticesTitle: 'NOTICES / NEWS',
+      viewAllNews: 'View all news',
+      chapterLabel: 'Chapter',
+      readNow: 'Read now',
+      noChapters: 'No recent chapters available yet.'
+    },
+    library: {
+      title: 'Manga Library',
+      myListTitle: 'My Reading List',
+      applyFilters: 'Apply Filters',
+      clearFilters: 'Clear Filters',
+      activeFilters: 'active filter',
+      activeFiltersPlural: 'active filters',
+      found: 'manga found',
+      foundPlural: 'mangas found',
+      loading: 'Loading catalog...',
+      emptyTitle: 'No mangas found',
+      emptyDesc: 'Try adjusting or clearing your search filters.',
+      myListEmptyTitle: 'Your list is empty',
+      myListEmptyDesc: 'Explore the library and bookmark your favorite series to track your reading.'
+    },
+    mangaDetail: {
+      backToLibrary: 'Back to Library',
+      author: 'Author',
+      status: 'Status',
+      type: 'Type',
+      demography: 'Demographic',
+      synopsis: 'Synopsis',
+      addToList: 'Add to My List',
+      inList: 'In My List',
+      chaptersTitle: 'Available Chapters',
+      chapter: 'Chapter',
+      noChapters: 'No chapters published for this manga yet.',
+      loading: 'Loading manga details...'
+    },
+    reader: {
+      details: 'Details',
+      zoom: 'Zoom',
+      report: 'Report',
+      reported: 'Reported',
+      prevPage: 'Prev. Page',
+      nextPage: 'Next Page',
+      prevChapter: 'Prev. Chapter',
+      nextChapter: 'Next Chapter',
+      loadingPages: 'Loading chapter pages...',
+      reportTitle: 'Report Chapter',
+      reportStatusTitle: 'Your Report Status',
+      reportAntiSpam: 'You can only submit 1 report per chapter. Use it if the chapter is misuploaded, broken, or belongs to another series.',
+      reportReason: 'Report reason *',
+      reportDetails: 'Additional details (optional)',
+      cancel: 'Cancel',
+      sendReport: 'Submit Report'
+    },
+    forum: {
+      createDiscussion: 'Create discussion',
+      sortBy: 'Sort by',
+      comments: 'Comments',
+      views: 'Views',
+      backToForum: 'Back to Discussions',
+      replyPlaceholder: 'Write your comment or reply here... Be constructive and respectful.',
+      publishReply: 'Post Reply',
+      loginToComment: 'Log in to join this discussion'
+    },
+    news: {
+      title: 'News & Updates',
+      subtitle: 'Stay informed about the latest anime announcements, manga hiatuses, and community updates.',
+      all: 'All',
+      readMore: 'Read full article',
+      backToNews: 'Back to news portal'
+    },
+    auth: {
+      loginTitle: 'Sign In',
+      registerTitle: 'Create Account',
+      emailPlaceholder: 'Email address',
+      usernamePlaceholder: 'Username',
+      passwordPlaceholder: 'Password',
+      confirmPasswordPlaceholder: 'Confirm password',
+      loginBtn: 'Login',
+      registerBtn: 'Register',
+      noAccount: "Don't have an account?",
+      registerHere: 'Register here',
+      hasAccount: 'Already have an account?',
+      loginHere: 'Sign in'
+    }
+  }
+};
+
+const LanguageContext = createContext();
+
+export const LanguageProvider = ({ children }) => {
+  const [language, setLanguageState] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved === 'en' || saved === 'es') return saved;
+      if (typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('en')) {
+        return 'en';
+      }
+    } catch {
+      // Fallback
+    }
+    return 'es';
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, language);
+    } catch {
+      // Ignorar errores de almacenamiento
+    }
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = language;
+    }
+  }, [language]);
+
+  const setLanguage = useCallback((lang) => {
+    if (lang === 'en' || lang === 'es') {
+      setLanguageState(lang);
+    }
+  }, []);
+
+  const toggleLanguage = useCallback(() => {
+    setLanguageState((prev) => (prev === 'es' ? 'en' : 'es'));
+  }, []);
+
+  const t = useCallback((path, fallback = '') => {
+    const keys = path.split('.');
+    let current = translations[language] || translations.es;
+    for (const k of keys) {
+      if (current && Object.prototype.hasOwnProperty.call(current, k)) {
+        current = current[k];
+      } else {
+        return fallback || path;
+      }
+    }
+    return typeof current === 'string' ? current : (fallback || path);
+  }, [language]);
+
+  return (
+    <LanguageContext.Provider value={{ language, setLanguage, toggleLanguage, t }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+};
+
+export const useLanguage = () => {
+  const ctx = useContext(LanguageContext);
+  if (!ctx) {
+    throw new Error('useLanguage debe ser usado dentro de un LanguageProvider');
+  }
+  return ctx;
+};
+
+export default LanguageContext;

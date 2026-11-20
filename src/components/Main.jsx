@@ -5,9 +5,11 @@ import RecentChapters from './RecentChapters';
 import '../styles/Main.scss';
 import NoticeCard from './NoticeCard';
 import { noticesApi } from '../services/api';
+import { useLanguage } from '../Context/LanguageContext';
 import SEO from './SEO';
 
 const Main = () => {
+    const { t } = useLanguage();
     const [notices, setNotices] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -57,8 +59,8 @@ const Main = () => {
                 <RecentChapters />
             </div>
             <div className="main-sidebar">
-                <Link to="/news" className="notices-bar" title="Ver portal de noticias">
-                    <span>Notices / Noticias</span>
+                <Link to="/news" className="notices-bar" title={t('home.viewAllNews')}>
+                    <span>{t('home.noticesTitle')}</span>
                     <i className="fa fa-arrow-right" style={{ fontSize: '13px', marginLeft: 'auto' }}></i>
                 </Link>
                 {loading && notices.length === 0 ? (

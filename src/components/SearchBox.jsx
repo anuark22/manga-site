@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSearchTerm } from '../Context/SearchBarContext';
+import { useLanguage } from '../Context/LanguageContext';
 import { mangasApi } from '../services/api';
 import { getMangaImage } from '../utils/imageHelper';
 import { useClickOutside } from '../hooks/useClickOutside';
 
 const SearchBox = ({ isMobile = false, onAfterNavigate }) => {
   const { searchTerm, setSearchTerm } = useSearchTerm();
+  const { t } = useLanguage();
   const [suggestions, setSuggestions] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -76,7 +78,7 @@ const SearchBox = ({ isMobile = false, onAfterNavigate }) => {
           type="text" 
           name="search" 
           value={searchTerm || ''}
-          placeholder="Buscar mangas..." 
+          placeholder={t('nav.searchPlaceholder')}
           onChange={e => setSearchTerm(e.target.value)}
           onFocus={() => {
             if ((searchTerm || '').trim().length > 0 && suggestions.length > 0) {

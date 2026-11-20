@@ -17,6 +17,7 @@ import AdminDashboard from './components/AdminDashboard';
 import { SearchBarProvider } from './Context/SearchBarContext';
 import { ThemeProvider } from './Context/ThemeContext';
 import { AuthProvider } from './Context/AuthContext';
+import { LanguageProvider } from './Context/LanguageContext';
 
 function App() {
   return (
@@ -51,12 +52,14 @@ function App() {
 
 export default function Root() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <SearchBarProvider>
-          <App />
-        </SearchBarProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <LanguageProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <SearchBarProvider>
+            <App />
+          </SearchBarProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </LanguageProvider>
   );
 }

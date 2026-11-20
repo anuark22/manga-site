@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import mangasTopTier from './mangasTopTier';
 import { mangasApi } from '../services/api';
 import { getMangaImage } from '../utils/imageHelper';
+import { useLanguage } from '../Context/LanguageContext';
 import '../styles/Lastest.scss';
 
 const Lastest = () => {
+    const { t } = useLanguage();
     const [mangas, setMangas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -72,7 +74,7 @@ const Lastest = () => {
         >
             <div className="slider-header-row">
                 <div className="popular-badge">
-                    <i className="fa fa-fire"></i> Popular Manga Tier
+                    <i className="fa fa-fire"></i> {t('home.popularTitle')}
                 </div>
                 <div className="slider-controls">
                     <button
