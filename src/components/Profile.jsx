@@ -170,14 +170,17 @@ const Profile = () => {
     }
   };
 
-  // Manejador para cambio de contraseña
+  // Manejador para cambio o creación de contraseña local
+  const hasLocalPassword = (profileData?.hasLocalPassword ?? user?.hasLocalPassword) !== false;
+  const authProvider = profileData?.authProvider || user?.authProvider || 'LOCAL';
+
   const handleChangePassword = async (e) => {
     e.preventDefault();
     setPasswordFeedback(null);
 
     const { currentPassword, newPassword, confirmPassword } = passwordForm;
 
-    if (!currentPassword) {
+    if (hasLocalPassword && !currentPassword) {
       setPasswordFeedback({ type: 'error', text: 'Introduce tu contraseña actual.' });
       return;
     }
@@ -193,15 +196,22 @@ const Profile = () => {
     setPasswordUpdating(true);
     try {
       const res = await profileApi.changePassword({
-        currentPassword,
+        currentPassword: hasLocalPassword ? currentPassword : '',
         newPassword,
         confirmPassword
       });
 
       if (res && res.error) {
-        setPasswordFeedback({ type: 'error', text: res.errorDescription || 'Error al cambiar la contraseña.' });
+        setPasswordFeedback({ type: 'error', text: res.errorDescription || 'Error al guardar la contraseña.' });
       } else {
-        setPasswordFeedback({ type: 'success', text: '¡Tu contraseña ha sido actualizada con éxito!' });
+        setPasswordFeedback({
+          type: 'success',
+          text: hasLocalPassword
+            ? '¡Tu contraseña ha sido actualizada con éxito!'
+            : '¡Contraseña creada con éxito! Ahora también puedes iniciar sesión con tu Email/Username y clave.'
+        });
+        updateUser({ hasLocalPassword: true });
+        setProfileData(prev => prev ? ({ ...prev, hasLocalPassword: true }) : prev);
         setPasswordForm({
           currentPassword: '',
           newPassword: '',
@@ -540,13 +550,50 @@ const Profile = () => {
             </div>
           )}
 
-          {/* TAB 2: CAMBIAR CONTRASEÑA */}
+          {/* TAB 2: CAMBIAR / CREAR CONTRASEÑA */}
           {activeTab === 'password' && (
             <div className="profile-card-section">
               <div className="section-title">
-                <h2><i className="fa fa-key" aria-hidden="true"></i> Cambiar Contraseña</h2>
-                <p>Protege tu cuenta actualizando periódicamente tu clave de acceso.</p>
+                <h2>
+                  <i className="fa fa-key" aria-hidden="true"></i>{' '}
+                  {hasLocalPassword
+                    ? (language === 'en' ? 'Change Password' : 'Cambiar Contraseña')
+                    : (language === 'en' ? 'Create Access Password' : 'Crear Contraseña de Acceso')}
+                </h2>
+                <p>
+                  {hasLocalPassword
+                    ? (language === 'en'
+                      ? 'Protect your account by updating your access password periodically.'
+                      : 'Protege tu cuenta actualizando periódicamente tu clave de acceso.')
+                    : (language === 'en'
+                      ? `Your account was created via ${authProvider}. Set a local password if you also want to log in with Email/Username.`
+                      : `Tu cuenta fue creada con ${authProvider === 'GOOGLE' ? 'Google (Gmail)' : authProvider}. Crea una contraseña si también deseas iniciar sesión con tu Email/Username.`)}
+                </p>
               </div>
+
+              {!hasLocalPassword && (
+                <div
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: '10px',
+                    background: 'rgba(56, 189, 248, 0.14)',
+                    border: '1px solid rgba(56, 189, 248, 0.35)',
+                    color: '#bae6fd',
+                    fontSize: '13px',
+                    marginBottom: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                  }}
+                >
+                  <i className="fa fa-google" aria-hidden="true" style={{ color: '#38bdf8' }}></i>
+                  <span>
+                    {language === 'en'
+                      ? 'You do not have a local password yet. Once created, you can sign in with either Google or your password.'
+                      : 'Aún no tienes una contraseña local. Al crearla podrás entrar tanto con Google como con tu contraseña.'}
+                  </span>
+                </div>
+              )}
 
               {passwordFeedback && (
                 <div className={`alert-banner ${passwordFeedback.type}`}>
@@ -556,30 +603,32 @@ const Profile = () => {
               )}
 
               <form onSubmit={handleChangePassword} className="profile-form">
-                <div className="form-group password-group">
-                  <label htmlFor="current-password">
-                    <i className="fa fa-lock" aria-hidden="true"></i> Contraseña Actual
-                  </label>
-                  <div className="password-input-wrapper">
-                    <input 
-                      type={showPassword.current ? 'text' : 'password'}
-                      id="current-password"
-                      name="currentPassword"
-                      value={passwordForm.currentPassword}
-                      onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
-                      placeholder="Tu contraseña actual"
-                      required
-                    />
-                    <button 
-                      type="button" 
-                      className="password-toggle-btn"
-                      onClick={() => setShowPassword(p => ({ ...p, current: !p.current }))}
-                      title={showPassword.current ? 'Ocultar contraseña' : 'Ver contraseña'}
-                    >
-                      <i className={`fa ${showPassword.current ? 'fa-eye-slash' : 'fa-eye'}`} aria-hidden="true"></i>
-                    </button>
+                {hasLocalPassword && (
+                  <div className="form-group password-group">
+                    <label htmlFor="current-password">
+                      <i className="fa fa-lock" aria-hidden="true"></i> Contraseña Actual
+                    </label>
+                    <div className="password-input-wrapper">
+                      <input 
+                        type={showPassword.current ? 'text' : 'password'}
+                        id="current-password"
+                        name="currentPassword"
+                        value={passwordForm.currentPassword}
+                        onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
+                        placeholder="Tu contraseña actual"
+                        required
+                      />
+                      <button 
+                        type="button" 
+                        className="password-toggle-btn"
+                        onClick={() => setShowPassword(p => ({ ...p, current: !p.current }))}
+                        title={showPassword.current ? 'Ocultar contraseña' : 'Ver contraseña'}
+                      >
+                        <i className={`fa ${showPassword.current ? 'fa-eye-slash' : 'fa-eye'}`} aria-hidden="true"></i>
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="form-group password-group">
                   <label htmlFor="new-password">
