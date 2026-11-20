@@ -3,9 +3,11 @@ import '../styles/SideBar.scss';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { forumApi } from '../services/api';
 import { useAuth } from '../Context/AuthContext';
+import { useLanguage } from '../Context/LanguageContext';
 
 const SideBar = ({ onSelectTopic, onPostCreated }) => {
     const { isAuthenticated } = useAuth();
+    const { t } = useLanguage();
     // Control individual e independiente para cada sección
     const [openSections, setOpenSections] = useState({
         community: true,
@@ -108,7 +110,7 @@ const SideBar = ({ onSelectTopic, onPostCreated }) => {
     return ( 
         <div className="forum-sidebar">
             <button type="button" onClick={() => setIsModalOpen(true)}>
-                Create discussion <i className="fa fa-plus" aria-hidden="true"></i>
+                {t('forum.createDiscussion')} <i className="fa fa-plus" aria-hidden="true"></i>
             </button>
 
             <div className="ul-container">
@@ -157,7 +159,7 @@ const SideBar = ({ onSelectTopic, onPostCreated }) => {
                 <div className="modal-backdrop">
                     <div className="modal-card" ref={modalRef}>
                         <div className="modal-header">
-                            <h3>Nueva Discusión en el Foro</h3>
+                            <h3>{t('forum.newDiscussionTitle')}</h3>
                             <button 
                                 type="button" 
                                 className="modal-close-btn"
@@ -177,7 +179,7 @@ const SideBar = ({ onSelectTopic, onPostCreated }) => {
                                 fontSize: '13px',
                                 color: 'var(--text-primary)'
                             }}>
-                                <i className="fa fa-info-circle"></i> Debes haber iniciado sesión para poder publicar.
+                                <i className="fa fa-info-circle"></i> {t('forum.loginRequiredPost')}
                             </div>
                         )}
 
@@ -194,7 +196,7 @@ const SideBar = ({ onSelectTopic, onPostCreated }) => {
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Categoría</label>
+                                <label>{t('forum.categoryLabel')}</label>
                                 <select 
                                     value={newCategory} 
                                     onChange={(e) => setNewCategory(e.target.value)}
@@ -207,10 +209,10 @@ const SideBar = ({ onSelectTopic, onPostCreated }) => {
                             </div>
 
                             <div className="form-group">
-                                <label>Título del Tema</label>
+                                <label>{t('forum.topicTitleLabel')}</label>
                                 <input 
                                     type="text" 
-                                    placeholder="¿De qué quieres hablar?"
+                                    placeholder={t('forum.topicTitlePlaceholder')}
                                     value={newTitle}
                                     onChange={(e) => setNewTitle(e.target.value)}
                                     required
@@ -218,10 +220,10 @@ const SideBar = ({ onSelectTopic, onPostCreated }) => {
                             </div>
 
                             <div className="form-group">
-                                <label>Mensaje</label>
+                                <label>{t('forum.messageLabel')}</label>
                                 <textarea 
                                     rows="4" 
-                                    placeholder="Escribe los detalles de tu discusión aquí..."
+                                    placeholder={t('forum.messagePlaceholder')}
                                     value={newContent}
                                     onChange={(e) => setNewContent(e.target.value)}
                                 />
@@ -233,10 +235,10 @@ const SideBar = ({ onSelectTopic, onPostCreated }) => {
                                     className="btn-cancel"
                                     onClick={() => setIsModalOpen(false)}
                                 >
-                                    Cancelar
+                                    {t('forum.cancel')}
                                 </button>
                                 <button type="submit" className="btn-submit" disabled={submitting}>
-                                    {submitting ? 'Publicando...' : 'Publicar Discusión'}
+                                    {submitting ? t('forum.publishing') : t('forum.publishDiscussion')}
                                 </button>
                             </div>
                         </form>

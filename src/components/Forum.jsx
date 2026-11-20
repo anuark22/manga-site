@@ -5,9 +5,11 @@ import '../styles/Forum.scss';
 import { useClickOutside } from '../hooks/useClickOutside';
 import { forumApi } from '../services/api';
 import postData from './postData';
+import { useLanguage } from '../Context/LanguageContext';
 import SEO from './SEO';
 
 const Forum = () => {
+    const { t } = useLanguage();
     const [isOpen, setIsOpen] = useState(false);
     const [selectedSort, setSelectedSort] = useState('Latest');
     const [filterCategory, setFilterCategory] = useState(null);
@@ -111,7 +113,7 @@ const Forum = () => {
 
                                 {(filterCategory || filterSubTopic) && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-                                        <span>Filtro activo: <b>{filterCategory}</b> {filterSubTopic && `> ${filterSubTopic}`}</span>
+                                        <span>{t('forum.activeFilter')}: <b>{filterCategory}</b> {filterSubTopic && `> ${filterSubTopic}`}</span>
                                         <button 
                                             type="button" 
                                             onClick={handleResetFilters}
@@ -125,7 +127,7 @@ const Forum = () => {
                                                 fontSize: '11px'
                                             }}
                                         >
-                                            Limpiar filtro
+                                            {t('forum.clearFilter')}
                                         </button>
                                     </div>
                                 )}
@@ -133,7 +135,7 @@ const Forum = () => {
                                 <button 
                                     type="button" 
                                     className="refresh-btn" 
-                                    title="Actualizar discusiones"
+                                    title={t('forum.refreshTitle')}
                                     onClick={fetchPosts}
                                 > 
                                     <i className="fa fa-refresh" aria-hidden="true"></i>

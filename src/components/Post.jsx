@@ -1,13 +1,15 @@
 import React, { Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import Gravatar from './Gravatar';
+import { useLanguage } from '../Context/LanguageContext';
 
 const Post = ({ posts = [], loading = false }) => {
+    const { t } = useLanguage();
     if (loading) {
         return (
             <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
                 <i className="fa fa-spinner fa-spin" style={{ fontSize: '28px', marginBottom: '10px', color: 'var(--main-color)' }}></i>
-                <p>Cargando discusiones del foro...</p>
+                <p>{t('forum.loadingPosts')}</p>
             </div>
         );
     }
@@ -54,10 +56,10 @@ const Post = ({ posts = [], loading = false }) => {
                                 </div>
                             </div>
                             <div className="post-stats">
-                                <div className="post-stats-content" title="Comentarios">
+                                <div className="post-stats-content" title={t('forum.comments')}>
                                     <i className="fa fa-comment-o" aria-hidden="true"></i> {comments} 
                                 </div>
-                                <div className="post-stats-content" title="Vistas">
+                                <div className="post-stats-content" title={t('forum.views')}>
                                     <i className="fa fa-eye" aria-hidden="true"></i> {views} 
                                 </div>
                             </div>
@@ -65,7 +67,7 @@ const Post = ({ posts = [], loading = false }) => {
                     );
                 }) : (
                     <div>
-                        <p className="no-mangas">No se encontraron discusiones en esta categoría</p>
+                        <p className="no-mangas">{t('forum.emptyPosts')}</p>
                     </div>
                 )
             }

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { forumApi } from '../services/api';
 import { useAuth } from '../Context/AuthContext';
+import { useLanguage } from '../Context/LanguageContext';
 import SEO from './SEO';
 import Gravatar from './Gravatar';
 import postData from './postData';
@@ -32,6 +33,7 @@ const ForumPostDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
+  const { t } = useLanguage();
 
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
@@ -260,7 +262,7 @@ const ForumPostDetail = () => {
         <div className="detail-nav-row">
           <Link to="/forum" className="btn-back-forum">
             <i className="fa fa-arrow-left"></i>
-            <span>Volver a Discusiones</span>
+            <span>{t('forum.backToForum')}</span>
           </Link>
 
           <div className="topic-badges-group">
@@ -372,10 +374,10 @@ const ForumPostDetail = () => {
           <div className="comments-section-header">
             <h2 className="comments-title">
               <i className="fa fa-comments"></i>
-              <span>Respuestas ({comments.length})</span>
+              <span>{t('forum.comments')} ({comments.length})</span>
             </h2>
             <span className="comments-note">
-              Participa con respeto y sigue las normas de la comunidad
+              {t('forum.replyNote')}
             </span>
           </div>
 
@@ -383,8 +385,8 @@ const ForumPostDetail = () => {
           {comments.length === 0 ? (
             <div className="empty-comments-card">
               <i className="fa fa-commenting-o"></i>
-              <h4>No hay respuestas aún</h4>
-              <p>Sé el primero en compartir tu punto de vista sobre esta discusión.</p>
+              <h4>{t('forum.noReplies')}</h4>
+              <p>{t('forum.beFirstReply')}</p>
             </div>
           ) : (
             <div className="comments-list">
@@ -455,7 +457,7 @@ const ForumPostDetail = () => {
                     <Gravatar email={user?.email || ''} />
                   </div>
                   <div className="current-user-label">
-                    <span>Respondiendo como <strong>@{user?.username}</strong></span>
+                    <span>{t('forum.replyingAs')} <strong>@{user?.username}</strong></span>
                   </div>
                 </div>
 
@@ -465,12 +467,12 @@ const ForumPostDetail = () => {
                     rows={4}
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
-                    placeholder="Escribe tu comentario o respuesta aquí... Sé constructivo y amable."
+                    placeholder={t('forum.replyPlaceholder')}
                     required
                     maxLength={1000}
                   />
                   <div className="textarea-footer">
-                    <span className="char-counter">{commentText.length}/1000 caracteres</span>
+                    <span className="char-counter">{commentText.length}/1000 {t('forum.chars')}</span>
                     <button
                       type="submit"
                       className="btn-primary"
@@ -479,12 +481,12 @@ const ForumPostDetail = () => {
                       {submitting ? (
                         <>
                           <i className="fa fa-spinner fa-spin"></i>
-                          <span>Publicando...</span>
+                          <span>{t('forum.publishing')}</span>
                         </>
                       ) : (
                         <>
                           <i className="fa fa-paper-plane"></i>
-                          <span>Publicar Respuesta</span>
+                          <span>{t('forum.publishReply')}</span>
                         </>
                       )}
                     </button>
@@ -497,11 +499,10 @@ const ForumPostDetail = () => {
                   <i className="fa fa-lock"></i>
                 </div>
                 <div className="prompt-content">
-                  <h4>¿Quieres unirte a la conversación?</h4>
-                  <p>Inicia sesión o crea una cuenta para comentar en este post y participar en la comunidad de OurMangaSite.</p>
+                  <h4>{t('forum.loginToComment')}</h4>
                 </div>
                 <Link to="/login" className="btn-primary">
-                  <i className="fa fa-sign-in"></i> Iniciar Sesión para Comentar
+                  <i className="fa fa-sign-in"></i> {t('nav.login')}
                 </Link>
               </div>
             )}
