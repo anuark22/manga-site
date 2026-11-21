@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import Nav from './Nav.jsx';
 import LiveChatWidget from './LiveChatWidget.jsx';
+import PwaInstallBanner from './PwaInstallBanner.jsx';
 
 const Layout = ({ children }) => {
   const location = useLocation();
@@ -25,6 +26,7 @@ const Layout = ({ children }) => {
       {!isReader && <Nav />}
       {children}
       {(!isHome || isMobile) && <LiveChatWidget />}
+      <PwaInstallBanner />
     </>
   );
 };

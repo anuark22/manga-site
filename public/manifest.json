@@ -1,25 +1,31 @@
 {
+  "id": "/",
   "short_name": "OurMangaSite",
-  "name": "Our Manga Site",
+  "name": "OurMangaSite - Manga, Manhwa & Manhua",
+  "description": "Lee tus mangas, manhwas y manhuas favoritos en línea, sigue tu progreso y participa en la comunidad.",
   "icons": [
     {
-      "src": "/favicon.ico",
+      "src": "/favicon.ico?v=2",
       "sizes": "64x64 32x32 24x24 16x16",
       "type": "image/x-icon"
     },
     {
       "src": "/android-chrome-192x192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
       "src": "/android-chrome-512x512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "orientation": "any",
+  "theme_color": "#0f172a",
+  "background_color": "#0b1021"
 }
