@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authApi, getStoredUser, getToken, setAuthData, clearAuthData } from '../services/api';
+import { authApi, getStoredUser, getToken, getRefreshToken, refreshSession, setAuthData, clearAuthData } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -9,21 +9,33 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Sincroniza estado al iniciar y al expirar el token (401 o TTL)
-    const syncAuth = () => {
+    // Sincroniza estado al iniciar y renueva silenciosamente si el JWT expiró pero hay Refresh Token
+    const syncAuth = async () => {
+      let storedToken = getToken();
+      if (!storedToken && getRefreshToken()) {
+        const renewed = await refreshSession();
+        storedToken = renewed?.token || null;
+      }
+      const storedUser = storedToken ? getStoredUser() : null;
+      setToken(storedToken);
+      setUser(storedUser);
+    };
+
+    const syncFromStorage = () => {
       const storedToken = getToken();
       const storedUser = storedToken ? getStoredUser() : null;
       setToken(storedToken);
       setUser(storedUser);
     };
 
-    syncAuth();
-    setLoading(false);
+    syncAuth().finally(() => setLoading(false));
 
-    window.addEventListener('oms:auth-expired', syncAuth);
+    window.addEventListener('oms:auth-expired', syncFromStorage);
+    window.addEventListener('oms:auth-refreshed', syncFromStorage);
     window.addEventListener('focus', syncAuth);
     return () => {
-      window.removeEventListener('oms:auth-expired', syncAuth);
+      window.removeEventListener('oms:auth-expired', syncFromStorage);
+      window.removeEventListener('oms:auth-refreshed', syncFromStorage);
       window.removeEventListener('focus', syncAuth);
     };
   }, []);
@@ -56,6 +68,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    const activeToken = getToken();
+    if (activeToken) {
+      fetch('/api/Users/Logout', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${activeToken}` }
+      }).catch(() => {});
+    }
     clearAuthData();
     setUser(null);
     setToken(null);

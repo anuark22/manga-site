@@ -23,23 +23,31 @@ export const isTokenExpired = (token) => {
 };
 
 /**
- * Obtiene el token JWT del almacenamiento local (limpia si ya expiró)
+ * Obtiene el refresh token del almacenamiento local
+ */
+export const getRefreshToken = () => localStorage.getItem('mangasite_refresh_token');
+
+/**
+ * Obtiene el token JWT del almacenamiento local (limpia si ya expiró y no hay refresh token)
  */
 export const getToken = () => {
   const token = localStorage.getItem('mangasite_token');
   if (token && isTokenExpired(token)) {
     localStorage.removeItem('mangasite_token');
-    localStorage.removeItem('mangasite_user');
+    if (!getRefreshToken()) {
+      localStorage.removeItem('mangasite_user');
+    }
     return null;
   }
   return token;
 };
 
 /**
- * Guarda el token y datos del usuario
+ * Guarda el token, refresh token y datos del usuario
  */
 export const setAuthData = (token, user) => {
   if (token) localStorage.setItem('mangasite_token', token);
+  if (user?.refreshToken) localStorage.setItem('mangasite_refresh_token', user.refreshToken);
   if (user) localStorage.setItem('mangasite_user', JSON.stringify(user));
 };
 
@@ -48,7 +56,56 @@ export const setAuthData = (token, user) => {
  */
 export const clearAuthData = () => {
   localStorage.removeItem('mangasite_token');
+  localStorage.removeItem('mangasite_refresh_token');
   localStorage.removeItem('mangasite_user');
+};
+
+let refreshPromise = null;
+
+/**
+ * Renueva silenciosamente el JWT usando el Refresh Token (evita llamadas duplicadas)
+ */
+export const refreshSession = async () => {
+  const rt = getRefreshToken();
+  if (!rt) return null;
+
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = (async () => {
+    try {
+      const response = await fetch(`${API_BASE}/Users/RefreshToken`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: rt })
+      });
+
+      if (!response.ok) {
+        throw new Error('Refresh failed');
+      }
+
+      const data = await response.json();
+      const renewed = data?.items?.[0];
+      if (!renewed?.token) {
+        throw new Error('Invalid refresh response');
+      }
+
+      setAuthData(renewed.token, renewed);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('oms:auth-refreshed'));
+      }
+      return renewed;
+    } catch {
+      clearAuthData();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('oms:auth-expired'));
+      }
+      return null;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
 };
 
 /**
@@ -68,7 +125,18 @@ export const getStoredUser = () => {
  */
 async function request(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
-  const token = getToken();
+  const isAuthEndpoint =
+    endpoint.startsWith('/Users/Login') ||
+    endpoint.startsWith('/Users/Register') ||
+    endpoint.startsWith('/Users/GoogleAuth') ||
+    endpoint.startsWith('/Users/RefreshToken');
+
+  let token = getToken();
+  if (!token && !isAuthEndpoint && getRefreshToken()) {
+    const renewed = await refreshSession();
+    token = renewed?.token || null;
+  }
+
   const isFormData = options.body instanceof FormData;
 
   const headers = {
@@ -94,7 +162,11 @@ async function request(endpoint, options = {}) {
     }
 
     if (!response.ok) {
-      if (response.status === 401 && token && !endpoint.startsWith('/Users/Login')) {
+      if (response.status === 401 && !isAuthEndpoint && !options._retried) {
+        const renewed = await refreshSession();
+        if (renewed?.token) {
+          return await request(endpoint, { ...options, _retried: true });
+        }
         clearAuthData();
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new Event('oms:auth-expired'));
