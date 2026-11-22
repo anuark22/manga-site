@@ -19,7 +19,7 @@ const Library = ({ isMyList = false }) => {
     const [types, setTypes] = useState([]);
     const [demographics, setDemographics] = useState([]);
     const [mangaGenres, setMangaGenres] = useState([]);
-    const { isAuthenticated, user } = useAuth();
+    const { isAuthenticated, user, token } = useAuth();
     const { searchTerm, setSearchTerm } = useSearchTerm();
 
     // Carga de metadatos para nombres de filtros y relaciones manga-género
@@ -99,7 +99,7 @@ const Library = ({ isMyList = false }) => {
         } finally {
             setLoading(false);
         }
-    }, [isMyList, isAuthenticated, searchTerm, mangaGenres]);
+    }, [isMyList, isAuthenticated, token, searchTerm, mangaGenres]);
 
     useEffect(() => {
         fetchMangas(filterValues, selectedGenres);
