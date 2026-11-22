@@ -9,12 +9,23 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Sincroniza estado al iniciar
-    const storedToken = getToken();
-    const storedUser = getStoredUser();
-    setToken(storedToken);
-    setUser(storedUser);
+    // Sincroniza estado al iniciar y al expirar el token (401 o TTL)
+    const syncAuth = () => {
+      const storedToken = getToken();
+      const storedUser = storedToken ? getStoredUser() : null;
+      setToken(storedToken);
+      setUser(storedUser);
+    };
+
+    syncAuth();
     setLoading(false);
+
+    window.addEventListener('oms:auth-expired', syncAuth);
+    window.addEventListener('focus', syncAuth);
+    return () => {
+      window.removeEventListener('oms:auth-expired', syncAuth);
+      window.removeEventListener('focus', syncAuth);
+    };
   }, []);
 
   const login = async ({ email, password, honeypot = '', recaptchaToken = '' }) => {

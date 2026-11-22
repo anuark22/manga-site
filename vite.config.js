@@ -17,23 +17,23 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'https://localhost:44311',
+        target: 'https://127.0.0.1:44311',
         changeOrigin: true,
         secure: false, // Permite certificados autofirmados de desarrollo de ASP.NET
         rewrite: (path) => path.replace(/^\/api/, '')
       },
       '/Files': {
-        target: 'https://localhost:44311',
+        target: 'https://127.0.0.1:44311',
         changeOrigin: true,
         secure: false
       },
       '/sitemap.xml': {
-        target: 'https://localhost:44311',
+        target: 'https://127.0.0.1:44311',
         changeOrigin: true,
         secure: false
       },
       '/hubs': {
-        target: 'https://localhost:44311',
+        target: 'https://127.0.0.1:44311',
         changeOrigin: true,
         secure: false,
         ws: true

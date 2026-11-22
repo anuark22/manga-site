@@ -6,9 +6,34 @@
 const API_BASE = '/api';
 
 /**
- * Obtiene el token JWT del almacenamiento local
+ * Verifica si un token JWT ha expirado
  */
-export const getToken = () => localStorage.getItem('mangasite_token');
+export const isTokenExpired = (token) => {
+  if (!token) return true;
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return true;
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(base64));
+    if (!payload.exp) return false;
+    return Date.now() >= payload.exp * 1000;
+  } catch {
+    return true;
+  }
+};
+
+/**
+ * Obtiene el token JWT del almacenamiento local (limpia si ya expiró)
+ */
+export const getToken = () => {
+  const token = localStorage.getItem('mangasite_token');
+  if (token && isTokenExpired(token)) {
+    localStorage.removeItem('mangasite_token');
+    localStorage.removeItem('mangasite_user');
+    return null;
+  }
+  return token;
+};
 
 /**
  * Guarda el token y datos del usuario
@@ -69,6 +94,12 @@ async function request(endpoint, options = {}) {
     }
 
     if (!response.ok) {
+      if (response.status === 401 && token && !endpoint.startsWith('/Users/Login')) {
+        clearAuthData();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('oms:auth-expired'));
+        }
+      }
       const errorMsg = (data && (data.errorDescription || data.message || data.title)) 
         || `Error ${response.status}: ${response.statusText}`;
       const error = new Error(errorMsg);
