@@ -60,25 +60,30 @@ const MangaDetail = () => {
           // Cargar capítulos reales de la API
           try {
             const apiChapters = await chaptersApi.getByManga(mangaId);
-            if (isMounted && apiChapters && apiChapters.length > 0) {
-              setChapters(apiChapters.map(c => ({
-                chapterId: c.chapterId,
-                number: c.chapterNumber,
-                title: c.chapterTitle || `Capítulo ${c.chapterNumber}`,
-                scanId: c.scanId,
-                scanName: c.scanName || 'Scan Group',
-                releaseDate: c.uploadedAt ? c.uploadedAt.substring(0, 10) : '2026-11'
-              })));
-            } else if (found.chapters) {
-              setChapters(found.chapters);
-            } else {
-              setChapters([
-                { number: 1, title: 'Capítulo 1: Inicio', releaseDate: '2026-10-11' },
-                { number: 2, title: 'Capítulo 2: El Despertar', releaseDate: '2026-10-18' }
-              ]);
+            if (isMounted) {
+              if (apiChapters && apiChapters.length > 0) {
+                setChapters(apiChapters.map(c => ({
+                  chapterId: c.chapterId,
+                  number: c.chapterNumber,
+                  title: c.chapterTitle || `Capítulo ${c.chapterNumber}`,
+                  scanId: c.scanId,
+                  scanName: c.scanName || 'Scan Group',
+                  releaseDate: c.uploadedAt ? c.uploadedAt.substring(0, 10) : '2026-11'
+                })));
+              } else if (found.mangaId) {
+                // Manga real de la BD con 0 capítulos aún: no mostrar capítulos ficticios
+                setChapters([]);
+              } else if (found.chapters) {
+                setChapters(found.chapters);
+              } else {
+                setChapters([]);
+              }
             }
           } catch {
-            if (found.chapters) setChapters(found.chapters);
+            if (isMounted) {
+              if (found.chapters) setChapters(found.chapters);
+              else setChapters([]);
+            }
           }
 
           // Verificar si está en la lista del usuario y cargar capítulos leídos
@@ -272,6 +277,8 @@ const MangaDetail = () => {
               <button 
                 type="button" 
                 className="btn-read"
+                disabled={chapters.length === 0}
+                style={chapters.length === 0 ? { opacity: 0.55, cursor: 'not-allowed' } : undefined}
                 onClick={() => {
                   const first = chapters[0];
                   if (first) {
@@ -279,7 +286,10 @@ const MangaDetail = () => {
                   }
                 }}
               >
-                <i className="fa fa-book" aria-hidden="true"></i> Leer primer capítulo
+                <i className="fa fa-book" aria-hidden="true"></i>{' '}
+                {chapters.length === 0
+                  ? (language === 'en' ? 'No chapters yet' : 'Sin capítulos aún')
+                  : (language === 'en' ? 'Read first chapter' : 'Leer primer capítulo')}
               </button>
               <button 
                 type="button" 
@@ -398,7 +408,25 @@ const MangaDetail = () => {
                 </div>
 
                 <div className="chapters-list">
-                  {groupedChapters.map((group) => {
+                  {groupedChapters.length === 0 ? (
+                    <div
+                      style={{
+                        textAlign: 'center',
+                        padding: '32px 16px',
+                        borderRadius: '10px',
+                        background: 'rgba(15, 23, 42, 0.35)',
+                        border: '1px dashed rgba(148, 163, 184, 0.25)',
+                        color: 'var(--text-secondary)'
+                      }}
+                    >
+                      <i className="fa fa-book" aria-hidden="true" style={{ fontSize: '26px', marginBottom: '10px', opacity: 0.6 }}></i>
+                      <p style={{ margin: 0 }}>
+                        {language === 'en'
+                          ? 'No chapters have been published for this manga yet.'
+                          : 'Aún no hay capítulos publicados para este manga.'}
+                      </p>
+                    </div>
+                  ) : groupedChapters.map((group) => {
                     if (group.items.length === 1) {
                       const chapter = group.items[0];
                       const isRead = chapter.chapterId && readChapterIds.has(chapter.chapterId);
