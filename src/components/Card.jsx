@@ -7,7 +7,7 @@ import { getMangaImage } from '../utils/imageHelper';
 
 const Card = ({ mangas, progressMap = null }) => {
   const { searchTerm } = useSearchTerm();
-  const { lang } = useLanguage();
+  const { language } = useLanguage();
   const safeMangas = Array.isArray(mangas) ? mangas : [];
 
   const filtered = safeMangas.filter((e) => {
@@ -32,6 +32,8 @@ const Card = ({ mangas, progressMap = null }) => {
           const prog = progressMap ? progressMap[id] : null;
           const totalCh = prog?.totalChapters || 0;
           const readCh = prog?.readChaptersCount || 0;
+          const unreadCh = Math.max(0, totalCh - readCh);
+          const hasNew = unreadCh > 0;
           const pct = totalCh > 0 ? Math.min(100, Math.round((readCh / totalCh) * 100)) : 0;
 
           return (
@@ -48,10 +50,28 @@ const Card = ({ mangas, progressMap = null }) => {
                   {type}
                 </div>
                 {prog && (
-                  <div className="card-progress-badge" title={`${readCh}/${totalCh} ${lang === 'es' ? 'capítulos vistos' : 'chapters read'}`}>
-                    <span>
-                      <i className="fa fa-eye"></i> {readCh}/{totalCh} {lang === 'es' ? 'vistos' : 'read'}
-                    </span>
+                  <div
+                    className={`card-progress-badge ${hasNew ? 'has-new' : totalCh > 0 ? 'up-to-date' : ''}`}
+                    title={
+                      hasNew
+                        ? `${readCh}/${totalCh} — ${unreadCh} ${language === 'en' ? 'unread chapters' : 'capítulos nuevos por ver'}`
+                        : `${readCh}/${totalCh} ${language === 'en' ? 'chapters read' : 'capítulos vistos'}`
+                    }
+                  >
+                    <div className="card-progress-row">
+                      <span className="progress-count">
+                        <i className="fa fa-eye" aria-hidden="true"></i> {readCh}/{totalCh}
+                      </span>
+                      {hasNew ? (
+                        <span className="progress-status-pill new">
+                          +{unreadCh} {language === 'en' ? 'new' : (unreadCh === 1 ? 'nuevo' : 'nuevos')}
+                        </span>
+                      ) : totalCh > 0 ? (
+                        <span className="progress-status-pill done">
+                          <i className="fa fa-check" aria-hidden="true"></i> {language === 'en' ? 'Up to date' : 'Al día'}
+                        </span>
+                      ) : null}
+                    </div>
                     <div className="card-progress-track">
                       <div className="card-progress-fill" style={{ width: `${pct}%` }} />
                     </div>
