@@ -28,8 +28,8 @@ const Card = ({ mangas, progressMap = null }) => {
           const type = manga.mangaType || manga.mangaTypeName || 'Manga';
           const demography = manga.mangaDemography || manga.demographyName || 'Shounen';
           const image = getMangaImage(manga);
-          const cardClass = manga.card || `card card-${(idx % 5) + 1}`;
           const prog = progressMap ? progressMap[id] : null;
+          const cardClass = `${manga.card || `card card-${(idx % 5) + 1}`}${prog ? ' card--mylist' : ''}`;
           const totalCh = prog?.totalChapters || 0;
           const readCh = prog?.readChaptersCount || 0;
           const unreadCh = Math.max(0, totalCh - readCh);
@@ -42,16 +42,23 @@ const Card = ({ mangas, progressMap = null }) => {
                 <p><b>Synopsis: </b>{synopsis}</p>
               </div>
               <div className="card-content">
-                <img src={image} alt={name}/>
-                <div className="manga-tittle">
-                  <b>{name}</b>
-                </div>
-                <div className={type}>
-                  {type}
+                <div className="card-cover-wrap">
+                  <img src={image} alt={name}/>
+                  <div className="manga-tittle">
+                    <b>{name}</b>
+                  </div>
+                  <div className={type}>
+                    {type}
+                  </div>
+                  {!prog && (
+                    <div className={demography}>
+                      <b>{demography}</b>
+                    </div>
+                  )}
                 </div>
                 {prog && (
                   <div
-                    className={`card-progress-badge ${hasNew ? 'has-new' : totalCh > 0 ? 'up-to-date' : ''}`}
+                    className={`card-mylist-footer ${hasNew ? 'has-new' : totalCh > 0 ? 'up-to-date' : ''}`}
                     title={
                       hasNew
                         ? `${readCh}/${totalCh} — ${unreadCh} ${language === 'en' ? 'unread chapters' : 'capítulos nuevos por ver'}`
@@ -70,16 +77,15 @@ const Card = ({ mangas, progressMap = null }) => {
                         <span className="progress-status-pill done">
                           <i className="fa fa-check" aria-hidden="true"></i> {language === 'en' ? 'Up to date' : 'Al día'}
                         </span>
-                      ) : null}
+                      ) : (
+                        <span className="progress-demo-tag">{demography}</span>
+                      )}
                     </div>
                     <div className="card-progress-track">
                       <div className="card-progress-fill" style={{ width: `${pct}%` }} />
                     </div>
                   </div>
                 )}
-                <div className={demography}>
-                  <b>{demography}</b>
-                </div>
               </div>
             </Link>
           );

@@ -354,6 +354,11 @@
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
+
+    &.my-list-cards {
+      grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
+      gap: 24px;
+    }
   }
 
   .no-mangas {

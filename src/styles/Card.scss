@@ -49,12 +49,25 @@
     }
   }
 
+  &.card--mylist {
+    max-width: 240px;
+    height: 360px;
+  }
+
   .card-content {
     position: relative;
     width: 100%;
     height: 100%;
     display: flex;
     flex-direction: column;
+
+    .card-cover-wrap {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      overflow: hidden;
+    }
 
     img {
       width: 100%;
@@ -121,23 +134,19 @@
       box-sizing: border-box;
     }
 
-    .card-progress-badge {
-      position: absolute;
-      bottom: 23px;
-      left: 0;
-      right: 0;
-      background: rgba(11, 16, 33, 0.93);
-      backdrop-filter: blur(4px);
+    .card-mylist-footer {
+      flex-shrink: 0;
+      width: 100%;
+      background: #0b1224;
       color: #e2e8f0;
-      font-size: 10.5px;
+      font-size: 11.5px;
       font-weight: 700;
-      padding: 5px 8px 4px;
+      padding: 8px 10px 9px;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 6px;
       box-sizing: border-box;
       border-top: 1px solid rgba(148, 163, 184, 0.2);
-      z-index: 3;
 
       .card-progress-row {
         display: flex;
@@ -149,29 +158,37 @@
         .progress-count {
           display: inline-flex;
           align-items: center;
-          gap: 4px;
+          gap: 5px;
           color: #93c5fd;
           font-weight: 800;
+          font-size: 12px;
+        }
+
+        .progress-demo-tag {
+          font-size: 10px;
+          font-weight: 700;
+          text-transform: uppercase;
+          color: #94a3b8;
         }
 
         .progress-status-pill {
           display: inline-flex;
           align-items: center;
-          gap: 3px;
-          padding: 1px 6px;
+          gap: 4px;
+          padding: 2px 8px;
           border-radius: 999px;
-          font-size: 9.5px;
+          font-size: 10px;
           font-weight: 800;
           letter-spacing: 0.2px;
 
           &.new {
-            background: rgba(245, 158, 11, 0.22);
+            background: rgba(245, 158, 11, 0.2);
             color: #fbbf24;
-            border: 1px solid rgba(245, 158, 11, 0.55);
+            border: 1px solid rgba(245, 158, 11, 0.5);
           }
 
           &.done {
-            background: rgba(16, 185, 129, 0.2);
+            background: rgba(16, 185, 129, 0.18);
             color: #34d399;
             border: 1px solid rgba(16, 185, 129, 0.45);
           }
@@ -180,8 +197,8 @@
 
       .card-progress-track {
         width: 100%;
-        height: 4px;
-        background: rgba(255, 255, 255, 0.14);
+        height: 5px;
+        background: rgba(255, 255, 255, 0.12);
         border-radius: 999px;
         overflow: hidden;
 
@@ -217,6 +234,11 @@
   .card {
     max-width: 100%;
     height: 220px;
+
+    &.card--mylist {
+      max-width: 100%;
+      height: 265px;
+    }
 
     .card-content {
       .manga-tittle {

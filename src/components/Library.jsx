@@ -320,7 +320,7 @@ const Library = ({ isMyList = false }) => {
                     )}
                 </div>
             ) : (
-                <div className="cards-container">
+                <div className={`cards-container ${isMyList ? 'my-list-cards' : ''}`}>
                     <Card mangas={mangas} progressMap={isMyList ? progressMap : null}/>
                 </div>
             )}
