@@ -204,10 +204,22 @@ export const mangasApi = {
     if (params.isAmateur !== undefined && params.isAmateur !== '') query.append('isAmateur', params.isAmateur);
     if (params.isErotic !== undefined && params.isErotic !== '') query.append('isErotic', params.isErotic);
     if (params.isFeatured !== undefined && params.isFeatured !== '') query.append('isFeatured', params.isFeatured);
+    if (params.genreIds) query.append('genreIds', params.genreIds);
+    if (params.page) query.append('page', params.page);
+    if (params.pageSize) query.append('pageSize', params.pageSize);
 
     const queryString = query.toString();
     const res = await request(`/Mangas/GetMangas${queryString ? `?${queryString}` : ''}`);
     return res.items || [];
+  },
+
+  /**
+   * Obtiene mangas paginados desde SQL Server con totalCount
+   */
+  async getMangasPaged(params = {}) {
+    const items = await this.getMangas(params);
+    const totalCount = items.length > 0 && items[0].totalCount != null ? items[0].totalCount : items.length;
+    return { items, totalCount };
   },
 
   /**
@@ -430,11 +442,20 @@ export const forumApi = {
   },
 
   /**
-   * Obtiene comentarios de un post
+   * Obtiene comentarios de un post (opcionalmente paginados)
    */
-  async getComments(postId) {
-    const res = await request(`/Forum/GetComments?postId=${postId}`);
+  async getComments(postId, { page = null, pageSize = null } = {}) {
+    const query = new URLSearchParams({ postId });
+    if (page) query.append('page', page);
+    if (pageSize) query.append('pageSize', pageSize);
+    const res = await request(`/Forum/GetComments?${query.toString()}`);
     return res.items || [];
+  },
+
+  async getCommentsPaged(postId, { page = 1, pageSize = 10 } = {}) {
+    const items = await this.getComments(postId, { page, pageSize });
+    const totalCount = items.length > 0 && items[0].totalCount != null ? items[0].totalCount : items.length;
+    return { items, totalCount };
   },
 
   /**
@@ -446,12 +467,46 @@ export const forumApi = {
   },
 
   /**
-   * Agrega un comentario a un post (Requiere autenticación)
+   * Agrega un comentario a un post (soporta citas, imágenes/GIFs y archivos)
    */
-  async addComment({ postId, content, honeypot = '' }) {
+  async addComment({ postId, content = '', parentCommentId = null, mediaUrl = '', mediaFile = null, honeypot = '' }) {
+    const formData = new FormData();
+    formData.append('PostId', Number(postId));
+    formData.append('Content', content || '');
+    if (parentCommentId) formData.append('ParentCommentId', Number(parentCommentId));
+    if (mediaUrl) formData.append('MediaUrl', mediaUrl);
+    if (mediaFile) formData.append('MediaFile', mediaFile);
+    if (honeypot) formData.append('Honeypot', honeypot);
+
     return await request('/Forum/AddComment', {
       method: 'POST',
-      body: JSON.stringify({ postId: Number(postId), content, honeypot })
+      body: formData
+    });
+  },
+
+  /**
+   * Obtiene reacciones agrupadas de un post y sus comentarios
+   */
+  async getReactions(postId) {
+    try {
+      const res = await request(`/Forum/GetReactions?postId=${postId}`);
+      return res.items || [];
+    } catch {
+      return [];
+    }
+  },
+
+  /**
+   * Agrega o quita una reacción (emoji o sticker) en el post o comentario
+   */
+  async toggleReaction({ postId, commentId = null, reactionKey }) {
+    return await request('/Forum/ToggleReaction', {
+      method: 'POST',
+      body: JSON.stringify({
+        postId: Number(postId),
+        commentId: commentId ? Number(commentId) : null,
+        reactionKey
+      })
     });
   },
 

@@ -18,34 +18,44 @@ const Library = ({ isMyList = false }) => {
     const [selectedGenres, setSelectedGenres] = useState([]);
     const [types, setTypes] = useState([]);
     const [demographics, setDemographics] = useState([]);
-    const [mangaGenres, setMangaGenres] = useState([]);
+    const [page, setPage] = useState(1);
+    const [totalCount, setTotalCount] = useState(0);
+    const PAGE_SIZE = 20;
     const { isAuthenticated, user, token } = useAuth();
     const { searchTerm, setSearchTerm } = useSearchTerm();
+    const [debouncedSearch, setDebouncedSearch] = useState(searchTerm || '');
 
-    // Carga de metadatos para nombres de filtros y relaciones manga-género
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchTerm || '');
+            setPage(1);
+        }, 350);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
+    // Carga de metadatos para nombres de filtros (solo una vez)
     useEffect(() => {
         let isMounted = true;
         Promise.all([
             filtersApi.getMangasType().catch(() => []),
-            filtersApi.getDemographics().catch(() => []),
-            filtersApi.getMangaGenres().catch(() => [])
-        ]).then(([typesData, demoData, mgData]) => {
+            filtersApi.getDemographics().catch(() => [])
+        ]).then(([typesData, demoData]) => {
             if (isMounted) {
                 if (typesData && typesData.length > 0) setTypes(typesData);
                 if (demoData && demoData.length > 0) setDemographics(demoData);
-                if (mgData && mgData.length > 0) setMangaGenres(mgData);
             }
         });
         return () => { isMounted = false; };
     }, []);
 
-    const fetchMangas = useCallback(async (filters = {}, genres = []) => {
+    const fetchMangas = useCallback(async (filters = {}, genres = [], targetPage = 1) => {
         setLoading(true);
         try {
             if (isMyList) {
                 if (!isAuthenticated) {
                     setMangas([]);
                     setProgressMap({});
+                    setTotalCount(0);
                     setLoading(false);
                     return;
                 }
@@ -61,49 +71,37 @@ const Library = ({ isMyList = false }) => {
                 });
                 setProgressMap(pMap);
                 setMangas(data || []);
+                setTotalCount((data || []).length);
             } else {
+                const selectedGenreIds = (genres || [])
+                    .map(g => (typeof g === 'object' && g?.genreId ? g.genreId : g))
+                    .filter(Boolean);
+
                 const params = {
                     ...filters,
-                    ...(searchTerm ? { mangaTittle: searchTerm } : {})
+                    ...(debouncedSearch ? { mangaTittle: debouncedSearch } : {}),
+                    ...(selectedGenreIds.length > 0 ? { genreIds: selectedGenreIds.join(',') } : {}),
+                    page: targetPage,
+                    pageSize: PAGE_SIZE
                 };
-                let data = await mangasApi.getMangas(params);
-                data = data || [];
-
-                // Filtrar por géneros seleccionados utilizando las relaciones de MangaGenres
-                if (genres && genres.length > 0) {
-                    const selectedGenreIds = genres.map(g => (typeof g === 'object' && g.genreId ? g.genreId : g));
-                    
-                    let currentMg = mangaGenres;
-                    if (!currentMg || currentMg.length === 0) {
-                        currentMg = await filtersApi.getMangaGenres().catch(() => []);
-                        setMangaGenres(currentMg);
-                    }
-
-                    if (currentMg && currentMg.length > 0) {
-                        data = data.filter(m => {
-                            const mId = m.mangaId || m.id;
-                            const mGenres = currentMg.filter(mg => mg.mangaId === mId).map(mg => mg.genreId);
-                            // El manga debe coincidir con todos los géneros seleccionados
-                            return selectedGenreIds.every(id => mGenres.includes(Number(id)));
-                        });
-                    }
-                }
-
-                setMangas(data);
+                const { items, totalCount: total } = await mangasApi.getMangasPaged(params);
+                setMangas(items || []);
+                setTotalCount(total || 0);
             }
         } catch (err) {
             console.warn('Error al obtener mangas, usando fallback:', err);
             if (!isMyList) {
                 setMangas(mangasData);
+                setTotalCount(mangasData.length);
             }
         } finally {
             setLoading(false);
         }
-    }, [isMyList, isAuthenticated, token, searchTerm, mangaGenres]);
+    }, [isMyList, isAuthenticated, token, debouncedSearch]);
 
     useEffect(() => {
-        fetchMangas(filterValues, selectedGenres);
-    }, [fetchMangas, isMyList]);
+        fetchMangas(filterValues, selectedGenres, page);
+    }, [fetchMangas, isMyList, page]);
 
     const handleFilterChange = (field, value) => {
         setFilterValues(prev => ({
@@ -135,14 +133,17 @@ const Library = ({ isMyList = false }) => {
     };
 
     const handleApplyFilters = () => {
-        fetchMangas(filterValues, selectedGenres);
+        setPage(1);
+        fetchMangas(filterValues, selectedGenres, 1);
     };
 
     const handleResetFilters = () => {
         setFilterValues({});
         setSelectedGenres([]);
         setSearchTerm('');
-        fetchMangas({}, []);
+        setDebouncedSearch('');
+        setPage(1);
+        fetchMangas({}, [], 1);
     };
 
     const handleRemoveFilter = (field) => {
@@ -320,9 +321,55 @@ const Library = ({ isMyList = false }) => {
                     )}
                 </div>
             ) : (
-                <div className={`cards-container ${isMyList ? 'my-list-cards' : ''}`}>
-                    <Card mangas={mangas} progressMap={isMyList ? progressMap : null}/>
-                </div>
+                <>
+                    <div className={`cards-container ${isMyList ? 'my-list-cards' : ''}`}>
+                        <Card mangas={mangas} progressMap={isMyList ? progressMap : null}/>
+                    </div>
+                    {!isMyList && totalCount > PAGE_SIZE && (() => {
+                        const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+                        const startItem = (page - 1) * PAGE_SIZE + 1;
+                        const endItem = Math.min(totalCount, page * PAGE_SIZE);
+                        return (
+                            <div className="library-pagination">
+                                <span className="pagination-summary">
+                                    Mostrando {startItem}-{endItem} de {totalCount}
+                                </span>
+                                <div className="pagination-controls">
+                                    <button
+                                        type="button"
+                                        className="page-btn"
+                                        disabled={page <= 1}
+                                        onClick={() => { setPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                    >
+                                        <i className="fa fa-chevron-left"></i> Anterior
+                                    </button>
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                        .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+                                        .map((p, idx, arr) => (
+                                            <React.Fragment key={p}>
+                                                {idx > 0 && arr[idx - 1] !== p - 1 && <span className="page-ellipsis">...</span>}
+                                                <button
+                                                    type="button"
+                                                    className={`page-btn ${p === page ? 'active' : ''}`}
+                                                    onClick={() => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                                >
+                                                    {p}
+                                                </button>
+                                            </React.Fragment>
+                                        ))}
+                                    <button
+                                        type="button"
+                                        className="page-btn"
+                                        disabled={page >= totalPages}
+                                        onClick={() => { setPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                    >
+                                        Siguiente <i className="fa fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })()}
+                </>
             )}
         </div>
     );

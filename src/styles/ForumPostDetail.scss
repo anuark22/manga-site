@@ -742,3 +742,524 @@
     }
   }
 }
+
+// ==========================================
+// INTERACTIVE FORUM ENHANCEMENTS
+// ==========================================
+
+.forum-formatted-text {
+  line-height: 1.65;
+  word-break: break-word;
+
+  .inline-quote-line {
+    margin: 6px 0;
+    padding: 6px 12px;
+    border-left: 3px solid var(--accent-primary, #60a5fa);
+    background: rgba(96, 165, 250, 0.08);
+    border-radius: 0 8px 8px 0;
+    color: var(--text-secondary, #cbd5e1);
+    font-style: italic;
+  }
+
+  .forum-spoiler {
+    background: #1e293b;
+    color: transparent;
+    padding: 1px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s ease, color 0.2s ease;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+
+    &:hover {
+      background: #334155;
+    }
+
+    &.revealed {
+      background: rgba(148, 163, 184, 0.16);
+      color: inherit;
+      user-select: text;
+    }
+  }
+}
+
+// Reactions Bar (Post & Comments)
+.reactions-bar-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.reactions-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.reaction-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(30, 41, 59, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  color: #e2e8f0;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    background: rgba(51, 65, 85, 0.9);
+    border-color: rgba(96, 165, 250, 0.45);
+  }
+
+  &.reacted {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: #60a5fa;
+    color: #93c5fd;
+  }
+
+  &.is-sticker {
+    background: rgba(139, 92, 246, 0.14);
+    border-color: rgba(167, 139, 250, 0.3);
+
+    &.reacted {
+      background: rgba(139, 92, 246, 0.28);
+      border-color: #a78bfa;
+      color: #ddd6fe;
+    }
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: default;
+  }
+
+  .rx-icon {
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  .rx-sticker-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    opacity: 0.9;
+  }
+
+  .rx-count {
+    font-weight: 600;
+    font-size: 0.78rem;
+  }
+}
+
+.reaction-picker-anchor {
+  position: relative;
+}
+
+.btn-add-reaction {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px dashed rgba(148, 163, 184, 0.35);
+  color: #94a3b8;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    color: #f8fafc;
+    border-color: #60a5fa;
+    background: rgba(30, 41, 59, 0.95);
+  }
+}
+
+.reaction-picker-popover {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 40;
+  width: 280px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #0f172a;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.55);
+
+  .picker-section-title {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #94a3b8;
+    margin-bottom: 6px;
+    font-weight: 600;
+
+    &:not(:first-child) {
+      margin-top: 10px;
+    }
+  }
+
+  .picker-emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+  }
+
+  .picker-emoji-btn {
+    background: rgba(30, 41, 59, 0.65);
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 5px;
+    font-size: 1.15rem;
+    cursor: pointer;
+    transition: transform 0.12s ease, background 0.12s ease;
+
+    &:hover {
+      transform: scale(1.12);
+      background: rgba(59, 130, 246, 0.2);
+      border-color: rgba(96, 165, 250, 0.4);
+    }
+  }
+
+  .picker-sticker-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+
+  .picker-sticker-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    background: rgba(30, 41, 59, 0.75);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    color: #e2e8f0;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &:hover {
+      background: rgba(139, 92, 246, 0.22);
+      border-color: rgba(167, 139, 250, 0.5);
+    }
+  }
+}
+
+// Comment Quote & Actions
+.comment-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-quote-comment {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(96, 165, 250, 0.28);
+  color: #93c5fd;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.24);
+    border-color: #60a5fa;
+  }
+}
+
+.comment-quote-box {
+  margin: 8px 0 12px;
+  padding: 8px 12px;
+  border-left: 3px solid #60a5fa;
+  background: rgba(15, 23, 42, 0.65);
+  border-radius: 0 8px 8px 0;
+
+  .quote-author {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #93c5fd;
+    margin-bottom: 3px;
+  }
+
+  .quote-excerpt {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    font-style: italic;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+.comment-media-box {
+  margin-top: 10px;
+  border-radius: 10px;
+  overflow: hidden;
+  display: inline-block;
+  max-width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.6);
+
+  img {
+    display: block;
+    max-width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 10px;
+  }
+}
+
+// Comments Pagination
+.forum-comments-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin: 22px 0;
+
+  .forum-page-btn {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 8px;
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    color: #e2e8f0;
+    font-weight: 600;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &:hover:not(:disabled) {
+      background: rgba(51, 65, 85, 0.95);
+      border-color: #60a5fa;
+    }
+
+    &.active {
+      background: #2563eb;
+      border-color: #3b82f6;
+      color: #ffffff;
+    }
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  }
+
+  .forum-page-ellipsis {
+    color: #94a3b8;
+    padding: 0 4px;
+    font-weight: 600;
+  }
+}
+
+// Reply Editor Enhancements
+.replying-to-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  background: rgba(59, 130, 246, 0.14);
+  border: 1px solid rgba(96, 165, 250, 0.35);
+
+  .replying-info {
+    font-size: 0.85rem;
+    color: #e2e8f0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    strong {
+      color: #93c5fd;
+    }
+  }
+
+  .btn-cancel-reply {
+    flex-shrink: 0;
+    background: rgba(15, 23, 42, 0.65);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #cbd5e1;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 0.78rem;
+    cursor: pointer;
+
+    &:hover {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(248, 113, 113, 0.5);
+      color: #fca5a5;
+    }
+  }
+}
+
+.forum-editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  position: relative;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 30px;
+    height: 30px;
+    padding: 0 8px;
+    border-radius: 6px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: #cbd5e1;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.12s ease;
+
+    &:hover,
+    &.active {
+      background: rgba(59, 130, 246, 0.18);
+      border-color: rgba(96, 165, 250, 0.35);
+      color: #ffffff;
+    }
+  }
+
+  .toolbar-divider {
+    width: 1px;
+    height: 18px;
+    background: rgba(148, 163, 184, 0.25);
+    margin: 0 4px;
+  }
+
+  .toolbar-preview-btn {
+    margin-left: auto;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+}
+
+.editor-emoji-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 8px;
+  z-index: 35;
+  width: 260px;
+  padding: 10px;
+  border-radius: 10px;
+  background: #0f172a;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+
+  button {
+    font-size: 1.1rem;
+    padding: 4px;
+  }
+}
+
+.media-url-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+
+  input {
+    flex: 1;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: #f8fafc;
+    font-size: 0.85rem;
+
+    &:focus {
+      outline: none;
+      border-color: #60a5fa;
+    }
+  }
+}
+
+.editor-media-preview {
+  position: relative;
+  display: inline-block;
+  margin-top: 10px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(15, 23, 42, 0.7);
+
+  img {
+    display: block;
+    max-width: 100%;
+    max-height: 220px;
+    object-fit: contain;
+  }
+
+  .btn-remove-preview {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(248, 113, 113, 0.5);
+    color: #fca5a5;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+
+    &:hover {
+      background: rgba(239, 68, 68, 0.9);
+      color: #ffffff;
+    }
+  }
+}
+
+.editor-preview-box {
+  min-height: 110px;
+  padding: 14px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: #e2e8f0;
+}
+
+@media (max-width: 640px) {
+  .reaction-picker-popover {
+    width: 240px;
+    left: auto;
+    right: 0;
+  }
+}
