@@ -481,9 +481,9 @@ const ForumPostDetail = () => {
 
   if (loading) {
     return (
-      <div className="forum-detail-wrapper">
-        <div className="forum-detail-container">
-          <div className="loading-state">
+      <div className="forum-detail-page">
+        <div className="detail-container">
+          <div className="detail-loading-box">
             <i className="fa fa-spinner fa-spin"></i>
             <p>{t('forum.loadingPost')}</p>
           </div>
@@ -494,9 +494,9 @@ const ForumPostDetail = () => {
 
   if (error || !post) {
     return (
-      <div className="forum-detail-wrapper">
-        <div className="forum-detail-container">
-          <div className="error-state-card">
+      <div className="forum-detail-page">
+        <div className="detail-container">
+          <div className="detail-error-box">
             <i className="fa fa-exclamation-triangle"></i>
             <h2>{t('forum.postNotFound')}</h2>
             <p>{error || 'El hilo que buscas no se encuentra disponible.'}</p>
@@ -523,7 +523,7 @@ const ForumPostDetail = () => {
   const isAuthor = user && (user.userId === post.userId || user.id === post.userId);
 
   return (
-    <div className="forum-detail-wrapper" onClick={() => openReactionPickerId && setOpenReactionPickerId(null)}>
+    <div className="forum-detail-page" onClick={() => openReactionPickerId && setOpenReactionPickerId(null)}>
       <SEO
         title={`${postTitle} — Foro OurMangaSite`}
         description={(postContent || '').slice(0, 155) || `Únete a la discusión "${postTitle}" en OurMangaSite.`}
@@ -531,20 +531,20 @@ const ForumPostDetail = () => {
         canonicalPath={`/forum/post/${id}`}
       />
       {toast && (
-        <div className="forum-toast">
+        <div className="forum-toast-message">
           <i className="fa fa-check-circle"></i>
           <span>{toast}</span>
         </div>
       )}
 
-      <div className="forum-detail-container">
-        <div className="top-nav-bar">
-          <Link to="/forum" className="back-to-forum-btn">
+      <div className="detail-container">
+        <div className="detail-nav-row">
+          <Link to="/forum" className="btn-back-forum">
             <i className="fa fa-arrow-left"></i>
             <span>{t('forum.backToForum')}</span>
           </Link>
 
-          <div className="breadcrumb-pills">
+          <div className="topic-badges-group">
             <span className="pill-topic">
               <i className="fa fa-folder-open"></i> {t(`forum.categories.${postTopic}`, postTopic)}
             </span>
@@ -577,7 +577,7 @@ const ForumPostDetail = () => {
                   <span>Publicado {formatTimeAgo(post.createdAt)}</span>
                   {post.createdAt && (
                     <span className="full-date-label">
-                      • {new Date(post.createdAt).toLocaleDateString()}
+                      {' '}• {new Date(post.createdAt).toLocaleDateString()}
                     </span>
                   )}
                 </div>
@@ -657,7 +657,7 @@ const ForumPostDetail = () => {
           {renderPagination()}
 
           {commentsLoading ? (
-            <div className="loading-state" style={{ padding: '24px 0' }}>
+            <div className="detail-loading-box" style={{ padding: '24px 0' }}>
               <i className="fa fa-spinner fa-spin"></i>
             </div>
           ) : comments.length === 0 ? (
@@ -931,7 +931,7 @@ const ForumPostDetail = () => {
                       ) : (
                         <>
                           <i className="fa fa-paper-plane"></i>
-                          <span>{t('forum.postReply')}</span>
+                          <span>{t('forum.publishReply')}</span>
                         </>
                       )}
                     </button>
@@ -944,12 +944,12 @@ const ForumPostDetail = () => {
                   <i className="fa fa-lock"></i>
                 </div>
                 <div className="prompt-content">
-                  <h4>{t('forum.joinConversation')}</h4>
-                  <p>{t('forum.loginToReply')}</p>
+                  <h4>{t('forum.loginToComment')}</h4>
+                  <p>{language === 'en' ? 'Sign in to reply, react, and share images.' : 'Inicia sesión para responder, reaccionar y compartir imágenes.'}</p>
                 </div>
                 <Link to="/login" className="btn-primary">
                   <i className="fa fa-sign-in"></i>
-                  <span>{t('forum.login')}</span>
+                  <span>{t('nav.login')}</span>
                 </Link>
               </div>
             )}
