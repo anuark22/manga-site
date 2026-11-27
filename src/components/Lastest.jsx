@@ -19,22 +19,24 @@ const Lastest = () => {
             try {
                 const data = await mangasApi.getPopular(10);
                 if (isMounted && data && data.length > 0) {
-                    let list = [...data];
-                    // Si la API devuelve menos de 6 mangas (ej. 5), complementar con los canónicos (como Bleach)
-                    if (list.length < 6) {
-                        const fallbackMangas = mangasTopTier.filter(
-                            fb => !list.some(m => (m.mangaName || m.mangaTittle || '').toLowerCase() === (fb.mangaName || fb.mangaTittle || '').toLowerCase())
-                        );
-                        list = [...list, ...fallbackMangas];
-                    }
-                    // Limitamos exactamente a los 6 más populares
+                    const list = [...data];
+                    // /* Fallback desactivado para mostrar solo datos reales de BD
+                    // if (list.length < 6) {
+                    //     const fallbackMangas = mangasTopTier.filter(
+                    //         fb => !list.some(m => (m.mangaName || m.mangaTittle || '').toLowerCase() === (fb.mangaName || fb.mangaTittle || '').toLowerCase())
+                    //     );
+                    //     list = [...list, ...fallbackMangas];
+                    // }
+                    // */
                     setMangas(list.slice(0, 6));
                 } else if (isMounted) {
-                    setMangas(mangasTopTier.slice(0, 6));
+                    // setMangas(mangasTopTier.slice(0, 6));
+                    setMangas([]);
                 }
             } catch (err) {
-                console.warn('Usando mangasTopTier fallback:', err);
-                if (isMounted) setMangas(mangasTopTier.slice(0, 6));
+                console.warn('Error al obtener mangas populares:', err);
+                // if (isMounted) setMangas(mangasTopTier.slice(0, 6));
+                if (isMounted) setMangas([]);
             } finally {
                 if (isMounted) setLoading(false);
             }

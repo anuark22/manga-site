@@ -86,11 +86,15 @@ const Main = () => {
                             <NoticeCard key={notice.noticeId || notice.id || index} notice={notice} />
                         ))
                     ) : (
-                        // Fallback inicial por si no hay noticias en base de datos
+                        /* Fallback inicial desactivado para mostrar solo datos reales de BD
                         <>
                             <NoticeCard />
                             <NoticeCard />
                         </>
+                        */
+                        <div style={{ padding: '16px', color: 'var(--text-secondary)', textAlign: 'center', fontSize: '0.9rem' }}>
+                            No hay noticias publicadas por el momento.
+                        </div>
                     )}
                 </div>
 

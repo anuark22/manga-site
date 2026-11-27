@@ -28,15 +28,15 @@ const Forum = () => {
             const data = await forumApi.getPosts(params);
             if (data && data.length > 0) {
                 setPosts(data);
-            } else if (!filterCategory && !filterSubTopic) {
-                // Fallback a postData local si la API está vacía
-                setPosts(postData);
             } else {
+                // Fallback a postData desactivado para mostrar solo datos reales de BD
+                // setPosts(postData);
                 setPosts([]);
             }
         } catch (err) {
-            console.warn('Error al obtener posts del foro, usando fallback:', err);
-            setPosts(postData);
+            console.warn('Error al obtener posts del foro:', err);
+            // setPosts(postData);
+            setPosts([]);
         } finally {
             setLoading(false);
         }
