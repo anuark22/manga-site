@@ -26,6 +26,8 @@ const Login = () => {
     const { login, googleLogin } = useAuth();
     const { language } = useLanguage();
     const navigate = useNavigate();
+    const rawRedirect = location.state?.from || new URLSearchParams(location.search).get('redirect') || '/';
+    const redirectTo = typeof rawRedirect === 'string' && rawRedirect.startsWith('/') ? rawRedirect : '/';
 
     // Estado del modal de recuperación de contraseña (3 pasos)
     const [showRecoveryModal, setShowRecoveryModal] = useState(false);
@@ -132,7 +134,7 @@ const Login = () => {
         setLoading(true);
         try {
             await googleLogin({ idToken, honeypot });
-            navigate('/');
+            navigate(redirectTo, { replace: true });
         } catch (err) {
             setError(err.message || 'No se pudo iniciar sesión con Google.');
         } finally {
@@ -170,7 +172,7 @@ const Login = () => {
                 honeypot,
                 recaptchaToken
             });
-            navigate('/');
+            navigate(redirectTo, { replace: true });
         } catch (err) {
             if (err.status === 429 || err.data?.status === 429) {
                 const remaining = err.data?.secondsRemaining || 120;

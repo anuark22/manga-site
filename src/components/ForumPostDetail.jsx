@@ -5,6 +5,7 @@ import { useAuth } from '../Context/AuthContext';
 import { useLanguage } from '../Context/LanguageContext';
 import SEO from './SEO';
 import Gravatar from './Gravatar';
+import ConfirmModal from './ConfirmModal';
 import postData from './postData';
 import '../styles/ForumPostDetail.scss';
 
@@ -124,6 +125,8 @@ const ForumPostDetail = () => {
 
   const [honeypot, setHoneypot] = useState('');
   const [toast, setToast] = useState('');
+  const [confirmDeletePost, setConfirmDeletePost] = useState(false);
+  const [deletingPost, setDeletingPost] = useState(false);
   const [error, setError] = useState(null);
 
   const commentInputRef = useRef(null);
@@ -345,13 +348,21 @@ const ForumPostDetail = () => {
     }
   };
 
-  const handleDeletePost = async () => {
-    if (!window.confirm('¿Estás seguro de eliminar esta discusión?')) return;
+  const handleDeletePost = () => {
+    setConfirmDeletePost(true);
+  };
+
+  const confirmDeletePostAction = async () => {
+    setDeletingPost(true);
     try {
       await forumApi.deletePost(id);
+      setConfirmDeletePost(false);
       navigate('/forum');
     } catch (err) {
+      setConfirmDeletePost(false);
       showToast(err.message || 'Error al eliminar discusión');
+    } finally {
+      setDeletingPost(false);
     }
   };
 
@@ -956,6 +967,18 @@ const ForumPostDetail = () => {
           </div>
         </section>
       </div>
+
+      <ConfirmModal
+        isOpen={confirmDeletePost}
+        variant="danger"
+        title={language === 'en' ? 'Delete discussion' : 'Eliminar discusión'}
+        message={language === 'en' ? 'Are you sure you want to delete this discussion?' : '¿Estás seguro de eliminar esta discusión?'}
+        confirmText={language === 'en' ? 'Delete' : 'Eliminar'}
+        cancelText={language === 'en' ? 'Cancel' : 'Cancelar'}
+        loading={deletingPost}
+        onCancel={() => !deletingPost && setConfirmDeletePost(false)}
+        onConfirm={confirmDeletePostAction}
+      />
     </div>
   );
 };

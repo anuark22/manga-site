@@ -3,6 +3,7 @@ import '../styles/SideBar.scss';
 import { forumApi } from '../services/api';
 import { useAuth } from '../Context/AuthContext';
 import { useLanguage } from '../Context/LanguageContext';
+import ConfirmModal from './ConfirmModal';
 
 const SideBar = ({ onSelectTopic, onPostCreated }) => {
     const { isAuthenticated } = useAuth();
@@ -22,6 +23,7 @@ const SideBar = ({ onSelectTopic, onPostCreated }) => {
     const [newContent, setNewContent] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [honeypot, setHoneypot] = useState('');
+    const [popup, setPopup] = useState(null);
 
     const toggleSection = (key) => {
         setOpenSections(prev => ({
@@ -40,12 +42,22 @@ const SideBar = ({ onSelectTopic, onPostCreated }) => {
     const handleCreateDiscussion = async (e) => {
         e.preventDefault();
         if (!isAuthenticated) {
-            alert('Debes iniciar sesión para crear una discusión en el foro.');
+            setPopup({
+                variant: 'warning',
+                title: 'Sesión requerida',
+                message: 'Debes iniciar sesión para crear una discusión en el foro.',
+                confirmText: 'Entendido'
+            });
             return;
         }
 
         if (!newTitle.trim()) {
-            alert('Por favor ingresa un título para la discusión');
+            setPopup({
+                variant: 'warning',
+                title: 'Título requerido',
+                message: 'Por favor ingresa un título para la discusión.',
+                confirmText: 'Entendido'
+            });
             return;
         }
 
@@ -59,17 +71,28 @@ const SideBar = ({ onSelectTopic, onPostCreated }) => {
                 honeypot
             });
 
-            alert(`¡Discusión creada con éxito en "${newCategory}":\n"${newTitle}"!`);
             setIsModalOpen(false);
             setNewTitle('');
             setNewContent('');
             setHoneypot('');
+            setPopup({
+                variant: 'success',
+                title: '¡Discusión publicada!',
+                message: `Se creó tu discusión en "${newCategory}": "${newTitle}"`,
+                confirmText: 'Aceptar'
+            });
 
             if (onPostCreated) {
                 onPostCreated();
             }
         } catch (err) {
-            alert(`Error al publicar la discusión: ${err.message || 'Error del servidor'}`);
+            setPopup({
+                variant: 'danger',
+                icon: 'fa-exclamation-circle',
+                title: 'Error al publicar',
+                message: err.message || 'Error del servidor al publicar la discusión.',
+                confirmText: 'Cerrar'
+            });
         } finally {
             setSubmitting(false);
         }
@@ -240,6 +263,18 @@ const SideBar = ({ onSelectTopic, onPostCreated }) => {
                     </div>
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={Boolean(popup)}
+                hideCancel={true}
+                variant={popup?.variant || 'primary'}
+                icon={popup?.icon}
+                title={popup?.title}
+                message={popup?.message}
+                confirmText={popup?.confirmText || 'Aceptar'}
+                onConfirm={() => setPopup(null)}
+                onCancel={() => setPopup(null)}
+            />
         </div>
     );
 };

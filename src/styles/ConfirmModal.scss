@@ -13,15 +13,34 @@
 
 .oms-confirm-dialog {
   width: 100%;
-  max-width: 430px;
+  max-width: 440px;
   background: var(--bg-card, #0e1528);
   border: 1px solid var(--border-color, rgba(148, 163, 184, 0.2));
-  border-radius: 16px;
-  padding: 28px 24px 22px;
-  box-shadow: 0 22px 55px rgba(0, 0, 0, 0.65);
+  border-radius: 18px;
+  padding: 28px 24px 24px;
+  box-shadow: 0 22px 55px var(--shadow-color, rgba(0, 0, 0, 0.65));
   text-align: center;
   color: var(--text-primary, #f1f5f9);
   animation: omsConfirmPopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+  &.lg {
+    max-width: 500px;
+    padding: 34px 30px 28px;
+
+    .oms-confirm-icon {
+      width: 64px;
+      height: 64px;
+      font-size: 26px;
+    }
+
+    .oms-confirm-title {
+      font-size: 1.32rem;
+    }
+
+    .oms-confirm-message {
+      font-size: 1rem;
+    }
+  }
 
   .oms-confirm-icon {
     width: 56px;
@@ -45,10 +64,17 @@
       border: 1px solid rgba(245, 158, 11, 0.35);
     }
 
-    &.primary {
-      background: rgba(56, 189, 248, 0.15);
-      color: #38bdf8;
-      border: 1px solid rgba(56, 189, 248, 0.35);
+    &.primary,
+    &.auth {
+      background: rgba(56, 189, 248, 0.14);
+      color: var(--main-color, #38bdf8);
+      border: 1px solid var(--main-color, rgba(56, 189, 248, 0.35));
+    }
+
+    &.success {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.35);
     }
   }
 
@@ -123,11 +149,24 @@
         }
       }
 
-      &.confirm.primary {
-        background: linear-gradient(135deg, #3b82f6, #2563eb);
+      &.confirm.primary,
+      &.confirm.auth {
+        background: var(--main-color, #2563eb);
         border: none;
         color: #ffffff;
-        box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
+        box-shadow: 0 6px 18px var(--shadow-color, rgba(37, 99, 235, 0.35));
+
+        &:hover:not(:disabled) {
+          filter: brightness(1.08);
+          transform: translateY(-1px);
+        }
+      }
+
+      &.confirm.success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        border: none;
+        color: #ffffff;
+        box-shadow: 0 6px 18px rgba(16, 185, 129, 0.35);
 
         &:hover:not(:disabled) {
           filter: brightness(1.08);

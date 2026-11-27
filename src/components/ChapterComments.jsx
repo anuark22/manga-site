@@ -4,6 +4,7 @@ import { chapterCommentsApi } from '../services/api';
 import { useAuth } from '../Context/AuthContext';
 import { useLanguage } from '../Context/LanguageContext';
 import Gravatar from './Gravatar';
+import ConfirmModal from './ConfirmModal';
 import '../styles/ChapterComments.scss';
 
 function buildCommentTree(flatList) {
@@ -202,6 +203,7 @@ const CommentNode = ({
   isAuthenticated,
   onReload,
   onZoomImage,
+  onRequestDelete,
   t
 }) => {
   const [collapsed, setCollapsed] = useState(false);
@@ -214,14 +216,8 @@ const CommentNode = ({
     isAdmin
   );
 
-  const handleDelete = async () => {
-    if (!window.confirm(t('chapterComments.deleteConfirm'))) return;
-    try {
-      await chapterCommentsApi.deleteComment(node.commentId);
-      onReload();
-    } catch (err) {
-      alert(err.message || 'No se pudo eliminar el comentario.');
-    }
+  const handleDelete = () => {
+    onRequestDelete?.(node.commentId);
   };
 
   return (
@@ -323,6 +319,7 @@ const CommentNode = ({
                       isAuthenticated={isAuthenticated}
                       onReload={onReload}
                       onZoomImage={onZoomImage}
+                      onRequestDelete={onRequestDelete}
                       t={t}
                     />
                   ))}
@@ -342,6 +339,9 @@ const ChapterComments = ({ chapterId }) => {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lightboxUrl, setLightboxUrl] = useState(null);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [deletingComment, setDeletingComment] = useState(false);
+  const [commentAlert, setCommentAlert] = useState(null);
 
   const loadComments = async () => {
     if (!chapterId) return;
@@ -412,6 +412,7 @@ const ChapterComments = ({ chapterId }) => {
               isAuthenticated={isAuthenticated}
               onReload={loadComments}
               onZoomImage={setLightboxUrl}
+              onRequestDelete={setDeleteTargetId}
               t={t}
             />
           ))}
@@ -426,6 +427,43 @@ const ChapterComments = ({ chapterId }) => {
           </button>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={Boolean(deleteTargetId)}
+        variant="danger"
+        title={t('chapterComments.delete')}
+        message={t('chapterComments.deleteConfirm')}
+        confirmText={t('chapterComments.delete')}
+        cancelText={t('forum.cancel')}
+        loading={deletingComment}
+        onCancel={() => !deletingComment && setDeleteTargetId(null)}
+        onConfirm={async () => {
+          if (!deleteTargetId) return;
+          setDeletingComment(true);
+          try {
+            await chapterCommentsApi.deleteComment(deleteTargetId);
+            setDeleteTargetId(null);
+            loadComments();
+          } catch (err) {
+            setDeleteTargetId(null);
+            setCommentAlert(err.message || 'No se pudo eliminar el comentario.');
+          } finally {
+            setDeletingComment(false);
+          }
+        }}
+      />
+
+      <ConfirmModal
+        isOpen={Boolean(commentAlert)}
+        hideCancel={true}
+        variant="danger"
+        icon="fa-exclamation-circle"
+        title="Error"
+        message={commentAlert}
+        confirmText="Cerrar"
+        onConfirm={() => setCommentAlert(null)}
+        onCancel={() => setCommentAlert(null)}
+      />
     </section>
   );
 };

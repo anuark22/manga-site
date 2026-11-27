@@ -7,7 +7,10 @@ const ConfirmModal = ({
   message,
   confirmText = 'Confirmar',
   cancelText = 'Cancelar',
-  variant = 'danger', // 'danger' | 'warning' | 'primary'
+  variant = 'danger', // 'danger' | 'warning' | 'primary' | 'success' | 'auth'
+  size = 'md', // 'md' | 'lg'
+  hideCancel = false,
+  icon,
   loading = false,
   onConfirm,
   onCancel
@@ -15,11 +18,16 @@ const ConfirmModal = ({
   if (!isOpen) return null;
 
   const iconClass =
-    variant === 'danger'
+    icon ||
+    (variant === 'danger'
       ? 'fa-trash'
       : variant === 'warning'
       ? 'fa-exclamation-triangle'
-      : 'fa-question-circle';
+      : variant === 'success'
+      ? 'fa-check-circle'
+      : variant === 'auth'
+      ? 'fa-user-circle'
+      : 'fa-question-circle');
 
   return (
     <div
@@ -28,7 +36,7 @@ const ConfirmModal = ({
       role="dialog"
       aria-modal="true"
     >
-      <div className="oms-confirm-dialog" onClick={(e) => e.stopPropagation()}>
+      <div className={`oms-confirm-dialog ${size === 'lg' ? 'lg' : ''}`} onClick={(e) => e.stopPropagation()}>
         <div className={`oms-confirm-icon ${variant}`}>
           <i className={`fa ${iconClass}`} aria-hidden="true"></i>
         </div>
@@ -37,14 +45,16 @@ const ConfirmModal = ({
         <p className="oms-confirm-message">{message}</p>
 
         <div className="oms-confirm-actions">
-          <button
-            type="button"
-            className="oms-confirm-btn cancel"
-            onClick={onCancel}
-            disabled={loading}
-          >
-            {cancelText}
-          </button>
+          {!hideCancel && (
+            <button
+              type="button"
+              className="oms-confirm-btn cancel"
+              onClick={onCancel}
+              disabled={loading}
+            >
+              {cancelText}
+            </button>
+          )}
           <button
             type="button"
             className={`oms-confirm-btn confirm ${variant}`}

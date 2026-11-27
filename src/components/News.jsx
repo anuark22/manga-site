@@ -5,6 +5,7 @@ import { useAuth } from '../Context/AuthContext';
 import { useLanguage } from '../Context/LanguageContext';
 import { getNoticeImage, getNoticeCompanionImages } from '../utils/imageHelper';
 import SEO from './SEO';
+import ConfirmModal from './ConfirmModal';
 import '../styles/News.scss';
 
 // Contenido extendido y citas para las noticias de muestra/canónicas
@@ -62,6 +63,8 @@ const News = () => {
   const [activeCategory, setActiveCategory] = useState('ALL');
   const [lightboxImage, setLightboxImage] = useState(null);
   const [toast, setToast] = useState('');
+  const [deleteNoticeId, setDeleteNoticeId] = useState(null);
+  const [deletingNotice, setDeletingNotice] = useState(false);
   const { t, language } = useLanguage();
 
   // Modal para que el Administrador publique una nueva noticia
@@ -150,20 +153,28 @@ const News = () => {
   };
 
   // Eliminar noticia (Admin)
-  const handleDeleteNotice = async (noticeId, e) => {
+  const handleDeleteNotice = (noticeId, e) => {
     if (e) e.stopPropagation();
-    if (!window.confirm('¿Seguro que deseas eliminar esta noticia?')) return;
+    setDeleteNoticeId(noticeId);
+  };
 
+  const confirmDeleteNotice = async () => {
+    if (!deleteNoticeId) return;
+    setDeletingNotice(true);
     try {
-      await noticesApi.deleteNotice(noticeId);
-      showToastMsg('Noticia eliminada correctamente.');
-      if (selectedNotice && (selectedNotice.noticeId === noticeId || selectedNotice.id === noticeId)) {
+      await noticesApi.deleteNotice(deleteNoticeId);
+      showToastMsg(language === 'en' ? 'Article deleted successfully.' : 'Noticia eliminada correctamente.');
+      if (selectedNotice && (selectedNotice.noticeId === deleteNoticeId || selectedNotice.id === deleteNoticeId)) {
         navigate('/news');
       }
-      setNotices((prev) => prev.filter((n) => (n.noticeId || n.id) !== noticeId));
+      setNotices((prev) => prev.filter((n) => (n.noticeId || n.id) !== deleteNoticeId));
+      setDeleteNoticeId(null);
     } catch (err) {
       console.error('Error al eliminar noticia:', err);
-      showToastMsg('No se pudo eliminar la noticia.');
+      setDeleteNoticeId(null);
+      showToastMsg(language === 'en' ? 'Could not delete the article.' : 'No se pudo eliminar la noticia.');
+    } finally {
+      setDeletingNotice(false);
     }
   };
 
@@ -714,6 +725,18 @@ const News = () => {
           )}
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={Boolean(deleteNoticeId)}
+        variant="danger"
+        title={t('news.delete')}
+        message={language === 'en' ? 'Are you sure you want to delete this article?' : '¿Seguro que deseas eliminar esta noticia?'}
+        confirmText={t('news.delete')}
+        cancelText={t('news.cancel')}
+        loading={deletingNotice}
+        onCancel={() => !deletingNotice && setDeleteNoticeId(null)}
+        onConfirm={confirmDeleteNotice}
+      />
     </div>
   );
 };

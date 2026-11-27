@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { mangasApi, chaptersApi, chapterReportsApi, userListApi, normalizePageUrl } from '../services/api';
 import mangasData, { canonicalMangas } from './mangasData';
 import { useTheme } from '../Context/ThemeContext';
 import { useAuth } from '../Context/AuthContext';
+import { useLanguage } from '../Context/LanguageContext';
 import { getMangaImage } from '../utils/imageHelper';
 import SEO from './SEO';
 import ChapterComments from './ChapterComments';
+import ConfirmModal from './ConfirmModal';
 import '../styles/MangaReader.scss';
 
 const REPORT_REASONS = [
@@ -21,8 +23,11 @@ const REPORT_REASONS = [
 const MangaReader = () => {
   const { id, chapterId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { theme } = useTheme();
   const { isAuthenticated } = useAuth();
+  const { language } = useLanguage();
+  const [readerPopup, setReaderPopup] = useState(null);
 
   // Estados de datos
   const [manga, setManga] = useState(null);
@@ -96,8 +101,22 @@ const MangaReader = () => {
 
   const handleOpenReportModal = () => {
     if (!isAuthenticated) {
-      setToastMessage('Debes iniciar sesión para poder reportar un capítulo.');
-      setTimeout(() => navigate('/login'), 1200);
+      const returnPath = `${location.pathname}${location.search}${location.hash}`;
+      setReaderPopup({
+        variant: 'auth',
+        size: 'lg',
+        icon: 'fa-flag',
+        title: language === 'en' ? 'Sign in to report this chapter' : 'Inicia sesión para reportar',
+        message: language === 'en'
+          ? 'You need an active account to submit a chapter report. Do you want to sign in now or keep reading?'
+          : 'Debes iniciar sesión para poder reportar un capítulo. ¿Deseas ir a iniciar sesión ahora o seguir leyendo?',
+        cancelText: language === 'en' ? 'Continue reading' : 'Seguir leyendo',
+        confirmText: language === 'en' ? 'Sign in' : 'Iniciar sesión',
+        onConfirm: () => {
+          setReaderPopup(null);
+          navigate('/login', { state: { from: returnPath } });
+        }
+      });
       return;
     }
     setReportError('');
@@ -359,9 +378,18 @@ const MangaReader = () => {
       setCurrentPage(prev => prev - 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (prevChapter) {
-      if (window.confirm('¿Deseas ir al capítulo anterior?')) {
-        goToChapter(prevChapter);
-      }
+      setReaderPopup({
+        variant: 'primary',
+        icon: 'fa-step-backward',
+        title: language === 'en' ? 'Previous Chapter' : 'Capítulo anterior',
+        message: language === 'en' ? 'Do you want to go to the previous chapter?' : '¿Deseas ir al capítulo anterior?',
+        cancelText: language === 'en' ? 'Stay here' : 'Quedarme aquí',
+        confirmText: language === 'en' ? 'Go to previous' : 'Ir al anterior',
+        onConfirm: () => {
+          setReaderPopup(null);
+          goToChapter(prevChapter);
+        }
+      });
     }
   };
 
@@ -370,9 +398,20 @@ const MangaReader = () => {
       setCurrentPage(prev => prev + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (nextChapter) {
-      if (window.confirm('¡Has llegado al final del capítulo! ¿Deseas leer el siguiente?')) {
-        goToChapter(nextChapter);
-      }
+      setReaderPopup({
+        variant: 'primary',
+        icon: 'fa-step-forward',
+        title: language === 'en' ? 'End of Chapter' : 'Fin del capítulo',
+        message: language === 'en'
+          ? 'You reached the end of this chapter! Do you want to read the next one?'
+          : '¡Has llegado al final del capítulo! ¿Deseas leer el siguiente?',
+        cancelText: language === 'en' ? 'Stay here' : 'Quedarme aquí',
+        confirmText: language === 'en' ? 'Next chapter' : 'Siguiente capítulo',
+        onConfirm: () => {
+          setReaderPopup(null);
+          goToChapter(nextChapter);
+        }
+      });
     }
   };
 
@@ -832,6 +871,19 @@ const MangaReader = () => {
           <i className="fa fa-cog"></i>
         </button>
       )}
+
+      <ConfirmModal
+        isOpen={Boolean(readerPopup)}
+        variant={readerPopup?.variant || 'primary'}
+        size={readerPopup?.size || 'md'}
+        icon={readerPopup?.icon}
+        title={readerPopup?.title}
+        message={readerPopup?.message}
+        cancelText={readerPopup?.cancelText}
+        confirmText={readerPopup?.confirmText}
+        onCancel={() => setReaderPopup(null)}
+        onConfirm={() => readerPopup?.onConfirm?.()}
+      />
 
       {/* Modal de Reporte de Capítulo */}
       {showReportModal && (
