@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import '../styles/SideBar.scss';
-import { useClickOutside } from '../hooks/useClickOutside';
 import { forumApi } from '../services/api';
 import { useAuth } from '../Context/AuthContext';
 import { useLanguage } from '../Context/LanguageContext';
@@ -23,10 +22,6 @@ const SideBar = ({ onSelectTopic, onPostCreated }) => {
     const [newContent, setNewContent] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [honeypot, setHoneypot] = useState('');
-
-    const modalRef = useClickOutside(() => {
-        if (isModalOpen) setIsModalOpen(false);
-    });
 
     const toggleSection = (key) => {
         setOpenSections(prev => ({
@@ -109,7 +104,7 @@ const SideBar = ({ onSelectTopic, onPostCreated }) => {
 
     return ( 
         <div className="forum-sidebar">
-            <button type="button" onClick={() => setIsModalOpen(true)}>
+            <button type="button" onClick={(e) => { e.stopPropagation(); setIsModalOpen(true); }}>
                 {t('forum.createDiscussion')} <i className="fa fa-plus" aria-hidden="true"></i>
             </button>
 
@@ -156,8 +151,8 @@ const SideBar = ({ onSelectTopic, onPostCreated }) => {
 
             {/* Modal para Crear Discusión */}
             {isModalOpen && (
-                <div className="modal-backdrop">
-                    <div className="modal-card" ref={modalRef}>
+                <div className="modal-backdrop" onClick={() => setIsModalOpen(false)}>
+                    <div className="modal-card" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <h3>{t('forum.newDiscussionTitle')}</h3>
                             <button 

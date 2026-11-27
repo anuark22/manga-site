@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { noticesApi } from '../services/api';
 import { useAuth } from '../Context/AuthContext';
+import { useLanguage } from '../Context/LanguageContext';
 import { getNoticeImage, getNoticeCompanionImages } from '../utils/imageHelper';
 import SEO from './SEO';
 import '../styles/News.scss';
@@ -61,6 +62,7 @@ const News = () => {
   const [activeCategory, setActiveCategory] = useState('ALL');
   const [lightboxImage, setLightboxImage] = useState(null);
   const [toast, setToast] = useState('');
+  const { t, language } = useLanguage();
 
   // Modal para que el Administrador publique una nueva noticia
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -167,10 +169,10 @@ const News = () => {
 
   // Formateador de fecha
   const formatNoticeDate = (dateStr) => {
-    if (!dateStr) return 'Fecha reciente';
+    if (!dateStr) return t('news.recentDate');
     const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return 'Reciente';
-    return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+    if (isNaN(d.getTime())) return t('news.recentShort');
+    return d.toLocaleDateString(language === 'en' ? 'en-US' : 'es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
   // Deducir categoría de la noticia
@@ -248,11 +250,11 @@ const News = () => {
               type="button"
               className="btn-close-lightbox"
               onClick={() => setLightboxImage(null)}
-              title="Cerrar vista ampliada"
+              title={t('news.closeZoom')}
             >
               <i className="fa fa-times"></i>
             </button>
-            <img src={lightboxImage.url} alt={lightboxImage.caption || 'Vista ampliada'} />
+            <img src={lightboxImage.url} alt={lightboxImage.caption || t('news.zoomTag')} />
             {lightboxImage.caption && (
               <p className="lightbox-caption">{lightboxImage.caption}</p>
             )}
@@ -265,7 +267,7 @@ const News = () => {
         <div className="news-modal-overlay" onClick={() => setShowCreateModal(false)}>
           <div className="news-modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header-row">
-              <h3><i className="fa fa-newspaper-o"></i> Publicar Nueva Noticia</h3>
+              <h3><i className="fa fa-newspaper-o"></i> {t('news.modalTitle')}</h3>
               <button
                 type="button"
                 className="btn-modal-close"
@@ -277,32 +279,32 @@ const News = () => {
 
             <form onSubmit={handleCreateNotice} className="modal-form-content">
               <div className="form-group">
-                <label>Título de la Noticia *</label>
+                <label>{t('news.modalTitleLabel')}</label>
                 <input
                   type="text"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="Ej. Temporada 3 de Jujutsu Kaisen anunciada oficialmente"
+                  placeholder={t('news.modalTitlePlaceholder')}
                   required
                 />
               </div>
 
               <div className="form-row-two">
                 <div className="form-group">
-                  <label>Categoría</label>
+                  <label>{t('news.modalCategory')}</label>
                   <select
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value)}
                   >
-                    <option value="Manga">Manga</option>
-                    <option value="Anime">Anime</option>
-                    <option value="Lanzamientos">Lanzamientos</option>
-                    <option value="Comunidad">Comunidad</option>
+                    <option value="Manga">{t('news.catManga')}</option>
+                    <option value="Anime">{t('news.catAnime')}</option>
+                    <option value="Lanzamientos">{t('news.catReleases')}</option>
+                    <option value="Comunidad">{t('news.catCommunity')}</option>
                   </select>
                 </div>
 
                 <div className="form-group">
-                  <label>Imagen de Portada (Opcional)</label>
+                  <label>{t('news.modalCover')}</label>
                   <input
                     type="file"
                     accept="image/png, image/jpeg, image/webp"
@@ -313,18 +315,18 @@ const News = () => {
 
               {previewUrl && (
                 <div className="image-preview-box">
-                  <img src={previewUrl} alt="Vista previa de imagen" />
-                  <span>Vista previa de la imagen seleccionada</span>
+                  <img src={previewUrl} alt={t('news.modalPreview')} />
+                  <span>{t('news.modalPreview')}</span>
                 </div>
               )}
 
               <div className="form-group">
-                <label>Cuerpo / Contenido de la Noticia *</label>
+                <label>{t('news.modalContentLabel')}</label>
                 <textarea
                   rows={6}
                   value={newContent}
                   onChange={(e) => setNewContent(e.target.value)}
-                  placeholder="Escribe la información detallada de la noticia..."
+                  placeholder={t('news.modalContentPlaceholder')}
                   required
                 />
               </div>
@@ -335,7 +337,7 @@ const News = () => {
                   className="btn-secondary"
                   onClick={() => setShowCreateModal(false)}
                 >
-                  Cancelar
+                  {t('news.cancel')}
                 </button>
                 <button
                   type="submit"
@@ -344,11 +346,11 @@ const News = () => {
                 >
                   {creating ? (
                     <>
-                      <i className="fa fa-spinner fa-spin"></i> Publicando...
+                      <i className="fa fa-spinner fa-spin"></i> {t('news.publishing')}
                     </>
                   ) : (
                     <>
-                      <i className="fa fa-paper-plane"></i> Publicar Noticia
+                      <i className="fa fa-paper-plane"></i> {t('news.publishSubmit')}
                     </>
                   )}
                 </button>
@@ -366,7 +368,7 @@ const News = () => {
           <div className="detail-top-nav">
             <Link to="/news" className="btn-back-news">
               <i className="fa fa-arrow-left"></i>
-              <span>Volver a todas las noticias</span>
+              <span>{t('news.backToNews')}</span>
             </Link>
 
             <div className="detail-meta-tags">
@@ -386,7 +388,7 @@ const News = () => {
             <div className="article-author-row">
               <div className="author-info">
                 <i className="fa fa-user-circle"></i>
-                <span>Publicado por <strong>{selectedNotice.authorName || 'OurMangaSite'}</strong></span>
+                <span>{t('news.publishedBy')} <strong>{selectedNotice.authorName || 'OurMangaSite'}</strong></span>
               </div>
               <span className="dot-sep">•</span>
               <div className="publish-date">
@@ -410,9 +412,9 @@ const News = () => {
               }
             />
             <div className="image-overlay-hint">
-              <i className="fa fa-search-plus"></i> Clic para ampliar imagen
+              <i className="fa fa-search-plus"></i> {t('news.clickToZoom')}
             </div>
-            <p className="image-caption">{selectedNotice.imageCaption || 'Imagen oficial del lanzamiento / anuncio'}</p>
+            <p className="image-caption">{selectedNotice.imageCaption || t('news.defaultCaption')}</p>
           </div>
 
           {/* Cuerpo del Artículo */}
@@ -439,7 +441,7 @@ const News = () => {
             {getNoticeCompanionImages(selectedNotice).length > 0 && (
               <section className="companion-gallery-section">
                 <h3 className="gallery-title">
-                  <i className="fa fa-picture-o"></i> Ilustraciones y Capturas Relacionadas
+                  <i className="fa fa-picture-o"></i> {t('news.illustrations')}
                 </h3>
                 <div className="companion-images-grid">
                   {getNoticeCompanionImages(selectedNotice).map((imgObj, idx) => (
@@ -450,7 +452,7 @@ const News = () => {
                     >
                       <div className="image-wrapper">
                         <img src={imgObj.url} alt={imgObj.caption} />
-                        <span className="zoom-tag"><i className="fa fa-arrows-alt"></i> Ampliar</span>
+                        <span className="zoom-tag"><i className="fa fa-arrows-alt"></i> {t('news.zoomTag')}</span>
                       </div>
                       <p className="companion-caption">{imgObj.caption}</p>
                     </div>
@@ -468,10 +470,10 @@ const News = () => {
                 className="btn-action-share"
                 onClick={() => {
                   navigator.clipboard?.writeText(window.location.href);
-                  showToastMsg('¡Enlace de la noticia copiado al portapapeles!');
+                  showToastMsg(t('news.linkCopied'));
                 }}
               >
-                <i className="fa fa-share-alt"></i> Compartir Noticia
+                <i className="fa fa-share-alt"></i> {t('news.shareNews')}
               </button>
 
               {isAdmin && (
@@ -480,20 +482,20 @@ const News = () => {
                   className="btn-action-delete"
                   onClick={(e) => handleDeleteNotice(selectedNotice.noticeId || selectedNotice.id, e)}
                 >
-                  <i className="fa fa-trash"></i> Eliminar
+                  <i className="fa fa-trash"></i> {t('news.delete')}
                 </button>
               )}
             </div>
 
             <Link to="/news" className="btn-primary">
-              <i className="fa fa-th-large"></i> Ver todas las noticias
+              <i className="fa fa-th-large"></i> {t('news.viewAll')}
             </Link>
           </footer>
 
           {/* Sección de Otras Noticias Relacionadas */}
           <section className="related-news-section">
             <h3 className="section-title">
-              <i className="fa fa-newspaper-o"></i> Otras Noticias que te Pueden Interesar
+              <i className="fa fa-newspaper-o"></i> {t('news.otherNews')}
             </h3>
             <div className="related-cards-grid">
               {notices
@@ -525,11 +527,11 @@ const News = () => {
           <header className="news-portal-header">
             <div className="header-titles">
               <div className="portal-badge">
-                <i className="fa fa-bolt"></i> Actualidad & Novedades
+                <i className="fa fa-bolt"></i> {t('news.badge')}
               </div>
-              <h1 className="portal-main-title">Noticias del Mundo Manga & Anime</h1>
+              <h1 className="portal-main-title">{t('news.title')}</h1>
               <p className="portal-description">
-                Descubre los lanzamientos más recientes, comunicados oficiales de autores, récords de ventas y adaptaciones animadas de la comunidad.
+                {t('news.subtitle')}
               </p>
             </div>
 
@@ -539,7 +541,7 @@ const News = () => {
                 className="btn-primary btn-publish-news"
                 onClick={() => setShowCreateModal(true)}
               >
-                <i className="fa fa-plus-circle"></i> Publicar Noticia
+                <i className="fa fa-plus-circle"></i> {t('news.publishBtn')}
               </button>
             )}
           </header>
@@ -547,14 +549,19 @@ const News = () => {
           {/* Barra de Filtros y Búsqueda */}
           <div className="news-toolbar-bar">
             <div className="categories-filter-pills">
-              {['ALL', 'MANGA', 'ANIME', 'COMUNIDAD'].map((cat) => (
+              {[
+                { key: 'ALL', label: t('news.allCategories') },
+                { key: 'MANGA', label: t('news.catManga') },
+                { key: 'ANIME', label: t('news.catAnime') },
+                { key: 'COMUNIDAD', label: t('news.catCommunity') }
+              ].map((cat) => (
                 <button
-                  key={cat}
+                  key={cat.key}
                   type="button"
-                  className={`category-pill ${activeCategory === cat ? 'active' : ''}`}
-                  onClick={() => setActiveCategory(cat)}
+                  className={`category-pill ${activeCategory === cat.key ? 'active' : ''}`}
+                  onClick={() => setActiveCategory(cat.key)}
                 >
-                  {cat === 'ALL' ? 'Todas' : cat.charAt(0) + cat.slice(1).toLowerCase()}
+                  {cat.label}
                 </button>
               ))}
             </div>
@@ -563,7 +570,7 @@ const News = () => {
               <i className="fa fa-search"></i>
               <input
                 type="text"
-                placeholder="Buscar noticias por título o contenido..."
+                placeholder={t('news.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -583,20 +590,20 @@ const News = () => {
           {loading ? (
             <div className="news-loading-card">
               <i className="fa fa-spinner fa-spin"></i>
-              <span>Cargando noticias y actualizaciones...</span>
+              <span>{t('news.loading')}</span>
             </div>
           ) : filteredNotices.length === 0 ? (
             <div className="news-empty-card">
               <i className="fa fa-newspaper-o"></i>
-              <h3>No se encontraron noticias</h3>
-              <p>Intenta con otros términos de búsqueda o cambia la categoría seleccionada.</p>
+              <h3>{t('news.emptyTitle')}</h3>
+              <p>{t('news.emptySub')}</p>
               {searchTerm && (
                 <button
                   type="button"
                   className="btn-secondary"
                   onClick={() => setSearchTerm('')}
                 >
-                  Limpiar búsqueda
+                  {t('news.clearSearch')}
                 </button>
               )}
             </div>
@@ -608,7 +615,7 @@ const News = () => {
                   <div className="hero-image-wrap">
                     <img src={getNoticeImage(heroNotice)} alt={heroNotice.title} />
                     <span className="hero-featured-tag">
-                      <i className="fa fa-star"></i> Destacada
+                      <i className="fa fa-star"></i> {t('news.featured')}
                     </span>
                   </div>
 
@@ -630,7 +637,7 @@ const News = () => {
                         to={`/news/${heroNotice.noticeId || heroNotice.id}`}
                         className="btn-primary"
                       >
-                        <span>Leer Noticia Completa</span>
+                        <span>{t('news.readFull')}</span>
                         <i className="fa fa-arrow-right"></i>
                       </Link>
 
@@ -639,7 +646,7 @@ const News = () => {
                           type="button"
                           className="btn-delete-quick"
                           onClick={(e) => handleDeleteNotice(heroNotice.noticeId || heroNotice.id, e)}
-                          title="Eliminar noticia"
+                          title={t('news.deleteTitle')}
                         >
                           <i className="fa fa-trash"></i>
                         </button>
@@ -653,7 +660,7 @@ const News = () => {
               {gridNotices.length > 0 && (
                 <section className="news-grid-section">
                   <h3 className="section-title">
-                    <i className="fa fa-list"></i> Más Noticias Recientes
+                    <i className="fa fa-list"></i> {t('news.moreRecent')}
                   </h3>
 
                   <div className="news-cards-grid">
@@ -681,7 +688,7 @@ const News = () => {
 
                             <div className="card-footer-row">
                               <Link to={`/news/${nId}`} className="card-read-link">
-                                <span>Leer más</span>
+                                <span>{t('news.readMore')}</span>
                                 <i className="fa fa-arrow-right"></i>
                               </Link>
 
@@ -690,7 +697,7 @@ const News = () => {
                                   type="button"
                                   className="btn-delete-mini"
                                   onClick={(e) => handleDeleteNotice(nId, e)}
-                                  title="Eliminar noticia"
+                                  title={t('news.deleteTitle')}
                                 >
                                   <i className="fa fa-trash"></i>
                                 </button>

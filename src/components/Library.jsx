@@ -8,9 +8,11 @@ import mangasData from './mangasData';
 import { mangasApi, userListApi, filtersApi } from '../services/api';
 import { useAuth } from '../Context/AuthContext';
 import { useSearchTerm } from '../Context/SearchBarContext';
+import { useLanguage } from '../Context/LanguageContext';
 import SEO from './SEO';
 
 const Library = ({ isMyList = false }) => {    
+    const { t } = useLanguage();
     const [mangas, setMangas] = useState([]);
     const [progressMap, setProgressMap] = useState({});
     const [loading, setLoading] = useState(true);
@@ -241,17 +243,17 @@ const Library = ({ isMyList = false }) => {
                             onClick={handleApplyFilters}
                         >
                             <i className="fa fa-filter" aria-hidden="true"></i>
-                            <span>Apply Filters</span>
+                            <span>{t('library.applyFilters')}</span>
                         </button>
                         {activeFilterPills.length > 0 && (
                             <button 
                                 type="button" 
                                 className="btn-reset-filter"
                                 onClick={handleResetFilters}
-                                title="Limpiar todos los filtros"
+                                title={t('library.clearFilters')}
                             >
                                 <i className="fa fa-undo" aria-hidden="true"></i>
-                                <span>Limpiar Filtros</span>
+                                <span>{t('library.clearFilters')}</span>
                             </button>
                         )}
                     </div>

@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import genderListData from './genderListData';
 import { filtersApi } from '../services/api';
 import { useClickOutside } from '../hooks/useClickOutside';
+import { useLanguage } from '../Context/LanguageContext';
 
 const GendersList = ({ selectedGenres = [], onToggleGenre }) => {
+    const { t } = useLanguage();
     const [genres, setGenres] = useState(genderListData);
     const [isOpen, setIsOpen] = useState(false);
 
@@ -43,7 +45,7 @@ const GendersList = ({ selectedGenres = [], onToggleGenre }) => {
                 id="genderHam" 
             >
                 <i className="fa fa-tags" aria-hidden="true"></i>
-                <span>Genres / Géneros {selectedGenres.length > 0 ? `(${selectedGenres.length})` : ''}</span>
+                <span>{t('library.genresBtn')} {selectedGenres.length > 0 ? `(${selectedGenres.length})` : ''}</span>
                 <i className={`fa ${isOpen ? 'fa-angle-up' : 'fa-angle-down'} filter-chevron`} aria-hidden="true"></i>
             </button>
             {
