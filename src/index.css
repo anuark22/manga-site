@@ -101,7 +101,7 @@ code {
 
 ::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb, #d96b43);
-  border-radius: 4px;
+  border-radius: 0;
 }
 
 ::-webkit-scrollbar-thumb:hover {
