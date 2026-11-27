@@ -178,29 +178,31 @@ const RecentChapters = () => {
 
           setChapters(combined);
         } else {
-          // Si no hay capítulos en BD, usamos el listado canónico
-          setChapters(
-            fallbackRecentChapters.map(fb => {
-              const parent = canonicalMangas.find(cm => cm.mangaId === fb.mangaId) || {};
-              return {
-                ...fb,
-                mangaImage: getMangaImage(parent)
-              };
-            })
-          );
+          // Fallback desactivado para mostrar solo datos reales de BD
+          // setChapters(
+          //   fallbackRecentChapters.map(fb => {
+          //     const parent = canonicalMangas.find(cm => cm.mangaId === fb.mangaId) || {};
+          //     return {
+          //       ...fb,
+          //       mangaImage: getMangaImage(parent)
+          //     };
+          //   })
+          // );
+          setChapters([]);
         }
       } catch (err) {
         console.warn('Error al cargar últimos capítulos:', err);
         if (isMounted) {
-          setChapters(
-            fallbackRecentChapters.map(fb => {
-              const parent = canonicalMangas.find(cm => cm.mangaId === fb.mangaId) || {};
-              return {
-                ...fb,
-                mangaImage: getMangaImage(parent)
-              };
-            })
-          );
+          // setChapters(
+          //   fallbackRecentChapters.map(fb => {
+          //     const parent = canonicalMangas.find(cm => cm.mangaId === fb.mangaId) || {};
+          //     return {
+          //       ...fb,
+          //       mangaImage: getMangaImage(parent)
+          //     };
+          //   })
+          // );
+          setChapters([]);
         }
       } finally {
         if (isMounted) setLoading(false);
